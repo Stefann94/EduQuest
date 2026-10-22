@@ -38,6 +38,7 @@
   --color-primary: var(--primary);
   --color-primary-shadow: var(--primary-shadow);
   --color-primary-soft: var(--primary-soft);
+  --color-scrim: var(--scrim);
   --color-popover-foreground: var(--foreground);
   --color-popover: var(--card);
   --color-card-foreground: var(--foreground);
@@ -136,6 +137,8 @@
   --accent-foreground: oklch(0.38 0.13 var(--h));
   --border: oklch(0.86 0.07 var(--h));
   --input: oklch(0.84 0.08 var(--h));
+  /* Fundalul întunecat din spatele ferestrelor din bara de sus. */
+  --scrim: oklch(0.24 0.08 var(--h));
   --code: oklch(0.29 0.07 var(--h));
   --code-foreground: oklch(0.97 0.02 var(--h));
 }

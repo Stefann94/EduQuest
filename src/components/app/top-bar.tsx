@@ -30,7 +30,7 @@ export function TopBar({
   config: TopBarConfig;
 }) {
   return (
-    <header className="sticky top-0 z-30 border-b-2 bg-background px-3 py-3 md:top-4 md:w-fit md:max-w-full md:self-center md:rounded-[2rem] md:border-2 md:bg-card md:p-3.5 md:shadow-[0_6px_0_0_var(--border)]">
+    <header className="sticky top-0 z-[45] border-b-2 bg-background px-3 py-3 md:top-4 md:w-fit md:max-w-full md:self-end md:rounded-[2rem] md:border-2 md:bg-card md:p-3.5 md:shadow-[0_6px_0_0_var(--border)]">
       <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
         <div className="md:hidden">
           <MobileNav nav={nav} user={user} />

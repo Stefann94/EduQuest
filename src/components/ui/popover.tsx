@@ -18,14 +18,28 @@ function PopoverContent({
   alignOffset = 0,
   side = "bottom",
   sideOffset = 4,
+  arrow = false,
+  backdrop = false,
+  children,
   ...props
 }: PopoverPrimitive.Popup.Props &
   Pick<
     PopoverPrimitive.Positioner.Props,
     "align" | "alignOffset" | "side" | "sideOffset"
-  >) {
+  > & {
+    /** O săgeată mică pe marginea ferestrei, centrată pe butonul care a deschis-o. */
+    arrow?: boolean;
+    /** Întunecă și estompează restul ecranului, în culoarea temei. */
+    backdrop?: boolean;
+  }) {
   return (
     <PopoverPrimitive.Portal>
+      {backdrop ? (
+        <PopoverPrimitive.Backdrop
+          data-slot="popover-backdrop"
+          className="fixed inset-0 z-40 bg-scrim/45 backdrop-blur-[3px] transition-opacity duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0"
+        />
+      ) : null}
       <PopoverPrimitive.Positioner
         align={align}
         alignOffset={alignOffset}
@@ -40,7 +54,15 @@ function PopoverContent({
             className,
           )}
           {...props}
-        />
+        >
+          {arrow ? (
+            <PopoverPrimitive.Arrow
+              data-slot="popover-arrow"
+              className="size-4 rotate-45 rounded-tl-[5px] border-border border-t-2 border-l-2 bg-popover data-[side=bottom]:-top-[9px] data-[side=top]:-bottom-[9px] data-[side=top]:rotate-[225deg]"
+            />
+          ) : null}
+          {children}
+        </PopoverPrimitive.Popup>
       </PopoverPrimitive.Positioner>
     </PopoverPrimitive.Portal>
   );

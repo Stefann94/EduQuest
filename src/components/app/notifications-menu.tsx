@@ -4,13 +4,10 @@ import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverTrigger } from "@/components/ui/popover";
 import type { Notification } from "@/lib/demo-data";
 import { cn } from "@/lib/utils";
+import { NavPopoverContent } from "./nav-popover";
 
 export function NotificationsMenu({ initial }: { initial: Notification[] }) {
   // Demo: starea „citit” e locală. Cu Supabase vine din baza de date, în timp real.
@@ -45,11 +42,7 @@ export function NotificationsMenu({ initial }: { initial: Notification[] }) {
           </span>
         ) : null}
       </PopoverTrigger>
-      <PopoverContent
-        align="end"
-        sideOffset={10}
-        className="w-96 max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-3xl border-2 p-0 shadow-[0_6px_0_0_var(--border)] ring-0"
-      >
+      <NavPopoverContent className="w-96 gap-0 p-0">
         <div className="flex items-center justify-between gap-3 border-b-2 px-4 py-3">
           <p className="font-bold font-heading text-xl">🔔 Notificări</p>
           {unread > 0 ? (
@@ -99,7 +92,7 @@ export function NotificationsMenu({ initial }: { initial: Notification[] }) {
             </li>
           ))}
         </ul>
-      </PopoverContent>
+      </NavPopoverContent>
     </Popover>
   );
 }

@@ -1,12 +1,9 @@
 "use client";
 
 import { Palette } from "lucide-react";
+import { NavPopoverContent } from "@/components/app/nav-popover";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { AvatarPicker, ColorPicker } from "./theme-picker";
 import { UserAvatar } from "./user-avatar";
@@ -42,14 +39,10 @@ export function PersonalizeButton({
         </span>
         <Palette className="hidden size-5 text-primary min-[1400px]:block" />
       </PopoverTrigger>
-      <PopoverContent
-        align="end"
-        sideOffset={10}
-        className="w-80 max-w-[calc(100vw-2rem)] gap-5 rounded-3xl border-2 p-5 shadow-[0_6px_0_0_var(--border)] ring-0"
-      >
+      <NavPopoverContent className="w-80 gap-5 p-5">
         <ColorPicker />
         <AvatarPicker />
-      </PopoverContent>
+      </NavPopoverContent>
     </Popover>
   );
 }

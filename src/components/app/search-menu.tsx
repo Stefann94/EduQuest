@@ -4,12 +4,9 @@ import { Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { NavPopoverContent } from "./nav-popover";
 
 export type SearchItem = {
   label: string;
@@ -101,11 +98,7 @@ export function SearchMenu({
           Ctrl K
         </kbd>
       </PopoverTrigger>
-      <PopoverContent
-        align="end"
-        sideOffset={10}
-        className="w-[26rem] max-w-[calc(100vw-2rem)] gap-0 overflow-hidden rounded-3xl border-2 p-0 shadow-[0_6px_0_0_var(--border)] ring-0"
-      >
+      <NavPopoverContent className="w-[26rem] gap-0 p-0">
         <div className="flex items-center gap-2 border-b-2 px-4">
           <Search className="size-5 text-primary" />
           <input
@@ -167,7 +160,7 @@ export function SearchMenu({
             })
           )}
         </ul>
-      </PopoverContent>
+      </NavPopoverContent>
     </Popover>
   );
 }
