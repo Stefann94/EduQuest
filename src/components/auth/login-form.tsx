@@ -10,7 +10,7 @@ export function LoginForm() {
   const router = useRouter();
 
   // Demo: autentificarea reală vine odată cu Supabase Auth.
-  function demoSubmit(destination: "/elev" | "/mentor") {
+  function demoSubmit(destination: "/" | "/mentor") {
     return (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       router.push(destination);
@@ -18,7 +18,7 @@ export function LoginForm() {
   }
 
   return (
-    <div className="sticker p-6 sm:p-8">
+    <div className="sticker animate-pop p-6 sm:p-8">
       <h1 className="font-bold text-3xl">Bine ai revenit! 👋</h1>
       <p className="mt-1 font-semibold text-muted-foreground">
         Cine intră azi?
@@ -31,7 +31,7 @@ export function LoginForm() {
         </TabsList>
 
         <TabsContent value="elev">
-          <form onSubmit={demoSubmit("/elev")} className="mt-5 grid gap-4">
+          <form onSubmit={demoSubmit("/")} className="mt-5 grid gap-4">
             <div className="grid gap-2">
               <Label htmlFor="username" className="font-bold text-base">
                 Utilizator
@@ -39,7 +39,7 @@ export function LoginForm() {
               <Input
                 id="username"
                 autoComplete="username"
-                placeholder="ex. andrei.p"
+                placeholder="ex. tudor.p"
               />
             </div>
             <div className="grid gap-2">

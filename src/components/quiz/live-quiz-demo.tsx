@@ -397,9 +397,9 @@ function FinalPodium({
   // Ordinea vizuală pe podium: locul 2, 1, 3.
   const podium = [top[1], top[0], top[2]].filter(Boolean);
   const steps = {
-    1: { h: "h-44", bg: "bg-fun-yellow", medal: "🥇" },
-    2: { h: "h-32", bg: "bg-fun-blue", medal: "🥈" },
-    3: { h: "h-24", bg: "bg-fun-orange", medal: "🥉" },
+    1: { h: "h-44", bg: "bg-primary", medal: "🥇" },
+    2: { h: "h-32", bg: "bg-primary/70", medal: "🥈" },
+    3: { h: "h-24", bg: "bg-primary/45", medal: "🥉" },
   } as const;
 
   return (
@@ -454,7 +454,7 @@ function FinalPodium({
         <Button onClick={onRestart} variant="outline" size="lg">
           <RotateCcw /> Mai joc o dată
         </Button>
-        <Link href="/elev" className={buttonVariants({ size: "lg" })}>
+        <Link href="/" className={buttonVariants({ size: "lg" })}>
           Înapoi acasă 🏠
         </Link>
       </div>

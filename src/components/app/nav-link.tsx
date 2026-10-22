@@ -7,31 +7,38 @@ import { cn } from "@/lib/utils";
 export function NavLink({
   href,
   emoji,
-  tile,
+  onNavigate,
   children,
 }: {
   href: string;
   emoji: string;
-  tile: string;
+  onNavigate?: () => void;
   children: React.ReactNode;
 }) {
-  const active = usePathname() === href;
+  const pathname = usePathname();
+  // „Acasă” (/) e activ doar pe /, celelalte și pe subpagini (ex. /exercitii/salut).
+  const active =
+    href === "/" || href === "/mentor"
+      ? pathname === href
+      : pathname === href || pathname.startsWith(`${href}/`);
+
   return (
     <Link
       href={href}
+      onClick={onNavigate}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "group flex shrink-0 items-center gap-3 rounded-2xl border-2 px-2 py-1.5 font-bold font-heading text-base outline-none transition-all focus-visible:ring-4 focus-visible:ring-ring/40",
+        "group flex shrink-0 items-center gap-3 rounded-2xl px-2 py-1.5 font-bold font-heading text-lg outline-none transition-all focus-visible:ring-4 focus-visible:ring-primary-foreground/50",
         active
-          ? "border-primary bg-primary-soft text-foreground shadow-[0_3px_0_0_var(--primary)]"
-          : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
+          ? "animate-pop bg-card text-foreground shadow-[0_4px_0_0_var(--primary-shadow)]"
+          : "text-primary-foreground hover:bg-primary-foreground/15",
       )}
     >
       <span
         aria-hidden="true"
         className={cn(
-          "grid size-9 place-items-center rounded-xl text-lg transition-transform group-hover:-rotate-6 group-hover:scale-110",
-          tile,
+          "grid size-10 place-items-center rounded-xl text-xl transition-transform group-hover:-rotate-6 group-hover:scale-110",
+          active ? "bg-primary-soft" : "bg-primary-foreground/20",
         )}
       >
         {emoji}

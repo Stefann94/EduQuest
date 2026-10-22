@@ -44,27 +44,43 @@ pnpm dev          # http://localhost:3000
 
 | Rută               | Ce este                                        |
 | ------------------ | ---------------------------------------------- |
-| `/`                | Pagina de prezentare                           |
-| `/intra`           | Intrare în joc cu PIN + nickname (invitați)    |
-| `/autentificare`   | Login elev (utilizator) / mentor (email)       |
-| `/elev`            | Panoul elevului: teme, jocuri, clasament       |
-| `/mentor`          | Panoul mentorului: grupe, teme, quiz-uri       |
-| `/mentor/sesiune`  | Lobby-ul quiz-ului live (PIN pe proiector)     |
-| `/live`            | Quiz live jucabil (demo, local)                |
+| `/`                 | Acasă (elev): nivel, teme, exerciții, PIN      |
+| `/quiz`             | Quiz live cu PIN, exersare, istoric            |
+| `/teme`             | Temele: de făcut / trimise / corectate         |
+| `/exercitii`        | Exerciții de programare, filtrate pe teme      |
+| `/exercitii/[id]`   | Un exercițiu: cerință, indiciu, editor de cod  |
+| `/intra`            | Intrare în joc cu PIN + nickname (invitați)    |
+| `/autentificare`    | Login elev (utilizator) / mentor (email)       |
+| `/mentor`           | Panoul mentorului: grupe, teme, quiz-uri       |
+| `/mentor/sesiune`   | Lobby-ul quiz-ului live (PIN pe proiector)     |
+| `/live`             | Quiz live jucabil (demo, local)                |
 
 ## Structură
 
 ```
 src/
-├── app/                 # rute (App Router)
+├── app/
+│   ├── (elev)/          # paginile elevului (rădăcina site-ului)
+│   └── mentor/          # paginile mentorului
 ├── components/
 │   ├── ui/              # componente shadcn/ui (generate, le putem modifica)
-│   ├── app/             # cadrul aplicației (meniu lateral)
-│   ├── site/            # componente pentru pagina publică
-│   ├── quiz/            # quiz live, formular PIN
+│   ├── app/             # meniul lateral, bara de sus, carduri comune
+│   ├── personalize/     # alegerea culorii și a avatarului
+│   ├── quiz/            # quiz live, formulare PIN
+│   ├── fx/              # efecte (steluțele la click)
+│   ├── brand/           # logo, mascota Bit
+│   ├── site/            # cadrul paginilor de intrare/login
 │   └── auth/            # formular de login
-└── lib/                 # utilitare, date demo
+└── lib/                 # teme, preferințe, utilitare, date demo
 ```
+
+### Teme de culoare
+
+Cele 8 teme sunt în [`src/app/globals.css`](src/app/globals.css) (`[data-theme="..."]`).
+Fiecare definește o nuanță (`--h`) și culoarea principală; restul culorilor se
+calculează din nuanță. Folosiți clasele de temă (`bg-primary`, `bg-secondary`,
+`text-muted-foreground` etc.), nu culori fixe, ca toată interfața să urmeze
+alegerea copilului.
 
 Componente shadcn noi: `pnpm dlx shadcn@latest add <nume>`.
 

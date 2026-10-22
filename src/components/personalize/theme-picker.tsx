@@ -30,7 +30,14 @@ export function ColorPicker({
               key={t.id}
               type="button"
               data-theme={t.id}
-              onClick={() => setPrefs({ theme: t.id })}
+              onClick={(e) => {
+                // Culoarea nouă pornește din centrul butonului apăsat.
+                const r = e.currentTarget.getBoundingClientRect();
+                setPrefs(
+                  { theme: t.id },
+                  { x: r.left + r.width / 2, y: r.top + r.height / 2 },
+                );
+              }}
               aria-pressed={active}
               aria-label={`Tema ${t.name}`}
               title={t.name}

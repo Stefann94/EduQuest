@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fredoka, Geist_Mono, Nunito } from "next/font/google";
+import { ClickBurst } from "@/components/fx/click-burst";
 import { DEFAULT_PREFS, THEME_INIT_SCRIPT } from "@/lib/themes";
 import "./globals.css";
 
@@ -47,7 +48,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
         />
       </head>
-      <body className="flex min-h-full flex-col">{children}</body>
+      <body className="flex min-h-full flex-col">
+        {children}
+        <ClickBurst />
+      </body>
     </html>
   );
 }

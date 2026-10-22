@@ -24,7 +24,13 @@ export function Mascot({
         strokeLinecap="round"
         className="stroke-primary-shadow"
       />
-      <circle cx="60" cy="10" r="7" className="fill-fun-yellow" />
+      <circle
+        cx="60"
+        cy="10"
+        r="7"
+        strokeWidth="3"
+        className="fill-primary-soft stroke-primary-shadow"
+      />
       {/* urechi */}
       <rect
         x="8"
@@ -62,10 +68,12 @@ export function Mascot({
       {/* ecran */}
       <rect x="28" y="36" width="64" height="44" rx="18" fill="white" />
       {/* ochi */}
-      <circle cx="46" cy="55" r="6" className="fill-foreground" />
-      <circle cx="74" cy="55" r="6" className="fill-foreground" />
-      <circle cx="48" cy="53" r="2" fill="white" />
-      <circle cx="76" cy="53" r="2" fill="white" />
+      <g className="mascot-eyes">
+        <circle cx="46" cy="55" r="6" className="fill-foreground" />
+        <circle cx="74" cy="55" r="6" className="fill-foreground" />
+        <circle cx="48" cy="53" r="2" fill="white" />
+        <circle cx="76" cy="53" r="2" fill="white" />
+      </g>
       {/* obraji */}
       <circle
         cx="36"
@@ -110,7 +118,7 @@ export function Mascot({
         rx="12"
         className="fill-primary"
       />
-      <circle cx="60" cy="109" r="5" className="fill-fun-yellow" />
+      <circle cx="60" cy="109" r="5" className="fill-primary-soft" />
     </svg>
   );
 }

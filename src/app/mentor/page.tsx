@@ -1,6 +1,7 @@
 import { ChevronRight, Plus } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { PageHeader } from "@/components/app/page-header";
 import { SectionTitle } from "@/components/app/section-title";
 import { buttonVariants } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -22,60 +23,52 @@ export default function MentorHomePage() {
       label: "Elevi activi",
       value: totalStudents,
       emoji: "👦",
-      tile: "bg-fun-blue/15",
     },
     {
       label: "Grupe",
       value: demoGroups.length,
       emoji: "🗓️",
-      tile: "bg-fun-pink/15",
     },
     {
       label: "Quiz-uri create",
       value: demoQuizzes.length,
       emoji: "📝",
-      tile: "bg-fun-green/15",
     },
     {
       label: "Teme de corectat",
       value: demoToGrade.length,
       emoji: "📬",
-      tile: "bg-fun-yellow/25",
     },
   ];
 
   return (
     <div className="grid gap-8">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="font-bold text-muted-foreground">
-            Bună, {demoMentor.name}! ☀️
-          </p>
-          <h1 className="mt-1 font-bold text-4xl">Panoul mentorului</h1>
-        </div>
-        <div className="flex flex-wrap gap-3">
-          <button
-            type="button"
-            disabled
-            className={buttonVariants({ variant: "outline" })}
-          >
-            <Plus /> Temă nouă
-          </button>
-          <Link href="/mentor/sesiune" className={buttonVariants()}>
-            ⚡ Pornește quiz live
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        emoji="📊"
+        title="Panoul mentorului"
+        description={`Bună, ${demoMentor.name}! Iată ce se întâmplă în grupele tale.`}
+        action={
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              disabled
+              className={buttonVariants({ variant: "outline" })}
+            >
+              <Plus /> Temă nouă
+            </button>
+            <Link href="/mentor/sesiune" className={buttonVariants()}>
+              ⚡ Pornește quiz live
+            </Link>
+          </div>
+        }
+      />
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="sticker p-5">
             <span
               aria-hidden="true"
-              className={cn(
-                "grid size-12 place-items-center rounded-2xl text-2xl",
-                s.tile,
-              )}
+              className="grid size-12 place-items-center rounded-2xl bg-secondary text-2xl"
             >
               {s.emoji}
             </span>

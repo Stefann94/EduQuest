@@ -4,7 +4,7 @@ import { cn } from "cn";
 
 // Butoane „de apăsat”, ca într-un joc: au o umbră plină dedesubt care dispare la click.
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 cursor-pointer select-none items-center justify-center whitespace-nowrap rounded-2xl border-2 border-transparent font-bold font-heading tracking-wide outline-none transition-[transform,box-shadow,background-color,filter] duration-100 focus-visible:ring-4 focus-visible:ring-ring/40 active:translate-y-[3px] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive [&_svg:not([class*='size-'])]:size-5 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+  "group/button inline-flex shrink-0 cursor-pointer select-none items-center justify-center whitespace-nowrap rounded-2xl border-2 border-transparent font-bold font-heading tracking-wide outline-none transition-[transform,box-shadow,background-color,filter] duration-100 focus-visible:ring-4 focus-visible:ring-ring/40 hover:-translate-y-0.5 active:translate-y-[3px] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive [&_svg:not([class*='size-'])]:size-5 [&_svg]:pointer-events-none [&_svg]:shrink-0",
   {
     variants: {
       variant: {

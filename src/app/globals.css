@@ -124,17 +124,20 @@
   --primary-soft: oklch(0.94 0.05 var(--h));
   --ring: var(--primary);
 
-  --background: oklch(0.985 0.016 var(--h));
-  --foreground: oklch(0.3 0.04 var(--h));
-  --card: oklch(1 0 0);
-  --secondary: oklch(0.95 0.045 var(--h));
-  --secondary-foreground: oklch(0.4 0.11 var(--h));
-  --muted: oklch(0.97 0.018 var(--h));
-  --muted-foreground: oklch(0.53 0.035 var(--h));
-  --accent: oklch(0.95 0.045 var(--h));
-  --accent-foreground: oklch(0.4 0.11 var(--h));
-  --border: oklch(0.91 0.03 var(--h));
-  --input: oklch(0.88 0.04 var(--h));
+  /* Totul e nuanțat cu culoarea temei: fundal, carduri, chenare, text, cod. */
+  --background: oklch(0.955 0.045 var(--h));
+  --foreground: oklch(0.29 0.06 var(--h));
+  --card: oklch(0.995 0.008 var(--h));
+  --secondary: oklch(0.92 0.065 var(--h));
+  --secondary-foreground: oklch(0.38 0.13 var(--h));
+  --muted: oklch(0.945 0.04 var(--h));
+  --muted-foreground: oklch(0.5 0.06 var(--h));
+  --accent: oklch(0.92 0.065 var(--h));
+  --accent-foreground: oklch(0.38 0.13 var(--h));
+  --border: oklch(0.86 0.07 var(--h));
+  --input: oklch(0.84 0.08 var(--h));
+  --code: oklch(0.29 0.07 var(--h));
+  --code-foreground: oklch(0.97 0.02 var(--h));
 }
 
 :root {
@@ -145,8 +148,6 @@
   --success: oklch(0.62 0.16 150);
   --warning: oklch(0.78 0.16 75);
   --xp: oklch(0.8 0.16 80);
-  --code: oklch(0.3 0.05 270);
-  --code-foreground: oklch(0.97 0.01 270);
 
   --fun-pink: oklch(0.72 0.17 355);
   --fun-purple: oklch(0.66 0.19 295);
@@ -207,12 +208,25 @@
   }
   body {
     @apply bg-background text-foreground;
-    transition: background-color 0.3s;
   }
   h1,
   h2,
   h3 {
     @apply font-heading;
+  }
+  /* Cursor „deget” peste tot ce se poate apăsa. */
+  a[href],
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [role="tab"],
+  label[for],
+  select,
+  summary {
+    cursor: pointer;
+  }
+  button:disabled,
+  [aria-disabled="true"] {
+    cursor: not-allowed;
   }
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -244,4 +258,84 @@
     transparent 1.5px
   );
   background-size: 24px 24px;
+}
+
+/*
+ * Tranziția la schimbarea temei: setPrefs() animă noua „poză” a paginii
+ * cu un cerc care se mărește (clip-path). Aici oprim fade-ul implicit.
+ */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 2;
+}
+
+/* ---------- Animații jucăușe ---------- */
+
+/* Intrarea unei pagini noi (template.tsx): secțiunile „sar” pe rând. */
+@keyframes page-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(28px) scale(0.96);
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+.page-enter > * > * {
+  animation: page-rise 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+.page-enter > * > :nth-child(2) {
+  --i: 1;
+}
+.page-enter > * > :nth-child(3) {
+  --i: 2;
+}
+.page-enter > * > :nth-child(4) {
+  --i: 3;
+}
+.page-enter > * > :nth-child(5) {
+  --i: 4;
+}
+.page-enter > * > :nth-child(n + 6) {
+  --i: 5;
+}
+
+/* Barele de progres se umplu cu un mic „boing”. */
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+[data-slot="progress-indicator"] {
+  transform-origin: left;
+  animation: grow-x 1s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s backwards;
+}
+
+/* Mascota clipește din când în când. */
+@keyframes blink {
+  0%,
+  92%,
+  100% {
+    transform: scaleY(1);
+  }
+  95% {
+    transform: scaleY(0.1);
+  }
+}
+.mascot-eyes {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: blink 4.5s infinite;
 }

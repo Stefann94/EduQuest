@@ -6,8 +6,8 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative flex min-h-dvh flex-col overflow-hidden">
       <div className="bg-dots absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_at_center,black_25%,transparent_75%)]" />
-      <div className="absolute -top-20 -left-20 -z-10 size-72 rounded-full bg-fun-pink/25 blur-3xl" />
-      <div className="absolute -right-20 -bottom-20 -z-10 size-80 rounded-full bg-fun-yellow/30 blur-3xl" />
+      <div className="absolute -top-24 -left-24 -z-10 size-80 rounded-full bg-primary/25 blur-3xl" />
+      <div className="absolute -right-24 -bottom-24 -z-10 size-96 rounded-full bg-primary/20 blur-3xl" />
       <FloatingShapes />
       <header className="mx-auto flex h-20 w-full max-w-6xl items-center px-4">
         <Logo />
@@ -24,21 +24,15 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
 
 function FloatingShapes() {
   const shapes = [
-    { c: "bg-fun-blue", p: "top-[18%] left-[8%] size-10 rounded-xl rotate-12" },
-    { c: "bg-fun-green", p: "top-[70%] left-[12%] size-8 rounded-full" },
-    { c: "bg-fun-orange", p: "top-[30%] right-[10%] size-7 rounded-full" },
-    {
-      c: "bg-fun-purple",
-      p: "bottom-[12%] right-[22%] size-9 rounded-xl -rotate-12",
-    },
+    "top-[18%] left-[8%] size-10 rounded-xl rotate-12 bg-primary/40",
+    "top-[70%] left-[12%] size-8 rounded-full bg-primary/30",
+    "top-[30%] right-[10%] size-7 rounded-full bg-primary/50",
+    "bottom-[12%] right-[22%] size-9 rounded-xl -rotate-12 bg-primary/35",
   ];
   return (
     <div aria-hidden="true" className="absolute inset-0 -z-10 hidden md:block">
       {shapes.map((s) => (
-        <span
-          key={s.p}
-          className={`absolute animate-float opacity-60 ${s.c} ${s.p}`}
-        />
+        <span key={s} className={`absolute animate-float ${s}`} />
       ))}
     </div>
   );
