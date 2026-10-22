@@ -1,0 +1,7 @@
+# Capete de linie LF pentru toți (Windows, macOS, Linux), ca să evităm diff-uri false.
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.ico binary
+*.woff2 binary
