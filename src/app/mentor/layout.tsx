@@ -1,33 +1,18 @@
-import {
-  BookOpenCheck,
-  ChartColumn,
-  LayoutDashboard,
-  ListChecks,
-  Radio,
-  Users,
-} from "lucide-react";
 import { AppShell, type NavItem } from "@/components/app/app-shell";
 import { demoMentor } from "@/lib/demo-data";
 
 const nav: NavItem[] = [
-  { label: "Panou", icon: LayoutDashboard, href: "/mentor" },
-  { label: "Sesiune live", icon: Radio, href: "/mentor/sesiune" },
-  { label: "Quiz-uri", icon: ListChecks },
-  { label: "Teme", icon: BookOpenCheck },
-  { label: "Grupe și elevi", icon: Users },
-  { label: "Rapoarte", icon: ChartColumn },
+  { label: "Panou", emoji: "📊", href: "/mentor" },
+  { label: "Sesiune live", emoji: "⚡", href: "/mentor/sesiune" },
+  { label: "Quiz-uri", emoji: "📝" },
+  { label: "Teme", emoji: "📚" },
+  { label: "Grupe și elevi", emoji: "👥" },
+  { label: "Rapoarte", emoji: "📈" },
 ];
 
 export default function MentorLayout({ children }: LayoutProps<"/mentor">) {
   return (
-    <AppShell
-      nav={nav}
-      user={{
-        name: demoMentor.name,
-        initials: demoMentor.initials,
-        role: "Mentor",
-      }}
-    >
+    <AppShell nav={nav} user={{ firstName: demoMentor.name, role: "Mentor" }}>
       {children}
     </AppShell>
   );

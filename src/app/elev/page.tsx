@@ -1,26 +1,14 @@
-import {
-  Award,
-  CheckCircle2,
-  Clock,
-  Flame,
-  KeyRound,
-  Lock,
-  Play,
-  Star,
-  Trophy,
-} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ANSWER_STYLES, AnswerShape } from "@/components/quiz/answer-shape";
-import { Badge } from "@/components/ui/badge";
-import { buttonVariants } from "@/components/ui/button";
+import { SectionTitle } from "@/components/app/section-title";
+import { Mascot } from "@/components/brand/mascot";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  AvatarPicker,
+  ColorPicker,
+} from "@/components/personalize/theme-picker";
+import { UserAvatar } from "@/components/personalize/user-avatar";
+import { ANSWER_STYLES, AnswerShape } from "@/components/quiz/answer-shape";
+import { buttonVariants } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import {
   demoBadges,
@@ -34,171 +22,178 @@ import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Acasă" };
 
-const statusLabel: Record<HomeworkStatus, { text: string; className: string }> =
-  {
-    "de-facut": {
-      text: "De făcut",
-      className: "bg-warning/15 text-amber-700 dark:text-warning",
-    },
-    predata: {
-      text: "Predată",
-      className: "bg-quiz-blue/12 text-quiz-blue",
-    },
-    corectata: {
-      text: "Corectată",
-      className: "bg-success/12 text-success",
-    },
-  };
+const status: Record<
+  HomeworkStatus,
+  { text: string; emoji: string; className: string }
+> = {
+  "de-facut": {
+    text: "De făcut",
+    emoji: "⏰",
+    className: "bg-fun-yellow/30 text-amber-800",
+  },
+  predata: {
+    text: "Trimisă",
+    emoji: "📨",
+    className: "bg-fun-blue/15 text-sky-800",
+  },
+  corectata: {
+    text: "Corectată",
+    emoji: "✅",
+    className: "bg-fun-green/20 text-emerald-800",
+  },
+};
 
 export default function StudentHomePage() {
   const s = demoStudent;
   const xpPercent = Math.round((s.xp / s.xpNextLevel) * 100);
 
   return (
-    <div className="grid gap-6">
-      <section className="relative overflow-hidden rounded-3xl bg-primary p-6 text-primary-foreground sm:p-8">
-        <div className="bg-dots absolute inset-0 opacity-25" />
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-          <div className="lg:flex-1">
-            <p className="opacity-80">Salut, {s.firstName}! 👋</p>
-            <h1 className="mt-1 font-bold text-3xl tracking-tight">
-              Ești la nivelul {s.level}
-            </h1>
-            <div className="mt-5 w-full max-w-sm">
-              <div className="mb-2 flex justify-between gap-4 text-sm">
-                <span className="opacity-80">
-                  Până la nivelul {s.level + 1}
+    <div className="grid gap-8">
+      <section className="relative overflow-hidden rounded-[2rem] bg-primary p-6 text-primary-foreground shadow-[0_6px_0_0_var(--primary-shadow)] sm:p-8">
+        <div className="bg-dots absolute inset-0 opacity-40" />
+        <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center">
+          <div className="hidden size-32 shrink-0 animate-float place-items-center rounded-full bg-white shadow-[0_5px_0_0_var(--primary-shadow)] sm:grid">
+            <Mascot className="size-24" />
+          </div>
+          <div className="flex-1">
+            <p className="font-bold text-lg opacity-90">
+              Salut, {s.firstName}! 👋
+            </p>
+            <h1 className="mt-1 font-bold text-4xl">Nivelul {s.level} 🚀</h1>
+            <div className="mt-4 max-w-md">
+              <div className="mb-2 flex justify-between gap-4 font-bold text-sm">
+                <span className="opacity-90">
+                  Încă puțin până la nivelul {s.level + 1}!
                 </span>
-                <span className="font-semibold tabular-nums">
+                <span className="tabular-nums">
                   {s.xp} / {s.xpNextLevel} XP
                 </span>
               </div>
               <Progress
                 value={xpPercent}
                 aria-label="Progres către nivelul următor"
-                className="[&_[data-slot=progress-indicator]]:bg-xp [&_[data-slot=progress-track]]:h-2.5 [&_[data-slot=progress-track]]:bg-primary-foreground/20"
+                className="[&_[data-slot=progress-indicator]]:bg-fun-yellow [&_[data-slot=progress-track]]:h-4 [&_[data-slot=progress-track]]:bg-white/25"
               />
             </div>
           </div>
           <div className="flex gap-3">
-            <Stat icon={Flame} value={`${s.streakDays} zile`} label="la rând" />
-            <Stat icon={Trophy} value={`#${s.rank}`} label="în grupă" />
+            <Stat emoji="🔥" value={`${s.streakDays} zile`} label="la rând" />
+            <Stat emoji="🏆" value={`#${s.rank}`} label="în grupă" />
           </div>
         </div>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="text-lg">Temele mele</CardTitle>
-            <CardDescription>Ce ai de lucru săptămâna asta</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="grid gap-3">
-              {demoHomework.map((h) => (
-                <li
-                  key={h.id}
-                  className="flex flex-wrap items-center gap-3 rounded-xl border p-4"
-                >
-                  <span
-                    className={cn(
-                      "grid size-10 shrink-0 place-items-center rounded-lg",
-                      statusLabel[h.status].className,
-                    )}
-                  >
-                    {h.status === "corectata" ? (
-                      <CheckCircle2 className="size-5" />
-                    ) : (
-                      <Clock className="size-5" />
-                    )}
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium">{h.title}</p>
-                    <p className="text-muted-foreground text-xs">
-                      {h.topic} · termen {h.due}
-                    </p>
-                  </div>
-                  {h.grade !== undefined ? (
-                    <span className="font-bold text-lg text-success tabular-nums">
-                      {h.grade}
-                    </span>
-                  ) : null}
-                  <Badge
-                    className={cn(
-                      "h-6 px-2.5",
-                      statusLabel[h.status].className,
-                    )}
-                  >
-                    {statusLabel[h.status].text}
-                  </Badge>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-
-        <Card className="border-2 border-primary/30 border-dashed bg-secondary/40 ring-0">
-          <CardHeader>
-            <CardTitle className="text-lg">Quiz live</CardTitle>
-            <CardDescription>
-              Mentorul pornește quiz-ul în timpul orei. Ține PIN-ul pregătit!
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-1 flex-col justify-end gap-6">
-            <div
-              aria-hidden="true"
-              className="grid flex-1 grid-cols-2 place-content-center gap-2"
-            >
-              {ANSWER_STYLES.map((style, i) => (
+        <section className="sticker p-5 sm:p-6 lg:col-span-2">
+          <SectionTitle
+            emoji="📚"
+            title="Misiunile mele"
+            hint="Temele de săptămâna asta"
+          />
+          <ul className="mt-5 grid gap-3">
+            {demoHomework.map((h) => (
+              <li
+                key={h.id}
+                className="flex flex-wrap items-center gap-3 rounded-2xl border-2 bg-background p-4 transition-transform hover:-translate-y-0.5"
+              >
                 <span
-                  key={style.shape}
+                  aria-hidden="true"
                   className={cn(
-                    "grid h-12 place-items-center rounded-xl",
-                    style.bg,
-                    i % 3 === 0 ? "rotate-2" : "-rotate-2",
+                    "grid size-12 shrink-0 place-items-center rounded-2xl text-2xl",
+                    status[h.status].className,
                   )}
                 >
-                  <AnswerShape shape={style.shape} className="size-5" />
+                  {status[h.status].emoji}
                 </span>
-              ))}
-            </div>
-            <Link
-              href="/intra"
-              className={cn(
-                buttonVariants({ size: "lg" }),
-                "h-12 w-full gap-2 text-base",
-              )}
-            >
-              <KeyRound /> Intră cu PIN
-            </Link>
-          </CardContent>
-        </Card>
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold font-heading text-lg">{h.title}</p>
+                  <p className="font-semibold text-muted-foreground text-sm">
+                    {h.topic} · până {h.due}
+                  </p>
+                </div>
+                {h.grade !== undefined ? (
+                  <span className="-rotate-6 rounded-xl bg-fun-green px-2.5 py-1 font-bold font-heading text-white text-xl">
+                    {h.grade}
+                  </span>
+                ) : null}
+                <span
+                  className={cn(
+                    "rounded-full px-3 py-1 font-bold text-sm",
+                    status[h.status].className,
+                  )}
+                >
+                  {status[h.status].text}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="sticker flex flex-col border-primary/40 border-dashed bg-primary-soft p-5 sm:p-6">
+          <SectionTitle
+            emoji="⚡"
+            title="Quiz live"
+            hint="Ține PIN-ul pregătit!"
+          />
+          <div
+            aria-hidden="true"
+            className="my-6 grid flex-1 grid-cols-2 place-content-center gap-3"
+          >
+            {ANSWER_STYLES.map((style, i) => (
+              <span
+                key={style.shape}
+                className={cn(
+                  "grid h-14 place-items-center rounded-2xl",
+                  style.bg,
+                  style.shadow,
+                  i % 3 === 0 ? "rotate-3" : "-rotate-3",
+                )}
+              >
+                <AnswerShape shape={style.shape} className="size-6" />
+              </span>
+            ))}
+          </div>
+          <Link
+            href="/intra"
+            className={cn(buttonVariants({ size: "lg" }), "w-full")}
+          >
+            Intră cu PIN 🎟️
+          </Link>
+        </section>
       </div>
 
       <section>
-        <h2 className="font-semibold text-lg">Jocuri rapide</h2>
-        <div className="mt-3 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {demoGames.map((g) => (
+        <SectionTitle
+          emoji="🎮"
+          title="Jocuri rapide"
+          hint="2–5 minute fiecare"
+        />
+        <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {demoGames.map((g, i) => (
             <Link
               key={g.id}
               href="/live"
-              className="group rounded-2xl border bg-card p-5 outline-none transition-all hover:-translate-y-0.5 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/50"
+              className={cn(
+                "sticker group p-5 outline-none transition-transform hover:-translate-y-1 focus-visible:ring-4 focus-visible:ring-ring/40",
+                i % 2 === 0 ? "hover:-rotate-1" : "hover:rotate-1",
+              )}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-start justify-between">
                 <span
+                  aria-hidden="true"
                   className={cn(
-                    "grid size-10 place-items-center rounded-xl text-white",
-                    g.color,
+                    "grid size-14 place-items-center rounded-2xl text-3xl transition-transform group-hover:scale-110",
+                    g.tile,
                   )}
                 >
-                  <Play className="size-4 fill-current" />
+                  {g.emoji}
                 </span>
-                <span className="text-muted-foreground text-xs">
-                  ~{g.minutes} min
+                <span className="rounded-full bg-secondary px-2.5 py-0.5 font-bold text-secondary-foreground text-xs">
+                  ⏱ {g.minutes} min
                 </span>
               </div>
-              <p className="mt-4 font-semibold">{g.title}</p>
-              <p className="mt-1 text-muted-foreground text-sm">
+              <p className="mt-4 font-bold font-heading text-xl">{g.title}</p>
+              <p className="mt-1 font-semibold text-muted-foreground text-sm">
                 {g.description}
               </p>
             </Link>
@@ -207,102 +202,117 @@ export default function StudentHomePage() {
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Clasamentul grupei</CardTitle>
-            <CardDescription>{s.group} · săptămâna asta</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ol className="grid gap-1.5">
-              {demoLeaderboard.map((p, i) => (
-                <li
-                  key={p.name}
+        <section className="sticker p-5 sm:p-6">
+          <SectionTitle
+            emoji="🏆"
+            title="Clasamentul grupei"
+            hint={`${s.group} · săptămâna asta`}
+          />
+          <ol className="mt-5 grid gap-2">
+            {demoLeaderboard.map((p, i) => (
+              <li
+                key={p.name}
+                className={cn(
+                  "flex items-center gap-3 rounded-2xl border-2 px-3 py-2",
+                  p.isMe
+                    ? "border-primary bg-primary-soft shadow-[0_3px_0_0_var(--primary)]"
+                    : "border-transparent bg-background",
+                )}
+              >
+                <span className="w-7 text-center font-bold font-heading text-lg">
+                  {["🥇", "🥈", "🥉"][i] ?? i + 1}
+                </span>
+                {p.isMe ? (
+                  <UserAvatar className="size-10 text-xl" />
+                ) : (
+                  <span
+                    aria-hidden="true"
+                    className="grid size-10 place-items-center rounded-2xl bg-secondary text-xl"
+                  >
+                    {p.avatar}
+                  </span>
+                )}
+                <span className="flex-1 font-bold">
+                  {p.name}
+                  {p.isMe ? " (tu)" : ""}
+                </span>
+                <span className="font-bold font-heading tabular-nums">
+                  ⭐ {p.xp}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        <section className="sticker p-5 sm:p-6">
+          <SectionTitle
+            emoji="🏅"
+            title="Insignele mele"
+            hint={`${demoBadges.filter((b) => b.earned).length} din ${demoBadges.length} câștigate`}
+          />
+          <ul className="mt-5 grid grid-cols-3 gap-4 sm:grid-cols-5 lg:grid-cols-3 xl:grid-cols-5">
+            {demoBadges.map((b, i) => (
+              <li
+                key={b.id}
+                className="flex flex-col items-center gap-2 text-center"
+              >
+                <span
+                  aria-hidden="true"
                   className={cn(
-                    "flex items-center gap-3 rounded-xl px-3 py-2",
-                    p.isMe && "bg-secondary font-semibold",
+                    "grid size-16 place-items-center rounded-full border-4 text-3xl",
+                    b.earned
+                      ? "border-fun-yellow bg-fun-yellow/20 shadow-[0_4px_0_0_var(--fun-orange)]"
+                      : "border-dashed border-border bg-muted opacity-60 grayscale",
+                    b.earned && (i % 2 === 0 ? "-rotate-6" : "rotate-6"),
                   )}
                 >
-                  <span className="w-5 text-muted-foreground text-sm tabular-nums">
-                    {i + 1}
-                  </span>
-                  <span className="grid size-8 place-items-center rounded-full bg-muted font-semibold text-xs">
-                    {p.initials}
-                  </span>
-                  <span className="flex-1">
-                    {p.name}
-                    {p.isMe ? " (tu)" : ""}
-                  </span>
-                  <span className="flex items-center gap-1 text-sm tabular-nums">
-                    <Star className="size-3.5 fill-xp text-xp" />
-                    {p.xp}
-                  </span>
-                </li>
-              ))}
-            </ol>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Insignele mele</CardTitle>
-            <CardDescription>
-              {demoBadges.filter((b) => b.earned).length} din{" "}
-              {demoBadges.length} câștigate
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ul className="grid grid-cols-3 gap-3 sm:grid-cols-5 lg:grid-cols-3 xl:grid-cols-5">
-              {demoBadges.map((b) => (
-                <li
-                  key={b.id}
-                  className="flex flex-col items-center gap-2 text-center"
+                  {b.earned ? b.emoji : "🔒"}
+                </span>
+                <span
+                  className={cn(
+                    "font-bold text-xs leading-tight",
+                    !b.earned && "text-muted-foreground",
+                  )}
                 >
-                  <span
-                    className={cn(
-                      "grid size-14 place-items-center rounded-2xl",
-                      b.earned
-                        ? "bg-xp/20 text-xp"
-                        : "bg-muted text-muted-foreground/50",
-                    )}
-                  >
-                    {b.earned ? (
-                      <Award className="size-7" />
-                    ) : (
-                      <Lock className="size-6" />
-                    )}
-                  </span>
-                  <span
-                    className={cn(
-                      "text-xs leading-tight",
-                      !b.earned && "text-muted-foreground",
-                    )}
-                  >
-                    {b.title}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+                  {b.title}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
       </div>
+
+      <section className="sticker grid gap-6 p-5 sm:p-6 md:grid-cols-2">
+        <div className="md:col-span-2">
+          <SectionTitle
+            emoji="✨"
+            title="Personalizează"
+            hint="Alege-ți culoarea și avatarul. Le poți schimba oricând!"
+          />
+        </div>
+        <ColorPicker className="max-w-sm" />
+        <AvatarPicker className="max-w-md" />
+      </section>
     </div>
   );
 }
 
 function Stat({
-  icon: Icon,
+  emoji,
   value,
   label,
 }: {
-  icon: typeof Flame;
+  emoji: string;
   value: string;
   label: string;
 }) {
   return (
-    <div className="rounded-2xl bg-primary-foreground/12 px-4 py-3 backdrop-blur">
-      <Icon className="size-5 text-xp" />
-      <p className="mt-1 font-bold text-xl">{value}</p>
-      <p className="text-xs opacity-80">{label}</p>
+    <div className="min-w-24 rounded-3xl bg-white/20 px-4 py-3 text-center">
+      <span aria-hidden="true" className="text-2xl">
+        {emoji}
+      </span>
+      <p className="font-bold font-heading text-2xl leading-tight">{value}</p>
+      <p className="font-bold text-xs opacity-90">{label}</p>
     </div>
   );
 }

@@ -1,10 +1,9 @@
-import { ArrowLeft, Play, Users } from "lucide-react";
+import { ArrowLeft, Play } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ANSWER_STYLES } from "@/components/quiz/answer-shape";
+import { Mascot } from "@/components/brand/mascot";
 import { buttonVariants } from "@/components/ui/button";
 import { demoLobbyPlayers, demoQuizzes } from "@/lib/demo-data";
-import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Sesiune live" };
 
@@ -17,73 +16,65 @@ export default function LiveSessionLobbyPage() {
     <div className="grid gap-6">
       <Link
         href="/mentor"
-        className="flex w-fit items-center gap-1 text-muted-foreground text-sm hover:text-foreground"
+        className="flex w-fit items-center gap-1 font-bold text-muted-foreground hover:text-foreground"
       >
         <ArrowLeft className="size-4" /> Înapoi la panou
       </Link>
 
-      <section className="relative overflow-hidden rounded-3xl border bg-card p-6 text-center sm:p-10">
-        <div className="bg-dots absolute inset-0 -z-0 opacity-60 [mask-image:radial-gradient(ellipse_at_center,black_10%,transparent_70%)]" />
+      <section className="relative overflow-hidden rounded-[2.5rem] bg-primary p-6 text-center text-primary-foreground shadow-[0_8px_0_0_var(--primary-shadow)] sm:p-10">
+        <div className="bg-dots absolute inset-0 opacity-40" />
         <div className="relative">
-          <p className="text-muted-foreground">
+          <p className="font-bold text-lg opacity-90">
             Intră pe{" "}
-            <span className="font-semibold text-foreground">
-              eduquest.ro/intra
-            </span>{" "}
-            și scrie PIN-ul
+            <span className="underline decoration-wavy">eduquest.ro/intra</span>{" "}
+            și scrie PIN-ul 👇
           </p>
-          <p className="mt-4 font-bold font-mono text-6xl text-primary tracking-[0.15em] sm:text-8xl">
+          <p className="mx-auto mt-5 w-fit -rotate-2 rounded-[2rem] bg-white px-8 py-4 font-bold font-mono text-6xl text-primary tracking-[0.12em] shadow-[0_6px_0_0_var(--primary-shadow)] sm:text-8xl">
             <span className="sr-only">PIN {DEMO_PIN.split("").join(" ")}</span>
             <span aria-hidden="true">
               {DEMO_PIN.slice(0, 3)} {DEMO_PIN.slice(3)}
             </span>
           </p>
-          <p className="mt-6 font-medium">
-            {quiz.title} · {quiz.questions} întrebări
+          <p className="mt-6 font-bold font-heading text-xl">
+            🔁 {quiz.title} · {quiz.questions} întrebări
           </p>
         </div>
       </section>
 
-      <section className="rounded-3xl border bg-card p-6">
+      <section className="sticker p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
-          <h2 className="flex items-center gap-2 font-semibold text-lg">
-            <Users className="size-5 text-primary" />
-            {demoLobbyPlayers.length} elevi au intrat
-            <span className="relative ml-1 flex size-2.5">
+          <div className="flex items-center gap-3">
+            <Mascot className="size-14" mood="wow" />
+            <h2 className="font-bold text-2xl">
+              {demoLobbyPlayers.length} elevi au intrat!
+            </h2>
+            <span className="relative flex size-3">
               <span className="absolute inline-flex size-full animate-ping rounded-full bg-success opacity-75" />
-              <span className="relative inline-flex size-2.5 rounded-full bg-success" />
+              <span className="relative inline-flex size-3 rounded-full bg-success" />
             </span>
-          </h2>
-          <Link
-            href="/live"
-            className={cn(
-              buttonVariants({ size: "lg" }),
-              "h-12 gap-2 px-6 text-base",
-            )}
-          >
+          </div>
+          <Link href="/live" className={buttonVariants({ size: "lg" })}>
             <Play className="fill-current" /> Începe quiz-ul
           </Link>
         </div>
         <ul className="mt-6 flex flex-wrap gap-3">
-          {demoLobbyPlayers.map((name, i) => (
+          {demoLobbyPlayers.map((p, i) => (
             <li
-              key={name}
-              className="flex animate-pop items-center gap-2 rounded-full border bg-background py-1.5 pr-4 pl-1.5 font-medium"
-              style={{ animationDelay: `${i * 60}ms` }}
+              key={p.name}
+              className="flex animate-pop items-center gap-2 rounded-full border-2 bg-background py-1.5 pr-5 pl-1.5 font-bold font-heading text-lg shadow-[0_3px_0_0_var(--border)]"
+              style={{ animationDelay: `${i * 80}ms` }}
             >
               <span
-                className={cn(
-                  "grid size-8 place-items-center rounded-full font-semibold text-sm text-white",
-                  ANSWER_STYLES[i % ANSWER_STYLES.length].bg,
-                )}
+                aria-hidden="true"
+                className="grid size-10 place-items-center rounded-full bg-secondary text-2xl"
               >
-                {name[0]}
+                {p.avatar}
               </span>
-              {name}
+              {p.name}
             </li>
           ))}
-          <li className="flex items-center rounded-full border border-dashed px-4 py-1.5 text-muted-foreground">
-            se așteaptă…
+          <li className="flex items-center rounded-full border-2 border-dashed px-5 py-1.5 font-bold text-muted-foreground">
+            se așteaptă… ⏳
           </li>
         </ul>
       </section>

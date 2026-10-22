@@ -2,28 +2,28 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Tema întunecată urmează setarea sistemului (fără JavaScript, fără "flash"). */
-@custom-variant dark (@media (prefers-color-scheme: dark));
+/* Platforma folosește doar teme deschise; clasa .dark nu se aplică nicăieri. */
+@custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
+  --font-heading: var(--font-display);
+  --color-sidebar-ring: var(--ring);
+  --color-sidebar-border: var(--border);
+  --color-sidebar-accent-foreground: var(--secondary-foreground);
+  --color-sidebar-accent: var(--secondary);
+  --color-sidebar-primary-foreground: var(--primary-foreground);
+  --color-sidebar-primary: var(--primary);
+  --color-sidebar-foreground: var(--foreground);
+  --color-sidebar: var(--card);
+  --color-chart-5: var(--fun-pink);
+  --color-chart-4: var(--fun-blue);
+  --color-chart-3: var(--fun-yellow);
+  --color-chart-2: var(--fun-green);
+  --color-chart-1: var(--primary);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -36,17 +36,29 @@
   --color-secondary: var(--secondary);
   --color-primary-foreground: var(--primary-foreground);
   --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
+  --color-primary-shadow: var(--primary-shadow);
+  --color-primary-soft: var(--primary-soft);
+  --color-popover-foreground: var(--foreground);
+  --color-popover: var(--card);
+  --color-card-foreground: var(--foreground);
   --color-card: var(--card);
 
-  /* Culori EduQuest */
   --color-success: var(--success);
   --color-warning: var(--warning);
   --color-xp: var(--xp);
   --color-code: var(--code);
   --color-code-foreground: var(--code-foreground);
+
+  /* Culori „de joacă”, fixe, indiferent de tema aleasă. */
+  --color-fun-pink: var(--fun-pink);
+  --color-fun-purple: var(--fun-purple);
+  --color-fun-blue: var(--fun-blue);
+  --color-fun-teal: var(--fun-teal);
+  --color-fun-green: var(--fun-green);
+  --color-fun-yellow: var(--fun-yellow);
+  --color-fun-orange: var(--fun-orange);
+
+  /* Culorile răspunsurilor la quiz (aceleași pentru toți). */
   --color-quiz-red: var(--quiz-red);
   --color-quiz-blue: var(--quiz-blue);
   --color-quiz-yellow: var(--quiz-yellow);
@@ -60,11 +72,13 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
-  --animate-pop: pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+  --animate-pop: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+  --animate-float: float 4s ease-in-out infinite;
+  --animate-wiggle: wiggle 0.5s ease-in-out;
 
   @keyframes pop {
     0% {
-      transform: scale(0.9);
+      transform: scale(0.85);
       opacity: 0;
     }
     100% {
@@ -72,102 +86,115 @@
       opacity: 1;
     }
   }
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+  @keyframes wiggle {
+    0%,
+    100% {
+      transform: rotate(0);
+    }
+    25% {
+      transform: rotate(-8deg);
+    }
+    75% {
+      transform: rotate(8deg);
+    }
+  }
+}
+
+/*
+ * Fiecare temă alege o nuanță (--h) și culoarea principală.
+ * Restul culorilor (fundal, chenare, text) se calculează din nuanță,
+ * așa că întreaga interfață se colorează după alegerea copilului.
+ * Selectorul [data-theme] permite și mostre de culoare pe orice element.
+ */
+:root,
+[data-theme] {
+  --radius: 1rem;
+
+  --primary-foreground: oklch(1 0 0);
+  --primary-shadow: color-mix(in oklch, var(--primary), black 22%);
+  --primary-soft: oklch(0.94 0.05 var(--h));
+  --ring: var(--primary);
+
+  --background: oklch(0.985 0.016 var(--h));
+  --foreground: oklch(0.3 0.04 var(--h));
+  --card: oklch(1 0 0);
+  --secondary: oklch(0.95 0.045 var(--h));
+  --secondary-foreground: oklch(0.4 0.11 var(--h));
+  --muted: oklch(0.97 0.018 var(--h));
+  --muted-foreground: oklch(0.53 0.035 var(--h));
+  --accent: oklch(0.95 0.045 var(--h));
+  --accent-foreground: oklch(0.4 0.11 var(--h));
+  --border: oklch(0.91 0.03 var(--h));
+  --input: oklch(0.88 0.04 var(--h));
 }
 
 :root {
-  --radius: 0.875rem;
+  --h: 295;
+  --primary: oklch(0.6 0.21 295);
 
-  --background: oklch(0.985 0.006 285);
-  --foreground: oklch(0.22 0.035 285);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.22 0.035 285);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.22 0.035 285);
-  --primary: oklch(0.54 0.23 285);
-  --primary-foreground: oklch(0.99 0.005 285);
-  --secondary: oklch(0.95 0.03 285);
-  --secondary-foreground: oklch(0.32 0.1 285);
-  --muted: oklch(0.96 0.012 285);
-  --muted-foreground: oklch(0.5 0.03 285);
-  --accent: oklch(0.95 0.03 285);
-  --accent-foreground: oklch(0.32 0.1 285);
-  --destructive: oklch(0.58 0.22 25);
-  --border: oklch(0.91 0.015 285);
-  --input: oklch(0.89 0.02 285);
-  --ring: oklch(0.54 0.23 285);
+  --destructive: oklch(0.6 0.21 22);
+  --success: oklch(0.62 0.16 150);
+  --warning: oklch(0.78 0.16 75);
+  --xp: oklch(0.8 0.16 80);
+  --code: oklch(0.3 0.05 270);
+  --code-foreground: oklch(0.97 0.01 270);
 
-  --success: oklch(0.62 0.16 152);
-  --warning: oklch(0.75 0.16 70);
-  --xp: oklch(0.78 0.16 75);
-  --code: oklch(0.23 0.04 285);
-  --code-foreground: oklch(0.96 0.01 285);
-  --quiz-red: oklch(0.6 0.21 22);
-  --quiz-blue: oklch(0.55 0.19 255);
-  --quiz-yellow: oklch(0.72 0.16 70);
-  --quiz-green: oklch(0.6 0.16 152);
+  --fun-pink: oklch(0.72 0.17 355);
+  --fun-purple: oklch(0.66 0.19 295);
+  --fun-blue: oklch(0.68 0.15 245);
+  --fun-teal: oklch(0.72 0.12 190);
+  --fun-green: oklch(0.72 0.17 145);
+  --fun-yellow: oklch(0.85 0.16 90);
+  --fun-orange: oklch(0.75 0.16 55);
 
-  --chart-1: oklch(0.54 0.23 285);
-  --chart-2: oklch(0.62 0.16 152);
-  --chart-3: oklch(0.72 0.16 70);
-  --chart-4: oklch(0.55 0.19 255);
-  --chart-5: oklch(0.6 0.21 22);
-
-  --sidebar: oklch(0.975 0.01 285);
-  --sidebar-foreground: oklch(0.22 0.035 285);
-  --sidebar-primary: oklch(0.54 0.23 285);
-  --sidebar-primary-foreground: oklch(0.99 0.005 285);
-  --sidebar-accent: oklch(0.94 0.035 285);
-  --sidebar-accent-foreground: oklch(0.32 0.1 285);
-  --sidebar-border: oklch(0.91 0.015 285);
-  --sidebar-ring: oklch(0.54 0.23 285);
+  --quiz-red: oklch(0.63 0.21 22);
+  --quiz-blue: oklch(0.6 0.17 250);
+  --quiz-yellow: oklch(0.76 0.16 75);
+  --quiz-green: oklch(0.64 0.16 150);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: oklch(0.17 0.022 285);
-    --foreground: oklch(0.96 0.01 285);
-    --card: oklch(0.215 0.028 285);
-    --card-foreground: oklch(0.96 0.01 285);
-    --popover: oklch(0.215 0.028 285);
-    --popover-foreground: oklch(0.96 0.01 285);
-    --primary: oklch(0.7 0.18 285);
-    --primary-foreground: oklch(0.16 0.03 285);
-    --secondary: oklch(0.28 0.045 285);
-    --secondary-foreground: oklch(0.92 0.03 285);
-    --muted: oklch(0.26 0.03 285);
-    --muted-foreground: oklch(0.72 0.03 285);
-    --accent: oklch(0.28 0.045 285);
-    --accent-foreground: oklch(0.92 0.03 285);
-    --destructive: oklch(0.68 0.19 22);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.7 0.18 285);
-
-    --success: oklch(0.72 0.15 152);
-    --warning: oklch(0.8 0.15 75);
-    --xp: oklch(0.82 0.15 80);
-    --code: oklch(0.13 0.02 285);
-    --code-foreground: oklch(0.96 0.01 285);
-    --quiz-red: oklch(0.62 0.2 22);
-    --quiz-blue: oklch(0.6 0.17 255);
-    --quiz-yellow: oklch(0.74 0.15 72);
-    --quiz-green: oklch(0.63 0.15 152);
-
-    --chart-1: oklch(0.7 0.18 285);
-    --chart-2: oklch(0.72 0.15 152);
-    --chart-3: oklch(0.8 0.15 75);
-    --chart-4: oklch(0.6 0.17 255);
-    --chart-5: oklch(0.62 0.2 22);
-
-    --sidebar: oklch(0.19 0.025 285);
-    --sidebar-foreground: oklch(0.96 0.01 285);
-    --sidebar-primary: oklch(0.7 0.18 285);
-    --sidebar-primary-foreground: oklch(0.16 0.03 285);
-    --sidebar-accent: oklch(0.27 0.045 285);
-    --sidebar-accent-foreground: oklch(0.96 0.01 285);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.7 0.18 285);
-  }
+[data-theme="unicorn"] {
+  --h: 295;
+  --primary: oklch(0.6 0.21 295);
+}
+[data-theme="capsuna"] {
+  --h: 355;
+  --primary: oklch(0.64 0.21 358);
+}
+[data-theme="cireasa"] {
+  --h: 22;
+  --primary: oklch(0.62 0.21 25);
+}
+[data-theme="portocala"] {
+  --h: 50;
+  --primary: oklch(0.68 0.18 48);
+}
+[data-theme="soare"] {
+  --h: 88;
+  --primary: oklch(0.84 0.16 88);
+  --primary-foreground: oklch(0.36 0.08 65);
+  --primary-shadow: oklch(0.72 0.15 75);
+}
+[data-theme="jungla"] {
+  --h: 148;
+  --primary: oklch(0.63 0.17 148);
+}
+[data-theme="menta"] {
+  --h: 185;
+  --primary: oklch(0.64 0.12 188);
+}
+[data-theme="ocean"] {
+  --h: 245;
+  --primary: oklch(0.6 0.17 248);
 }
 
 @layer base {
@@ -176,10 +203,16 @@
   }
   html {
     @apply font-sans;
-    color-scheme: light dark;
+    color-scheme: light;
   }
   body {
     @apply bg-background text-foreground;
+    transition: background-color 0.3s;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-heading;
   }
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -187,16 +220,28 @@
     *::after {
       /* biome-ignore lint/complexity/noImportantStyles: trebuie să bată orice animație */
       animation-duration: 0.01ms !important;
+      /* biome-ignore lint/complexity/noImportantStyles: trebuie să bată orice animație */
+      animation-iteration-count: 1 !important;
       /* biome-ignore lint/complexity/noImportantStyles: trebuie să bată orice tranziție */
       transition-duration: 0.01ms !important;
     }
   }
 }
 
+/* Card tip „sticker”: chenar gros și o umbră plină dedesubt. */
+@utility sticker {
+  border-width: 2px;
+  border-color: var(--border);
+  background-color: var(--card);
+  border-radius: var(--radius-3xl);
+  box-shadow: 0 5px 0 0 var(--border);
+}
+
+/* Fundal cu buline în culoarea temei. */
 @utility bg-dots {
   background-image: radial-gradient(
-    color-mix(in oklch, var(--foreground) 12%, transparent) 1px,
-    transparent 1px
+    color-mix(in oklch, var(--primary) 22%, transparent) 1.5px,
+    transparent 1.5px
   );
-  background-size: 22px 22px;
+  background-size: 24px 24px;
 }

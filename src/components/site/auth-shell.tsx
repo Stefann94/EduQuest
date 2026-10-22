@@ -1,16 +1,45 @@
 import { Logo } from "@/components/brand/logo";
+import { Mascot } from "@/components/brand/mascot";
 
 // Cadru comun pentru paginile simple, centrate: intrare cu PIN, autentificare.
 export function AuthShell({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative flex min-h-dvh flex-col">
-      <div className="bg-dots absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_at_center,black_20%,transparent_70%)]" />
-      <header className="mx-auto flex h-16 w-full max-w-6xl items-center px-4">
+    <div className="relative flex min-h-dvh flex-col overflow-hidden">
+      <div className="bg-dots absolute inset-0 -z-10 [mask-image:radial-gradient(ellipse_at_center,black_25%,transparent_75%)]" />
+      <div className="absolute -top-20 -left-20 -z-10 size-72 rounded-full bg-fun-pink/25 blur-3xl" />
+      <div className="absolute -right-20 -bottom-20 -z-10 size-80 rounded-full bg-fun-yellow/30 blur-3xl" />
+      <FloatingShapes />
+      <header className="mx-auto flex h-20 w-full max-w-6xl items-center px-4">
         <Logo />
       </header>
       <main className="flex flex-1 items-center justify-center px-4 pb-16">
-        <div className="w-full max-w-md">{children}</div>
+        <div className="relative w-full max-w-md">
+          <Mascot className="absolute -top-20 -right-4 z-10 size-24 rotate-12 animate-float sm:-right-12" />
+          {children}
+        </div>
       </main>
+    </div>
+  );
+}
+
+function FloatingShapes() {
+  const shapes = [
+    { c: "bg-fun-blue", p: "top-[18%] left-[8%] size-10 rounded-xl rotate-12" },
+    { c: "bg-fun-green", p: "top-[70%] left-[12%] size-8 rounded-full" },
+    { c: "bg-fun-orange", p: "top-[30%] right-[10%] size-7 rounded-full" },
+    {
+      c: "bg-fun-purple",
+      p: "bottom-[12%] right-[22%] size-9 rounded-xl -rotate-12",
+    },
+  ];
+  return (
+    <div aria-hidden="true" className="absolute inset-0 -z-10 hidden md:block">
+      {shapes.map((s) => (
+        <span
+          key={s.p}
+          className={`absolute animate-float opacity-60 ${s.c} ${s.p}`}
+        />
+      ))}
     </div>
   );
 }

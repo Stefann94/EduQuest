@@ -6,9 +6,13 @@ import { cn } from "@/lib/utils";
 
 export function NavLink({
   href,
+  emoji,
+  tile,
   children,
 }: {
   href: string;
+  emoji: string;
+  tile: string;
   children: React.ReactNode;
 }) {
   const active = usePathname() === href;
@@ -17,13 +21,22 @@ export function NavLink({
       href={href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "flex shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 font-medium text-sm transition-colors [&_svg]:size-5",
+        "group flex shrink-0 items-center gap-3 rounded-2xl border-2 px-2 py-1.5 font-bold font-heading text-base outline-none transition-all focus-visible:ring-4 focus-visible:ring-ring/40",
         active
-          ? "bg-sidebar-accent text-sidebar-accent-foreground"
-          : "text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground",
+          ? "border-primary bg-primary-soft text-foreground shadow-[0_3px_0_0_var(--primary)]"
+          : "border-transparent text-muted-foreground hover:bg-secondary hover:text-foreground",
       )}
     >
-      {children}
+      <span
+        aria-hidden="true"
+        className={cn(
+          "grid size-9 place-items-center rounded-xl text-lg transition-transform group-hover:-rotate-6 group-hover:scale-110",
+          tile,
+        )}
+      >
+        {emoji}
+      </span>
+      <span className="pr-2">{children}</span>
     </Link>
   );
 }

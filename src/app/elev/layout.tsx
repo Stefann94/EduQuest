@@ -1,21 +1,13 @@
-import {
-  Award,
-  BookOpenCheck,
-  Gamepad2,
-  House,
-  KeyRound,
-  Trophy,
-} from "lucide-react";
 import { AppShell, type NavItem } from "@/components/app/app-shell";
 import { demoStudent } from "@/lib/demo-data";
 
 const nav: NavItem[] = [
-  { label: "Acasă", icon: House, href: "/elev" },
-  { label: "Intră cu PIN", icon: KeyRound, href: "/intra" },
-  { label: "Teme", icon: BookOpenCheck },
-  { label: "Jocuri", icon: Gamepad2 },
-  { label: "Clasament", icon: Trophy },
-  { label: "Insigne", icon: Award },
+  { label: "Acasă", emoji: "🏠", href: "/elev" },
+  { label: "Intră cu PIN", emoji: "🎟️", href: "/intra" },
+  { label: "Teme", emoji: "📚" },
+  { label: "Jocuri", emoji: "🎮" },
+  { label: "Clasament", emoji: "🏆" },
+  { label: "Insigne", emoji: "🏅" },
 ];
 
 export default function StudentLayout({ children }: LayoutProps<"/elev">) {
@@ -23,8 +15,7 @@ export default function StudentLayout({ children }: LayoutProps<"/elev">) {
     <AppShell
       nav={nav}
       user={{
-        name: demoStudent.name,
-        initials: demoStudent.initials,
+        firstName: demoStudent.firstName,
         role: `Elev · ${demoStudent.group}`,
       }}
     >

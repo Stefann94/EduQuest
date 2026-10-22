@@ -52,45 +52,49 @@ export const demoGames = [
     title: "Ghicește output-ul",
     description: "Citește codul și spune ce afișează.",
     minutes: 3,
-    color: "bg-quiz-blue",
+    emoji: "🔮",
+    tile: "bg-fun-blue/15",
   },
   {
     id: "bug",
     title: "Vânătoare de bug-uri",
     description: "Găsește greșeala din cod cât mai repede.",
     minutes: 5,
-    color: "bg-quiz-red",
+    emoji: "🐛",
+    tile: "bg-fun-pink/15",
   },
   {
     id: "ordine",
     title: "Pune codul în ordine",
     description: "Aranjează liniile ca programul să meargă.",
     minutes: 4,
-    color: "bg-quiz-green",
+    emoji: "🧩",
+    tile: "bg-fun-green/15",
   },
   {
     id: "tastare",
     title: "Tastare rapidă",
     description: "Scrie cod corect, contra cronometru.",
     minutes: 2,
-    color: "bg-quiz-yellow",
+    emoji: "⌨️",
+    tile: "bg-fun-yellow/25",
   },
 ];
 
 export const demoBadges = [
-  { id: "b1", title: "Prima buclă", earned: true },
-  { id: "b2", title: "5 zile la rând", earned: true },
-  { id: "b3", title: "Vânător de bug-uri", earned: true },
-  { id: "b4", title: "Quiz perfect", earned: false },
-  { id: "b5", title: "10 teme predate", earned: false },
+  { id: "b1", title: "Prima buclă", emoji: "🔁", earned: true },
+  { id: "b2", title: "5 zile la rând", emoji: "🔥", earned: true },
+  { id: "b3", title: "Vânător de bug-uri", emoji: "🐞", earned: true },
+  { id: "b4", title: "Quiz perfect", emoji: "💯", earned: false },
+  { id: "b5", title: "10 teme predate", emoji: "📦", earned: false },
 ];
 
 export const demoLeaderboard = [
-  { name: "Maria", initials: "MI", xp: 1580 },
-  { name: "Luca", initials: "LD", xp: 1395 },
-  { name: "Andrei", initials: "AP", xp: 1240, isMe: true },
-  { name: "Sofia", initials: "SR", xp: 1105 },
-  { name: "David", initials: "DM", xp: 990 },
+  { name: "Maria", avatar: "🐼", xp: 1580 },
+  { name: "Luca", avatar: "🦖", xp: 1395 },
+  { name: "Andrei", avatar: "🦊", xp: 1240, isMe: true },
+  { name: "Sofia", avatar: "🦄", xp: 1105 },
+  { name: "David", avatar: "🐙", xp: 990 },
 ];
 
 export const demoMentor = {
@@ -102,6 +106,7 @@ export const demoGroups = [
   {
     id: "g1",
     name: "Python Începători",
+    emoji: "🐍",
     schedule: "Sâmbătă, 10:00",
     students: 8,
     progress: 62,
@@ -109,6 +114,7 @@ export const demoGroups = [
   {
     id: "g2",
     name: "Scratch Junior",
+    emoji: "🐱",
     schedule: "Sâmbătă, 12:00",
     students: 6,
     progress: 45,
@@ -116,6 +122,7 @@ export const demoGroups = [
   {
     id: "g3",
     name: "JavaScript Avansați",
+    emoji: "⚡",
     schedule: "Duminică, 11:00",
     students: 5,
     progress: 78,
@@ -132,34 +139,34 @@ export const demoToGrade = [
   {
     id: "s1",
     student: "Maria Ionescu",
-    initials: "MI",
+    avatar: "🐼",
     homework: "Calculator de vârstă",
     submitted: "acum 2 ore",
   },
   {
     id: "s2",
     student: "Luca Dima",
-    initials: "LD",
+    avatar: "🦖",
     homework: "Calculator de vârstă",
     submitted: "acum 5 ore",
   },
   {
     id: "s3",
     student: "Sofia Radu",
-    initials: "SR",
+    avatar: "🦄",
     homework: "Desenează cu turtle",
     submitted: "ieri",
   },
 ];
 
 export const demoLobbyPlayers = [
-  "Maria",
-  "Luca",
-  "Andrei",
-  "Sofia",
-  "David",
-  "Ioana",
-  "Matei",
+  { name: "Maria", avatar: "🐼" },
+  { name: "Luca", avatar: "🦖" },
+  { name: "Andrei", avatar: "🦊" },
+  { name: "Sofia", avatar: "🦄" },
+  { name: "David", avatar: "🐙" },
+  { name: "Ioana", avatar: "🐱" },
+  { name: "Matei", avatar: "🐸" },
 ];
 
 export type LiveQuestion = {

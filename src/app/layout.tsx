@@ -1,10 +1,16 @@
 import type { Metadata, Viewport } from "next";
-import { Geist_Mono, Lexend } from "next/font/google";
+import { Fredoka, Geist_Mono, Nunito } from "next/font/google";
+import { DEFAULT_PREFS, THEME_INIT_SCRIPT } from "@/lib/themes";
 import "./globals.css";
 
-// Lexend e gândit pentru lizibilitate, util pentru copii. latin-ext aduce ă, â, î, ș, ț.
-const lexend = Lexend({
+// Fonturi rotunjite și prietenoase. latin-ext aduce ă, â, î, ș, ț.
+const nunito = Nunito({
   variable: "--font-sans",
+  subsets: ["latin", "latin-ext"],
+});
+
+const fredoka = Fredoka({
+  variable: "--font-display",
   subsets: ["latin", "latin-ext"],
 });
 
@@ -23,18 +29,24 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#faf9ff" },
-    { media: "(prefers-color-scheme: dark)", color: "#16131f" },
-  ],
+  themeColor: "#fbf9ff",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ro"
-      className={`${lexend.variable} ${geistMono.variable} h-full antialiased`}
+      data-theme={DEFAULT_PREFS.theme}
+      // Scriptul de mai jos poate schimba data-theme înainte ca React să preia pagina.
+      suppressHydrationWarning
+      className={`${nunito.variable} ${fredoka.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          // biome-ignore lint/security/noDangerouslySetInnerHtml: script static, scris de noi, fără date de la utilizator
+          dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }}
+        />
+      </head>
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );
