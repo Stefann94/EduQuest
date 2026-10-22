@@ -29,7 +29,7 @@ export default function LiveSessionLobbyPage() {
             <span className="underline decoration-wavy">eduquest.ro/intra</span>{" "}
             și scrie PIN-ul 👇
           </p>
-          <p className="anim-pop mx-auto mt-5 w-fit -rotate-2 rounded-[2rem] bg-white px-8 py-4 font-bold font-mono text-6xl text-primary tracking-[0.12em] shadow-[0_6px_0_0_var(--primary-shadow)] sm:text-8xl">
+          <p className="anim-rise mx-auto mt-5 w-fit -rotate-2 rounded-[2rem] bg-white px-8 py-4 font-bold font-mono text-6xl text-primary tracking-[0.12em] shadow-[0_6px_0_0_var(--primary-shadow)] sm:text-8xl">
             <span className="sr-only">PIN {DEMO_PIN.split("").join(" ")}</span>
             <span aria-hidden="true">
               {DEMO_PIN.slice(0, 3)} {DEMO_PIN.slice(3)}
@@ -44,7 +44,7 @@ export default function LiveSessionLobbyPage() {
       <section className="sticker p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Mascot className="anim-pop size-14" mood="wow" />
+            <Mascot className="size-14" mood="wow" />
             <h2 className="font-bold text-2xl">
               {demoLobbyPlayers.length} elevi au intrat!
             </h2>
@@ -57,7 +57,7 @@ export default function LiveSessionLobbyPage() {
             <Play className="fill-current" /> Începe quiz-ul
           </Link>
         </div>
-        <ul className="stagger-pop mt-6 flex flex-wrap gap-3">
+        <ul className="mt-6 flex flex-wrap gap-3">
           {demoLobbyPlayers.map((p) => (
             <li
               key={p.name}

@@ -39,7 +39,7 @@ export function NotificationsMenu({ initial }: { initial: Notification[] }) {
       >
         <Bell className="text-primary" />
         {unread > 0 ? (
-          <span className="absolute -top-2 -right-2 grid size-6 animate-pop place-items-center rounded-full border-2 border-card bg-destructive font-bold text-white text-xs">
+          <span className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full border-2 border-card bg-destructive font-bold text-white text-xs">
             {unread}
           </span>
         ) : null}

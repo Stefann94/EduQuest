@@ -63,7 +63,7 @@ export function SidebarContent({
         )}
       </nav>
 
-      <div className="anim-fade relative mt-auto flex items-center gap-3 rounded-3xl bg-primary-foreground/15 p-2.5 [--c:5]">
+      <div className="anim-slide relative mt-auto flex items-center gap-3 rounded-3xl bg-primary-foreground/15 p-2.5 [--c:5]">
         <UserAvatar className="size-11 bg-card text-2xl shadow-none" />
         <div className="min-w-0 flex-1">
           <p className="truncate font-bold font-heading text-lg leading-tight">

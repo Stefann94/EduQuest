@@ -40,7 +40,7 @@ export function TopBar({
           className="md:hidden [&>span]:hidden sm:[&>span]:inline"
         />
 
-        <div className="stagger-pop hidden min-w-0 items-center gap-2 overflow-hidden lg:flex">
+        <div className="hidden min-w-0 items-center gap-2 overflow-hidden lg:flex">
           {config.status.map((chip) => (
             <Link
               key={chip.label}
@@ -53,7 +53,7 @@ export function TopBar({
           ))}
         </div>
 
-        <div className="stagger-pop ml-auto flex items-center gap-2 sm:gap-3">
+        <div className="ml-auto flex items-center gap-2 sm:gap-3">
           <SearchMenu
             items={config.search}
             placeholder={config.searchPlaceholder}

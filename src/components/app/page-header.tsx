@@ -13,11 +13,11 @@ export function PageHeader({
     <div className="flex flex-wrap items-center gap-4">
       <span
         aria-hidden="true"
-        className="anim-pop grid size-16 shrink-0 -rotate-6 place-items-center rounded-3xl bg-primary text-4xl shadow-[0_5px_0_0_var(--primary-shadow)]"
+        className="grid size-16 shrink-0 -rotate-6 place-items-center rounded-3xl bg-primary text-4xl shadow-[0_5px_0_0_var(--primary-shadow)]"
       >
         {emoji}
       </span>
-      <div className="anim-fade min-w-0 flex-1">
+      <div className="min-w-0 flex-1">
         <h1 className="font-bold text-4xl leading-tight">{title}</h1>
         {description ? (
           <p className="font-semibold text-lg text-muted-foreground">
@@ -25,7 +25,7 @@ export function PageHeader({
           </p>
         ) : null}
       </div>
-      {action ? <div className="anim-fade max-sm:w-full">{action}</div> : null}
+      {action ? <div className="max-sm:w-full">{action}</div> : null}
     </div>
   );
 }

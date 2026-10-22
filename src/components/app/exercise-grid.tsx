@@ -53,21 +53,21 @@ export function ExerciseGrid({ exercises }: { exercises: Exercise[] }) {
               <div className="flex items-start justify-between gap-3">
                 <span
                   aria-hidden="true"
-                  className="anim-pop grid size-14 place-items-center rounded-2xl bg-secondary text-3xl transition-transform group-hover:scale-110"
+                  className="grid size-14 place-items-center rounded-2xl bg-secondary text-3xl transition-transform group-hover:scale-110"
                 >
                   {e.emoji}
                 </span>
                 {e.done ? (
-                  <span className="anim-pop rounded-full bg-success/15 px-3 py-1 font-bold text-sm text-success">
+                  <span className="rounded-full bg-success/15 px-3 py-1 font-bold text-sm text-success">
                     ✅ Rezolvat
                   </span>
                 ) : (
-                  <span className="anim-pop rounded-full bg-primary-soft px-3 py-1 font-bold text-secondary-foreground text-sm">
+                  <span className="rounded-full bg-primary-soft px-3 py-1 font-bold text-secondary-foreground text-sm">
                     +{e.xp} XP
                   </span>
                 )}
               </div>
-              <div className="anim-fade flex-1">
+              <div className="flex-1">
                 <p className="font-bold font-heading text-xl">{e.title}</p>
                 <p className="mt-1 font-semibold text-muted-foreground text-sm">
                   {e.statement}

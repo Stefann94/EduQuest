@@ -13,7 +13,7 @@ export function LevelStars({
   return (
     <span
       className={cn(
-        "anim-pop inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 font-bold text-secondary-foreground text-xs",
+        "inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-0.5 font-bold text-secondary-foreground text-xs",
         className,
       )}
     >

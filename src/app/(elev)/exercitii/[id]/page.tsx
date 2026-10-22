@@ -48,17 +48,17 @@ async function Exercise({ params }: { params: Props["params"] }) {
           <div className="flex items-start gap-4">
             <span
               aria-hidden="true"
-              className="anim-pop grid size-16 shrink-0 -rotate-6 place-items-center rounded-3xl bg-primary text-4xl shadow-[0_5px_0_0_var(--primary-shadow)]"
+              className="grid size-16 shrink-0 -rotate-6 place-items-center rounded-3xl bg-primary text-4xl shadow-[0_5px_0_0_var(--primary-shadow)]"
             >
               {exercise.emoji}
             </span>
             <div>
-              <h1 className="anim-fade font-bold text-3xl leading-tight">
+              <h1 className="font-bold text-3xl leading-tight">
                 {exercise.title}
               </h1>
               <div className="mt-2 flex flex-wrap items-center gap-2">
                 <LevelStars level={exercise.level} />
-                <span className="anim-pop rounded-full bg-primary-soft px-2.5 py-0.5 font-bold text-secondary-foreground text-xs">
+                <span className="rounded-full bg-primary-soft px-2.5 py-0.5 font-bold text-secondary-foreground text-xs">
                   +{exercise.xp} XP
                 </span>
                 <span className="font-bold text-muted-foreground text-sm">
@@ -67,17 +67,11 @@ async function Exercise({ params }: { params: Props["params"] }) {
               </div>
             </div>
           </div>
-          <h2 className="anim-fade mt-6 font-bold text-xl">
-            🎯 Ce ai de făcut
-          </h2>
-          <p className="anim-fade mt-1 font-semibold text-lg">
-            {exercise.statement}
-          </p>
+          <h2 className="mt-6 font-bold text-xl">🎯 Ce ai de făcut</h2>
+          <p className="mt-1 font-semibold text-lg">{exercise.statement}</p>
 
-          <h2 className="anim-fade mt-5 font-bold text-xl">
-            👀 Exemplu de rezultat
-          </h2>
-          <pre className="anim-fade mt-2 overflow-x-auto rounded-2xl bg-code px-4 py-3 font-mono text-code-foreground">
+          <h2 className="mt-5 font-bold text-xl">👀 Exemplu de rezultat</h2>
+          <pre className="mt-2 overflow-x-auto rounded-2xl bg-code px-4 py-3 font-mono text-code-foreground">
             {exercise.example}
           </pre>
         </section>
@@ -89,9 +83,7 @@ async function Exercise({ params }: { params: Props["params"] }) {
               ▾
             </span>
           </summary>
-          <p className="mt-3 animate-pop font-semibold text-lg">
-            {exercise.hint}
-          </p>
+          <p className="mt-3 font-semibold text-lg">{exercise.hint}</p>
         </details>
       </div>
 

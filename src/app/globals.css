@@ -285,8 +285,8 @@
  *   --c  ordinea în listă              (copiii unui .stagger / .stagger-*)
  *
  * Clase:
- *   .anim-rise / .anim-slide / .anim-fade / .anim-pop   pe un element
- *   .stagger-rise / .stagger-slide / .stagger-pop        animă toți copiii, pe rând
+ *   .anim-rise / .anim-slide          pe un element (o „fereastră”: card, panou)
+ *   .stagger-rise / .stagger-slide    animă toți copiii, pe rând (carduri, rânduri)
  *
  * Animăm doar transform și opacity: le calculează placa video, deci rămân
  * fluide chiar și când browserul are mult de lucru. Totul stă în
@@ -318,29 +318,6 @@
   from {
     opacity: 0;
     transform: translateX(-22px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes pop-in {
-  0% {
-    opacity: 0;
-    transform: scale(0.3);
-  }
-  65% {
-    opacity: 1;
-    transform: scale(1.15);
-  }
-  100% {
-    transform: scale(1);
-  }
-}
-@keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
   }
   to {
     opacity: 1;
@@ -387,7 +364,7 @@
   }
 
   /* Liste: copiii primesc indicele lor. */
-  :where(.stagger, .stagger-rise, .stagger-slide, .stagger-pop) {
+  :where(.stagger, .stagger-rise, .stagger-slide) {
     & > :nth-child(2) {
       --c: 1;
     }
@@ -426,11 +403,8 @@
   /* Întârzierea se calculează pe fiecare element animat, din indicii moșteniți. */
   .anim-rise,
   .anim-slide,
-  .anim-fade,
-  .anim-pop,
   .stagger-rise > *,
   .stagger-slide > *,
-  .stagger-pop > *,
   [data-slot="progress-indicator"] {
     --delay: calc(
       var(--s, 0) *
@@ -442,8 +416,8 @@
     );
   }
 
-  /* Tipurile de animație. Decalajul fix face ca, într-un card, întâi să apară
-     cardul, apoi textul, apoi iconițele și insignele. */
+  /* Tipurile de animație: doar pe „ferestre” (carduri, panouri, rânduri din liste).
+     Iconițele, insignele și textele se mișcă odată cu fereastra lor. */
   .anim-rise,
   .stagger-rise > * {
     animation: rise 0.6s var(--ease-bounce) backwards;
@@ -453,15 +427,6 @@
   .stagger-slide > * {
     animation: slide-in 0.5s var(--ease-smooth) backwards;
     animation-delay: calc(var(--delay) + 120ms);
-  }
-  .anim-fade {
-    animation: fade-up 0.5s var(--ease-smooth) backwards;
-    animation-delay: calc(var(--delay) + 100ms);
-  }
-  .anim-pop,
-  .stagger-pop > * {
-    animation: pop-in 0.45s var(--ease-bounce) backwards;
-    animation-delay: calc(var(--delay) + 220ms);
   }
 
   /* Barele de progres se umplu după ce apare cardul lor. */
@@ -475,11 +440,8 @@
     .page-enter > * > *,
     .anim-rise,
     .anim-slide,
-    .anim-fade,
-    .anim-pop,
     .stagger-rise > *,
     .stagger-slide > *,
-    .stagger-pop > *,
     [data-slot="progress-indicator"] {
       animation: none;
     }

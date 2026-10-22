@@ -68,7 +68,7 @@ export default function MentorHomePage() {
           <div key={s.label} className="sticker p-5">
             <span
               aria-hidden="true"
-              className="anim-pop grid size-12 place-items-center rounded-2xl bg-secondary text-2xl"
+              className="grid size-12 place-items-center rounded-2xl bg-secondary text-2xl"
             >
               {s.emoji}
             </span>
@@ -93,7 +93,7 @@ export default function MentorHomePage() {
                 <div className="flex items-center gap-3">
                   <span
                     aria-hidden="true"
-                    className="anim-pop grid size-11 place-items-center rounded-2xl bg-secondary text-2xl"
+                    className="grid size-11 place-items-center rounded-2xl bg-secondary text-2xl"
                   >
                     {g.emoji}
                   </span>
@@ -131,7 +131,7 @@ export default function MentorHomePage() {
               >
                 <span
                   aria-hidden="true"
-                  className="anim-pop grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl"
+                  className="grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl"
                 >
                   {t.avatar}
                 </span>
