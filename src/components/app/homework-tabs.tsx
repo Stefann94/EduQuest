@@ -13,8 +13,8 @@ const TABS: HomeworkStatus[] = ["de-facut", "predata", "corectata"];
 
 export function HomeworkTabs({ homework }: { homework: Homework[] }) {
   return (
-    <Tabs defaultValue="de-facut">
-      <TabsList className="grid w-full grid-cols-3 sm:w-fit">
+    <Tabs defaultValue="de-facut" className="groups">
+      <TabsList className="stagger-zoom grid w-full grid-cols-3 sm:w-fit">
         {TABS.map((status) => (
           <TabsTrigger key={status} value={status} className="sm:px-5">
             {HOMEWORK_STATUS[status].emoji} {HOMEWORK_STATUS[status].text}
@@ -30,7 +30,7 @@ export function HomeworkTabs({ homework }: { homework: Homework[] }) {
         return (
           <TabsContent key={status} value={status} className="mt-5">
             {items.length === 0 ? (
-              <p className="sticker p-8 text-center font-bold text-lg text-muted-foreground">
+              <p className="anim-rise sticker p-8 text-center font-bold text-lg text-muted-foreground">
                 Nimic aici. 🎉
               </p>
             ) : (
@@ -69,7 +69,7 @@ function HomeworkCard({ homework: h }: { homework: Homework }) {
       <p className="font-semibold text-lg">{h.description}</p>
 
       {h.feedback ? (
-        <div className="flex gap-3 rounded-2xl bg-primary-soft p-4">
+        <div className="anim-slide flex gap-3 rounded-2xl bg-primary-soft p-4">
           <span
             aria-hidden="true"
             className="grid size-12 shrink-0 -rotate-6 place-items-center rounded-2xl bg-primary font-bold font-heading text-primary-foreground text-xl"

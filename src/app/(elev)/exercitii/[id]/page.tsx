@@ -71,7 +71,7 @@ async function Exercise({ params }: { params: Props["params"] }) {
           <p className="mt-1 font-semibold text-lg">{exercise.statement}</p>
 
           <h2 className="mt-5 font-bold text-xl">👀 Exemplu de rezultat</h2>
-          <pre className="mt-2 overflow-x-auto rounded-2xl bg-code px-4 py-3 font-mono text-code-foreground">
+          <pre className="anim-zoom mt-2 overflow-x-auto rounded-2xl bg-code px-4 py-3 font-mono text-code-foreground">
             {exercise.example}
           </pre>
         </section>

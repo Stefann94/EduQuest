@@ -25,7 +25,7 @@ export function PageHeader({
           </p>
         ) : null}
       </div>
-      {action ? <div className="max-sm:w-full">{action}</div> : null}
+      {action ? <div className="anim-zoom max-sm:w-full">{action}</div> : null}
     </div>
   );
 }

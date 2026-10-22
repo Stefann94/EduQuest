@@ -63,7 +63,7 @@ export default function MentorHomePage() {
         }
       />
 
-      <div className="stagger-rise grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="stagger-zoom grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="sticker p-5">
             <span
@@ -81,7 +81,7 @@ export default function MentorHomePage() {
       </div>
 
       <div className="groups grid gap-6 lg:grid-cols-5">
-        <section className="sticker p-5 sm:p-6 lg:col-span-3">
+        <section className="anim-rise sticker p-5 sm:p-6 lg:col-span-3">
           <SectionTitle
             emoji="👥"
             title="Grupele mele"
@@ -117,7 +117,7 @@ export default function MentorHomePage() {
           </ul>
         </section>
 
-        <section className="sticker p-5 sm:p-6 lg:col-span-2">
+        <section className="anim-rise sticker p-5 sm:p-6 lg:col-span-2">
           <SectionTitle
             emoji="📬"
             title="De corectat"

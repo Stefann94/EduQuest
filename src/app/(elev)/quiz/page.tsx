@@ -30,7 +30,10 @@ export default function QuizPage() {
             </p>
             <PinJoin onColor className="mt-5 max-w-lg" />
           </div>
-          <div aria-hidden="true" className="hidden grid-cols-2 gap-3 lg:grid">
+          <div
+            aria-hidden="true"
+            className="stagger-flip hidden grid-cols-2 gap-3 lg:grid"
+          >
             {ANSWER_STYLES.map((style, i) => (
               <span
                 key={style.shape}
@@ -48,11 +51,12 @@ export default function QuizPage() {
         </div>
       </section>
 
-      <section>
+      <section className="groups">
         <SectionTitle
           emoji="🏋️"
           title="Exersează singur"
           hint="Quiz-uri scurte, fără cronometru pentru clasament"
+          className="anim-slide"
         />
         <ul className="stagger-rise mt-5 grid gap-4 sm:grid-cols-3">
           {demoPracticeQuizzes.map((q, i) => (

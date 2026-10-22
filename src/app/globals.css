@@ -278,20 +278,26 @@
 
 /* ---------- Coregrafia animațiilor ----------
  *
- * Fiecare tip de element are animația lui, iar întârzierile se adună din
- * trei „ceasuri”, așa că pagina se construiește pe rând, dar sincronizat:
+ * Fiecare chenar (card, rând, cutie, buton din bară) intră individual, cu o
+ * animație potrivită felului lui. Întârzierile se adună din trei „ceasuri”,
+ * așa că pagina se construiește pe rând, dar sincronizat:
  *   --s  ordinea secțiunii în pagină   (pusă automat de .page-enter)
  *   --g  ordinea grupului / coloanei   (copiii unui .groups)
- *   --c  ordinea în listă              (copiii unui .stagger / .stagger-*)
+ *   --c  ordinea în listă              (copiii unui .stagger-*)
  *
- * Clase:
- *   .anim-rise / .anim-slide          pe un element (o „fereastră”: card, panou)
- *   .stagger-rise / .stagger-slide    animă toți copiii, pe rând (carduri, rânduri)
+ * Felurile de chenar:
+ *   rise   carduri și panouri mari     se ridică
+ *   slide  rânduri din liste           alunecă din stânga
+ *   zoom   cutii mici (statistici,     apar cu un zoom blând, fără să se „umfle”
+ *          culori, avatare, tab-uri)
+ *   drop   butoanele din bara de sus   coboară de sus
+ *   flip   variantele de răspuns       se întorc ca un cartonaș
+ * Clase: .anim-<fel> pe un element, .stagger-<fel> pe părinte (animă copiii pe rând).
+ * Iconițele și textele nu au animație proprie: se mișcă odată cu chenarul lor.
  *
  * Animăm doar transform și opacity: le calculează placa video, deci rămân
- * fluide chiar și când browserul are mult de lucru. Totul stă în
- * @layer components, ca utilitarele Tailwind (ex. hover:animate-wiggle) să aibă
- * prioritate atunci când sunt folosite.
+ * fluide. Totul stă în @layer components, ca utilitarele Tailwind
+ * (ex. hover:animate-wiggle) să aibă prioritate atunci când sunt folosite.
  */
 :root {
   --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -324,6 +330,36 @@
     transform: none;
   }
 }
+@keyframes zoom-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.88);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes flip-in {
+  from {
+    opacity: 0;
+    transform: perspective(700px) rotateX(-60deg) translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 @keyframes grow-x {
   from {
     transform: scaleX(0);
@@ -331,8 +367,9 @@
 }
 
 @layer components {
-  /* Secțiunile paginii (template.tsx) se ridică pe rând. */
-  .page-enter > * > * {
+  /* Secțiunile paginii (template.tsx) se ridică pe rând. Containerele care doar
+     grupează chenare (.groups, .stagger-*) nu se mișcă: își animă copiii. */
+  .page-enter > * > :not(.groups, [class*="stagger-"]) {
     animation: rise 0.6s var(--ease-bounce) backwards;
     animation-delay: calc(var(--s, 0) * var(--step-s));
   }
@@ -364,7 +401,14 @@
   }
 
   /* Liste: copiii primesc indicele lor. */
-  :where(.stagger, .stagger-rise, .stagger-slide) {
+  :where(
+      .stagger,
+      .stagger-rise,
+      .stagger-slide,
+      .stagger-zoom,
+      .stagger-drop,
+      .stagger-flip
+    ) {
     & > :nth-child(2) {
       --c: 1;
     }
@@ -395,16 +439,25 @@
     & > :nth-child(11) {
       --c: 10;
     }
-    & > :nth-child(n + 12) {
+    & > :nth-child(12) {
       --c: 11;
+    }
+    & > :nth-child(n + 13) {
+      --c: 12;
     }
   }
 
-  /* Întârzierea se calculează pe fiecare element animat, din indicii moșteniți. */
+  /* Întârzierea se calculează pe fiecare chenar animat, din indicii moșteniți. */
   .anim-rise,
   .anim-slide,
+  .anim-zoom,
+  .anim-drop,
+  .anim-flip,
   .stagger-rise > *,
   .stagger-slide > *,
+  .stagger-zoom > *,
+  .stagger-drop > *,
+  .stagger-flip > *,
   [data-slot="progress-indicator"] {
     --delay: calc(
       var(--s, 0) *
@@ -416,8 +469,6 @@
     );
   }
 
-  /* Tipurile de animație: doar pe „ferestre” (carduri, panouri, rânduri din liste).
-     Iconițele, insignele și textele se mișcă odată cu fereastra lor. */
   .anim-rise,
   .stagger-rise > * {
     animation: rise 0.6s var(--ease-bounce) backwards;
@@ -428,8 +479,24 @@
     animation: slide-in 0.5s var(--ease-smooth) backwards;
     animation-delay: calc(var(--delay) + 120ms);
   }
+  .anim-zoom,
+  .stagger-zoom > * {
+    animation: zoom-in 0.45s var(--ease-smooth) backwards;
+    animation-delay: calc(var(--delay) + 160ms);
+  }
+  .anim-drop,
+  .stagger-drop > * {
+    animation: drop-in 0.5s var(--ease-bounce) backwards;
+    animation-delay: calc(var(--delay) + 60ms);
+  }
+  .anim-flip,
+  .stagger-flip > * {
+    transform-origin: top center;
+    animation: flip-in 0.6s var(--ease-smooth) backwards;
+    animation-delay: calc(var(--delay) + 100ms);
+  }
 
-  /* Barele de progres se umplu după ce apare cardul lor. */
+  /* Barele de progres se umplu după ce apare chenarul lor. */
   [data-slot="progress-indicator"] {
     transform-origin: left;
     animation: grow-x 1s var(--ease-bounce) backwards;
@@ -440,8 +507,14 @@
     .page-enter > * > *,
     .anim-rise,
     .anim-slide,
+    .anim-zoom,
+    .anim-drop,
+    .anim-flip,
     .stagger-rise > *,
     .stagger-slide > *,
+    .stagger-zoom > *,
+    .stagger-drop > *,
+    .stagger-flip > *,
     [data-slot="progress-indicator"] {
       animation: none;
     }

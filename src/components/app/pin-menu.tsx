@@ -15,7 +15,7 @@ export function PinMenu() {
     <Popover>
       <PopoverTrigger
         aria-label="Intră într-un quiz live cu PIN"
-        className={cn(buttonVariants(), "px-3 sm:px-5")}
+        className={cn(buttonVariants(), "h-12 px-3 sm:px-5")}
       >
         <span aria-hidden="true">🎟️</span>
         <span className="hidden sm:inline">Am un PIN</span>

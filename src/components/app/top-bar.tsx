@@ -30,8 +30,8 @@ export function TopBar({
   config: TopBarConfig;
 }) {
   return (
-    <header className="sticky top-0 z-30 border-b-2 bg-background px-3 py-3 md:top-4 md:rounded-[2rem] md:border-2 md:bg-card md:px-4 md:shadow-[0_5px_0_0_var(--border)]">
-      <div className="flex items-center gap-2 sm:gap-3">
+    <header className="sticky top-0 z-30 border-b-2 bg-background px-3 py-3 md:top-4 md:w-fit md:max-w-full md:self-center md:rounded-[2rem] md:border-2 md:bg-card md:p-3.5 md:shadow-[0_6px_0_0_var(--border)]">
+      <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
         <div className="md:hidden">
           <MobileNav nav={nav} user={user} />
         </div>
@@ -40,20 +40,24 @@ export function TopBar({
           className="md:hidden [&>span]:hidden sm:[&>span]:inline"
         />
 
-        <div className="hidden min-w-0 items-center gap-2 overflow-hidden lg:flex">
+        <div className="stagger-drop hidden min-w-0 items-center gap-2 overflow-hidden lg:flex">
           {config.status.map((chip) => (
             <Link
               key={chip.label}
               href={chip.href}
-              className="flex min-w-0 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-secondary px-3.5 py-2 font-bold font-heading text-secondary-foreground transition-transform hover:-translate-y-0.5"
+              className="flex min-w-0 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-secondary px-4 py-3 font-bold font-heading text-lg text-secondary-foreground transition-transform hover:-translate-y-0.5"
             >
               <span aria-hidden="true">{chip.emoji}</span>
               <span className="truncate">{chip.label}</span>
             </Link>
           ))}
         </div>
+        <span
+          aria-hidden="true"
+          className="hidden h-9 w-0.5 rounded-full bg-border lg:block"
+        />
 
-        <div className="ml-auto flex items-center gap-2 sm:gap-3">
+        <div className="stagger-drop ml-auto flex items-center gap-2 sm:gap-3 md:ml-0">
           <SearchMenu
             items={config.search}
             placeholder={config.searchPlaceholder}
@@ -63,7 +67,7 @@ export function TopBar({
           ) : (
             <Link
               href="/mentor/sesiune"
-              className={buttonVariants({ className: "px-3 sm:px-5" })}
+              className={buttonVariants({ className: "h-12 px-3 sm:px-5" })}
             >
               <span aria-hidden="true">⚡</span>
               <span className="hidden sm:inline">Quiz live</span>

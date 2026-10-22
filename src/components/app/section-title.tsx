@@ -1,16 +1,20 @@
+import { cn } from "@/lib/utils";
+
 export function SectionTitle({
   emoji,
   title,
   hint,
+  className,
   action,
 }: {
   emoji: string;
   title: string;
   hint?: string;
   action?: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className={cn("flex items-center gap-3", className)}>
       <span
         aria-hidden="true"
         className="grid size-12 shrink-0 -rotate-6 place-items-center rounded-2xl bg-secondary text-2xl"

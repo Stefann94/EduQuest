@@ -34,6 +34,7 @@ export function NotificationsMenu({ initial }: { initial: Notification[] }) {
         }
         className={cn(
           buttonVariants({ variant: "outline", size: "icon" }),
+          "size-12",
           "relative",
         )}
       >

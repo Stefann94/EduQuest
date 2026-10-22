@@ -27,7 +27,7 @@ export default function StudentHomePage() {
       <section className="relative overflow-hidden rounded-[2rem] bg-primary p-6 text-primary-foreground shadow-[0_6px_0_0_var(--primary-shadow)] sm:p-8">
         <div className="bg-dots absolute inset-0 opacity-40 [--primary:var(--primary-foreground)]" />
         <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center">
-          <div className="hidden size-32 shrink-0 place-items-center rounded-full bg-card shadow-[0_5px_0_0_var(--primary-shadow)] sm:grid">
+          <div className="anim-zoom hidden size-32 shrink-0 place-items-center rounded-full bg-card shadow-[0_5px_0_0_var(--primary-shadow)] sm:grid">
             <Mascot className="size-24 animate-float" />
           </div>
           <div className="flex-1">
@@ -51,7 +51,7 @@ export default function StudentHomePage() {
               />
             </div>
           </div>
-          <div className="flex gap-3">
+          <div className="stagger-zoom flex gap-3">
             <Stat emoji="🔥" value={`${s.streakDays} zile`} label="la rând" />
             <Stat emoji="🏆" value={`#${s.rank}`} label="în grupă" />
           </div>
@@ -68,7 +68,7 @@ export default function StudentHomePage() {
       </section>
 
       <div className="groups grid gap-6 lg:grid-cols-2">
-        <section className="sticker p-5 sm:p-6">
+        <section className="anim-rise sticker p-5 sm:p-6">
           <SectionTitle
             emoji="📚"
             title="Temele mele"
@@ -101,7 +101,7 @@ export default function StudentHomePage() {
           </ul>
         </section>
 
-        <section className="sticker p-5 sm:p-6">
+        <section className="anim-rise sticker p-5 sm:p-6">
           <SectionTitle
             emoji="💻"
             title="Exerciții pentru tine"

@@ -87,16 +87,17 @@ export function SearchMenu({
     <Popover open={open} onOpenChange={changeOpen}>
       <PopoverTrigger
         aria-label="Caută"
+        title="Caută (Ctrl+K)"
         className={cn(
           buttonVariants({ variant: "outline" }),
-          "w-11 px-0 xl:w-64 xl:justify-start xl:px-4",
+          "h-12 w-12 px-0 xl:w-32 xl:justify-start xl:px-4 2xl:w-48",
         )}
       >
         <Search className="text-primary" />
         <span className="hidden min-w-0 flex-1 truncate text-left font-sans font-semibold text-muted-foreground xl:inline">
-          {placeholder}
+          Caută
         </span>
-        <kbd className="hidden shrink-0 rounded-lg bg-secondary px-1.5 py-0.5 font-mono text-secondary-foreground text-xs xl:inline">
+        <kbd className="hidden shrink-0 rounded-lg bg-secondary px-1.5 py-0.5 font-mono text-secondary-foreground text-xs 2xl:inline">
           Ctrl K
         </kbd>
       </PopoverTrigger>
@@ -116,7 +117,7 @@ export function SearchMenu({
               setActive(0);
             }}
             onKeyDown={onKeyDown}
-            placeholder="Ce cauți?"
+            placeholder={placeholder}
             aria-label="Caută"
             className="h-14 flex-1 bg-transparent font-bold text-lg outline-none placeholder:text-muted-foreground"
           />

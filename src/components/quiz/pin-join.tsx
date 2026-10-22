@@ -25,7 +25,7 @@ export function PinJoin({
 
   return (
     <form
-      className={cn("flex flex-col gap-3 sm:flex-row", className)}
+      className={cn("stagger-zoom flex flex-col gap-3 sm:flex-row", className)}
       onSubmit={(e) => {
         e.preventDefault();
         // Demo: fără sesiuni reale încă, mergem la quiz-ul demo.

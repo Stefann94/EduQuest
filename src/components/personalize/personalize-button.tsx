@@ -27,11 +27,11 @@ export function PersonalizeButton({
         aria-label="Personalizează culoarea și avatarul"
         className={cn(
           buttonVariants({ variant: "outline" }),
-          "h-11 gap-3 p-1 text-left min-[1400px]:h-auto min-[1400px]:py-1 min-[1400px]:pr-4 min-[1400px]:pl-1",
+          "h-12 gap-3 p-1 text-left min-[1400px]:py-1 min-[1400px]:pr-4 min-[1400px]:pl-1",
           className,
         )}
       >
-        <UserAvatar className="size-9 text-xl shadow-none min-[1400px]:size-10" />
+        <UserAvatar className="size-9 text-xl shadow-none" />
         <span className="hidden min-w-0 max-w-40 flex-1 min-[1400px]:block">
           <span className="block truncate">{name}</span>
           {hint ? (

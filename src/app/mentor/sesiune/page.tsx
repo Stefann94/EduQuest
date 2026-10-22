@@ -57,7 +57,7 @@ export default function LiveSessionLobbyPage() {
             <Play className="fill-current" /> Începe quiz-ul
           </Link>
         </div>
-        <ul className="mt-6 flex flex-wrap gap-3">
+        <ul className="stagger-zoom mt-6 flex flex-wrap gap-3">
           {demoLobbyPlayers.map((p) => (
             <li
               key={p.name}

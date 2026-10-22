@@ -22,7 +22,9 @@ export function ColorPicker({
       >
         {legend || "Alege culoarea"}
       </legend>
-      <div className={cn("grid grid-cols-4 gap-2.5", gridClassName)}>
+      <div
+        className={cn("stagger-zoom grid grid-cols-4 gap-2.5", gridClassName)}
+      >
         {THEMES.map((t) => {
           const active = t.id === theme;
           return (
@@ -67,7 +69,7 @@ export function AvatarPicker({ className }: { className?: string }) {
       <legend className="mb-3 font-bold font-heading text-lg">
         😊 Avatarul tău
       </legend>
-      <div className="grid grid-cols-6 gap-2">
+      <div className="stagger-zoom grid grid-cols-6 gap-2">
         {AVATARS.map((a) => {
           const active = a === avatar;
           return (

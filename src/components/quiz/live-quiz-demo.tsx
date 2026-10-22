@@ -177,7 +177,7 @@ export function LiveQuizDemo() {
               />
             </div>
 
-            <div className="stagger-rise mt-6 grid flex-1 gap-4 sm:grid-cols-2">
+            <div className="stagger-flip mt-6 grid flex-1 gap-4 sm:grid-cols-2">
               {question.answers.map((text, i) => {
                 const style = ANSWER_STYLES[i];
                 const isCorrect = i === question.correct;
