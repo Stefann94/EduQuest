@@ -27,15 +27,17 @@ export default function StudentHomePage() {
       <section className="relative overflow-hidden rounded-[2rem] bg-primary p-6 text-primary-foreground shadow-[0_6px_0_0_var(--primary-shadow)] sm:p-8">
         <div className="bg-dots absolute inset-0 opacity-40 [--primary:var(--primary-foreground)]" />
         <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center">
-          <div className="hidden size-32 shrink-0 animate-float place-items-center rounded-full bg-card shadow-[0_5px_0_0_var(--primary-shadow)] sm:grid">
-            <Mascot className="size-24" />
+          <div className="anim-pop hidden size-32 shrink-0 place-items-center rounded-full bg-card shadow-[0_5px_0_0_var(--primary-shadow)] sm:grid">
+            <Mascot className="size-24 animate-float" />
           </div>
           <div className="flex-1">
-            <p className="font-bold text-lg opacity-90">
+            <p className="anim-fade font-bold text-lg opacity-90">
               Salut, {s.firstName}! 👋
             </p>
-            <h1 className="mt-1 font-bold text-4xl">Nivelul {s.level} 🚀</h1>
-            <div className="mt-4 max-w-md">
+            <h1 className="anim-fade mt-1 font-bold text-4xl">
+              Nivelul {s.level} 🚀
+            </h1>
+            <div className="anim-fade mt-4 max-w-md">
               <div className="mb-2 flex justify-between gap-4 font-bold text-sm">
                 <span className="opacity-90">
                   Încă puțin până la nivelul {s.level + 1}!
@@ -51,7 +53,7 @@ export default function StudentHomePage() {
               />
             </div>
           </div>
-          <div className="flex gap-3">
+          <div className="stagger-pop flex gap-3">
             <Stat emoji="🔥" value={`${s.streakDays} zile`} label="la rând" />
             <Stat emoji="🏆" value={`#${s.rank}`} label="în grupă" />
           </div>
@@ -64,10 +66,10 @@ export default function StudentHomePage() {
           title="Quiz live"
           hint="Mentorul îți arată PIN-ul în timpul orei."
         />
-        <PinJoin />
+        <PinJoin className="anim-fade" />
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="groups grid gap-6 lg:grid-cols-2">
         <section className="sticker p-5 sm:p-6">
           <SectionTitle
             emoji="📚"
@@ -75,7 +77,7 @@ export default function StudentHomePage() {
             hint={`${openCount} ${openCount === 1 ? "temă de făcut" : "teme de făcut"}`}
             action={<SeeAll href="/teme" />}
           />
-          <ul className="mt-5 grid gap-3">
+          <ul className="stagger-slide mt-5 grid gap-3">
             {demoHomework.map((h) => (
               <li key={h.id}>
                 <Link
@@ -84,7 +86,7 @@ export default function StudentHomePage() {
                 >
                   <span
                     aria-hidden="true"
-                    className="grid size-12 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl"
+                    className="anim-pop grid size-12 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl"
                   >
                     {HOMEWORK_STATUS[h.status].emoji}
                   </span>
@@ -108,7 +110,7 @@ export default function StudentHomePage() {
             hint="Continuă de unde ai rămas"
             action={<SeeAll href="/exercitii" />}
           />
-          <ul className="mt-5 grid gap-3">
+          <ul className="stagger-slide mt-5 grid gap-3">
             {nextExercises.map((e) => (
               <li key={e.id}>
                 <Link
@@ -117,7 +119,7 @@ export default function StudentHomePage() {
                 >
                   <span
                     aria-hidden="true"
-                    className="grid size-12 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl"
+                    className="anim-pop grid size-12 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl"
                   >
                     {e.emoji}
                   </span>

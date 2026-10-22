@@ -15,8 +15,8 @@ export function ExerciseGrid({ exercises }: { exercises: Exercise[] }) {
     topic === ALL ? exercises : exercises.filter((e) => e.topic === topic);
 
   return (
-    <div className="grid gap-5">
-      <fieldset className="flex flex-wrap gap-2">
+    <div className="groups grid gap-5">
+      <fieldset className="stagger-slide flex flex-wrap gap-2">
         <legend className="sr-only">Filtrează după temă</legend>
         {topics.map((t) => (
           <button
@@ -36,13 +36,13 @@ export function ExerciseGrid({ exercises }: { exercises: Exercise[] }) {
         ))}
       </fieldset>
 
-      <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <ul
+        // key: la schimbarea filtrului, lista se reconstruiește și cardurile intră din nou pe rând
+        key={topic}
+        className="stagger-rise grid gap-4 sm:grid-cols-2 xl:grid-cols-3"
+      >
         {visible.map((e, i) => (
-          <li
-            key={e.id}
-            className="animate-pop"
-            style={{ animationDelay: `${i * 40}ms` }}
-          >
+          <li key={e.id}>
             <Link
               href={`/exercitii/${e.id}`}
               className={cn(
@@ -53,21 +53,21 @@ export function ExerciseGrid({ exercises }: { exercises: Exercise[] }) {
               <div className="flex items-start justify-between gap-3">
                 <span
                   aria-hidden="true"
-                  className="grid size-14 place-items-center rounded-2xl bg-secondary text-3xl transition-transform group-hover:scale-110"
+                  className="anim-pop grid size-14 place-items-center rounded-2xl bg-secondary text-3xl transition-transform group-hover:scale-110"
                 >
                   {e.emoji}
                 </span>
                 {e.done ? (
-                  <span className="rounded-full bg-success/15 px-3 py-1 font-bold text-sm text-success">
+                  <span className="anim-pop rounded-full bg-success/15 px-3 py-1 font-bold text-sm text-success">
                     ✅ Rezolvat
                   </span>
                 ) : (
-                  <span className="rounded-full bg-primary-soft px-3 py-1 font-bold text-secondary-foreground text-sm">
+                  <span className="anim-pop rounded-full bg-primary-soft px-3 py-1 font-bold text-secondary-foreground text-sm">
                     +{e.xp} XP
                   </span>
                 )}
               </div>
-              <div className="flex-1">
+              <div className="anim-fade flex-1">
                 <p className="font-bold font-heading text-xl">{e.title}</p>
                 <p className="mt-1 font-semibold text-muted-foreground text-sm">
                   {e.statement}

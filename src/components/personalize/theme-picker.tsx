@@ -22,7 +22,9 @@ export function ColorPicker({
       >
         {legend || "Alege culoarea"}
       </legend>
-      <div className={cn("grid grid-cols-4 gap-2.5", gridClassName)}>
+      <div
+        className={cn("stagger-pop grid grid-cols-4 gap-2.5", gridClassName)}
+      >
         {THEMES.map((t) => {
           const active = t.id === theme;
           return (
@@ -42,7 +44,7 @@ export function ColorPicker({
               aria-label={`Tema ${t.name}`}
               title={t.name}
               className={cn(
-                "group relative grid aspect-square place-items-center rounded-2xl bg-primary text-2xl shadow-[0_4px_0_0_var(--primary-shadow)] outline-none transition-transform hover:-translate-y-0.5 hover:animate-wiggle focus-visible:ring-4 focus-visible:ring-ring/40 active:translate-y-[3px] active:shadow-[0_1px_0_0_var(--primary-shadow)]",
+                "group relative grid aspect-square place-items-center rounded-2xl bg-primary text-2xl shadow-[0_4px_0_0_var(--primary-shadow)] outline-none transition-transform hover:-translate-y-0.5 hover:-rotate-6 hover:scale-110 focus-visible:ring-4 focus-visible:ring-ring/40 active:translate-y-[3px] active:shadow-[0_1px_0_0_var(--primary-shadow)]",
                 active && "ring-4 ring-foreground/80 ring-offset-2",
               )}
             >
@@ -67,7 +69,7 @@ export function AvatarPicker({ className }: { className?: string }) {
       <legend className="mb-3 font-bold font-heading text-lg">
         😊 Avatarul tău
       </legend>
-      <div className="grid grid-cols-6 gap-2">
+      <div className="stagger-pop grid grid-cols-6 gap-2">
         {AVATARS.map((a) => {
           const active = a === avatar;
           return (
@@ -78,7 +80,7 @@ export function AvatarPicker({ className }: { className?: string }) {
               aria-pressed={active}
               aria-label={`Avatar ${a}`}
               className={cn(
-                "grid aspect-square place-items-center rounded-2xl border-2 bg-card text-2xl outline-none transition-transform hover:-translate-y-0.5 hover:animate-wiggle focus-visible:ring-4 focus-visible:ring-ring/40",
+                "grid aspect-square place-items-center rounded-2xl border-2 bg-card text-2xl outline-none transition-transform hover:-translate-y-0.5 hover:-rotate-6 hover:scale-110 focus-visible:ring-4 focus-visible:ring-ring/40",
                 active
                   ? "border-primary bg-primary-soft shadow-[0_3px_0_0_var(--primary)]"
                   : "shadow-[0_3px_0_0_var(--border)]",

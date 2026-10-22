@@ -121,7 +121,7 @@ export function SearchMenu({
             className="h-14 flex-1 bg-transparent font-bold text-lg outline-none placeholder:text-muted-foreground"
           />
         </div>
-        <ul className="max-h-80 overflow-y-auto p-2">
+        <ul className="stagger-slide max-h-80 overflow-y-auto p-2">
           {results.length === 0 ? (
             <li className="p-6 text-center font-bold text-muted-foreground">
               Nu am găsit nimic. 🔍

@@ -61,7 +61,7 @@ export function NotificationsMenu({ initial }: { initial: Notification[] }) {
             </button>
           ) : null}
         </div>
-        <ul className="max-h-96 overflow-y-auto p-2">
+        <ul className="stagger-slide max-h-96 overflow-y-auto p-2">
           {items.map((n) => (
             <li key={n.id}>
               <Link

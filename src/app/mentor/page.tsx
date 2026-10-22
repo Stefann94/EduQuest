@@ -63,12 +63,12 @@ export default function MentorHomePage() {
         }
       />
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="stagger-rise grid grid-cols-2 gap-4 lg:grid-cols-4">
         {stats.map((s) => (
           <div key={s.label} className="sticker p-5">
             <span
               aria-hidden="true"
-              className="grid size-12 place-items-center rounded-2xl bg-secondary text-2xl"
+              className="anim-pop grid size-12 place-items-center rounded-2xl bg-secondary text-2xl"
             >
               {s.emoji}
             </span>
@@ -80,20 +80,20 @@ export default function MentorHomePage() {
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-5">
+      <div className="groups grid gap-6 lg:grid-cols-5">
         <section className="sticker p-5 sm:p-6 lg:col-span-3">
           <SectionTitle
             emoji="👥"
             title="Grupele mele"
             hint="Progresul prin curriculum"
           />
-          <ul className="mt-5 grid gap-3">
+          <ul className="stagger-slide mt-5 grid gap-3">
             {demoGroups.map((g) => (
               <li key={g.id} className="rounded-2xl border-2 bg-background p-4">
                 <div className="flex items-center gap-3">
                   <span
                     aria-hidden="true"
-                    className="grid size-11 place-items-center rounded-2xl bg-secondary text-2xl"
+                    className="anim-pop grid size-11 place-items-center rounded-2xl bg-secondary text-2xl"
                   >
                     {g.emoji}
                   </span>
@@ -123,7 +123,7 @@ export default function MentorHomePage() {
             title="De corectat"
             hint="Teme trimise recent"
           />
-          <ul className="mt-5 grid gap-2">
+          <ul className="stagger-slide mt-5 grid gap-2">
             {demoToGrade.map((t) => (
               <li
                 key={t.id}
@@ -131,7 +131,7 @@ export default function MentorHomePage() {
               >
                 <span
                   aria-hidden="true"
-                  className="grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl"
+                  className="anim-pop grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl"
                 >
                   {t.avatar}
                 </span>
@@ -163,7 +163,7 @@ export default function MentorHomePage() {
             </button>
           }
         />
-        <ul className="mt-5 grid gap-4 md:grid-cols-3">
+        <ul className="stagger-rise mt-5 grid gap-4 md:grid-cols-3">
           {demoQuizzes.map((q, i) => (
             <li
               key={q.id}

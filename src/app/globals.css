@@ -72,7 +72,7 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
-  --animate-pop: pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+  --animate-pop: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
   --animate-float: float 4s ease-in-out infinite;
   --animate-wiggle: wiggle 0.5s ease-in-out;
 
@@ -276,13 +276,35 @@
   z-index: 2;
 }
 
-/* ---------- Animații jucăușe ---------- */
+/* ---------- Coregrafia animațiilor ----------
+ *
+ * Fiecare tip de element are animația lui, iar întârzierile se adună din
+ * trei „ceasuri”, așa că pagina se construiește pe rând, dar sincronizat:
+ *   --s  ordinea secțiunii în pagină   (pusă automat de .page-enter)
+ *   --g  ordinea grupului / coloanei   (copiii unui .groups)
+ *   --c  ordinea în listă              (copiii unui .stagger / .stagger-*)
+ *
+ * Clase:
+ *   .anim-rise / .anim-slide / .anim-fade / .anim-pop   pe un element
+ *   .stagger-rise / .stagger-slide / .stagger-pop        animă toți copiii, pe rând
+ *
+ * Animăm doar transform și opacity: le calculează placa video, deci rămân
+ * fluide chiar și când browserul are mult de lucru. Totul stă în
+ * @layer components, ca utilitarele Tailwind (ex. hover:animate-wiggle) să aibă
+ * prioritate atunci când sunt folosite.
+ */
+:root {
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --step-s: 90ms;
+  --step-g: 120ms;
+  --step-c: 70ms;
+}
 
-/* Intrarea unei pagini noi (template.tsx): secțiunile „sar” pe rând. */
-@keyframes page-rise {
+@keyframes rise {
   0% {
     opacity: 0;
-    transform: translateY(14px) scale(0.98);
+    transform: translateY(28px) scale(0.96);
   }
   60% {
     opacity: 1;
@@ -292,32 +314,176 @@
     transform: none;
   }
 }
-.page-enter > * > * {
-  animation: page-rise 0.32s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
-  animation-delay: calc(var(--i, 0) * 35ms);
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(-22px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
-.page-enter > * > :nth-child(2) {
-  --i: 1;
+@keyframes pop-in {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
 }
-.page-enter > * > :nth-child(3) {
-  --i: 2;
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
-.page-enter > * > :nth-child(4) {
-  --i: 3;
-}
-.page-enter > * > :nth-child(n + 5) {
-  --i: 4;
-}
-
-/* Barele de progres se umplu cu un mic „boing”. */
 @keyframes grow-x {
   from {
     transform: scaleX(0);
   }
 }
-[data-slot="progress-indicator"] {
-  transform-origin: left;
-  animation: grow-x 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s backwards;
+
+@layer components {
+  /* Secțiunile paginii (template.tsx) se ridică pe rând. */
+  .page-enter > * > * {
+    animation: rise 0.6s var(--ease-bounce) backwards;
+    animation-delay: calc(var(--s, 0) * var(--step-s));
+  }
+  .page-enter > * > :nth-child(2) {
+    --s: 1;
+  }
+  .page-enter > * > :nth-child(3) {
+    --s: 2;
+  }
+  .page-enter > * > :nth-child(4) {
+    --s: 3;
+  }
+  .page-enter > * > :nth-child(5) {
+    --s: 4;
+  }
+  .page-enter > * > :nth-child(n + 6) {
+    --s: 5;
+  }
+
+  /* Coloane / grupuri: fiecare pornește puțin după cel dinainte. */
+  .groups > :nth-child(2) {
+    --g: 1;
+  }
+  .groups > :nth-child(3) {
+    --g: 2;
+  }
+  .groups > :nth-child(n + 4) {
+    --g: 3;
+  }
+
+  /* Liste: copiii primesc indicele lor. */
+  :where(.stagger, .stagger-rise, .stagger-slide, .stagger-pop) {
+    & > :nth-child(2) {
+      --c: 1;
+    }
+    & > :nth-child(3) {
+      --c: 2;
+    }
+    & > :nth-child(4) {
+      --c: 3;
+    }
+    & > :nth-child(5) {
+      --c: 4;
+    }
+    & > :nth-child(6) {
+      --c: 5;
+    }
+    & > :nth-child(7) {
+      --c: 6;
+    }
+    & > :nth-child(8) {
+      --c: 7;
+    }
+    & > :nth-child(9) {
+      --c: 8;
+    }
+    & > :nth-child(10) {
+      --c: 9;
+    }
+    & > :nth-child(11) {
+      --c: 10;
+    }
+    & > :nth-child(n + 12) {
+      --c: 11;
+    }
+  }
+
+  /* Întârzierea se calculează pe fiecare element animat, din indicii moșteniți. */
+  .anim-rise,
+  .anim-slide,
+  .anim-fade,
+  .anim-pop,
+  .stagger-rise > *,
+  .stagger-slide > *,
+  .stagger-pop > *,
+  [data-slot="progress-indicator"] {
+    --delay: calc(
+      var(--s, 0) *
+      var(--step-s) +
+      var(--g, 0) *
+      var(--step-g) +
+      var(--c, 0) *
+      var(--step-c)
+    );
+  }
+
+  /* Tipurile de animație. Decalajul fix face ca, într-un card, întâi să apară
+     cardul, apoi textul, apoi iconițele și insignele. */
+  .anim-rise,
+  .stagger-rise > * {
+    animation: rise 0.6s var(--ease-bounce) backwards;
+    animation-delay: calc(var(--delay) + 80ms);
+  }
+  .anim-slide,
+  .stagger-slide > * {
+    animation: slide-in 0.5s var(--ease-smooth) backwards;
+    animation-delay: calc(var(--delay) + 120ms);
+  }
+  .anim-fade {
+    animation: fade-up 0.5s var(--ease-smooth) backwards;
+    animation-delay: calc(var(--delay) + 100ms);
+  }
+  .anim-pop,
+  .stagger-pop > * {
+    animation: pop-in 0.45s var(--ease-bounce) backwards;
+    animation-delay: calc(var(--delay) + 220ms);
+  }
+
+  /* Barele de progres se umplu după ce apare cardul lor. */
+  [data-slot="progress-indicator"] {
+    transform-origin: left;
+    animation: grow-x 1s var(--ease-bounce) backwards;
+    animation-delay: calc(var(--delay) + 300ms);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .page-enter > * > *,
+    .anim-rise,
+    .anim-slide,
+    .anim-fade,
+    .anim-pop,
+    .stagger-rise > *,
+    .stagger-slide > *,
+    .stagger-pop > *,
+    [data-slot="progress-indicator"] {
+      animation: none;
+    }
+  }
 }
 
 /* Mascota clipește din când în când. */

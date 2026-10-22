@@ -24,13 +24,18 @@ export default function QuizPage() {
         <div className="bg-dots absolute inset-0 opacity-40 [--primary:var(--primary-foreground)]" />
         <div className="relative grid gap-6 lg:grid-cols-[1fr_auto] lg:items-center">
           <div>
-            <h2 className="font-bold text-3xl">Intră într-un quiz live 🎟️</h2>
-            <p className="mt-1 font-semibold text-lg opacity-90">
+            <h2 className="anim-fade font-bold text-3xl">
+              Intră într-un quiz live 🎟️
+            </h2>
+            <p className="anim-fade mt-1 font-semibold text-lg opacity-90">
               Scrie PIN-ul pe care ți-l arată mentorul pe ecran.
             </p>
-            <PinJoin onColor className="mt-5 max-w-lg" />
+            <PinJoin onColor className="anim-fade mt-5 max-w-lg" />
           </div>
-          <div aria-hidden="true" className="hidden grid-cols-2 gap-3 lg:grid">
+          <div
+            aria-hidden="true"
+            className="stagger-pop hidden grid-cols-2 gap-3 lg:grid"
+          >
             {ANSWER_STYLES.map((style, i) => (
               <span
                 key={style.shape}
@@ -54,7 +59,7 @@ export default function QuizPage() {
           title="Exersează singur"
           hint="Quiz-uri scurte, fără cronometru pentru clasament"
         />
-        <ul className="mt-5 grid gap-4 sm:grid-cols-3">
+        <ul className="stagger-rise mt-5 grid gap-4 sm:grid-cols-3">
           {demoPracticeQuizzes.map((q, i) => (
             <li key={q.id}>
               <Link
@@ -66,7 +71,7 @@ export default function QuizPage() {
               >
                 <span
                   aria-hidden="true"
-                  className="grid size-14 place-items-center rounded-2xl bg-secondary text-3xl transition-transform group-hover:scale-110"
+                  className="anim-pop grid size-14 place-items-center rounded-2xl bg-secondary text-3xl transition-transform group-hover:scale-110"
                 >
                   {q.emoji}
                 </span>
@@ -96,7 +101,7 @@ export default function QuizPage() {
           title="Quiz-urile mele"
           hint="Rezultatele de la ore"
         />
-        <ul className="mt-5 grid gap-3">
+        <ul className="stagger-slide mt-5 grid gap-3">
           {demoQuizHistory.map((q) => (
             <li
               key={q.id}
@@ -104,7 +109,7 @@ export default function QuizPage() {
             >
               <span
                 aria-hidden="true"
-                className="grid size-12 shrink-0 place-items-center rounded-2xl bg-secondary font-bold font-heading text-2xl"
+                className="anim-pop grid size-12 shrink-0 place-items-center rounded-2xl bg-secondary font-bold font-heading text-2xl"
               >
                 {["🥇", "🥈", "🥉"][q.place - 1] ?? `#${q.place}`}
               </span>

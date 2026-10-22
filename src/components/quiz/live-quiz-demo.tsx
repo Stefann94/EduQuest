@@ -159,8 +159,8 @@ export function LiveQuizDemo() {
         )}
 
         {(phase === "question" || phase === "reveal") && (
-          <div key={index} className="flex flex-1 animate-pop flex-col">
-            <div className="sticker flex items-start justify-between gap-6 p-5 sm:p-6">
+          <div key={index} className="groups flex flex-1 flex-col">
+            <div className="anim-rise sticker flex items-start justify-between gap-6 p-5 sm:p-6">
               <div className="min-w-0">
                 <h1 className="text-balance font-bold text-2xl sm:text-3xl">
                   {question.prompt}
@@ -177,7 +177,7 @@ export function LiveQuizDemo() {
               />
             </div>
 
-            <div className="mt-6 grid flex-1 gap-4 sm:grid-cols-2">
+            <div className="stagger-rise mt-6 grid flex-1 gap-4 sm:grid-cols-2">
               {question.answers.map((text, i) => {
                 const style = ANSWER_STYLES[i];
                 const isCorrect = i === question.correct;
@@ -335,7 +335,7 @@ function RevealPanel({
 }) {
   const correct = points > 0;
   return (
-    <div className="sticker mt-6 grid animate-pop gap-5 p-5 sm:grid-cols-[1fr_1.3fr] sm:p-6">
+    <div className="anim-rise sticker mt-6 grid gap-5 p-5 sm:grid-cols-[1fr_1.3fr] sm:p-6">
       <div className="flex flex-col items-start justify-center">
         <p className="text-5xl" aria-hidden="true">
           {correct ? "🎉" : timedOut ? "⏰" : "🙈"}
@@ -359,7 +359,7 @@ function RevealPanel({
           {isLast ? "Vezi podiumul 🏆" : "Următoarea"} <ArrowRight />
         </Button>
       </div>
-      <ol className="grid gap-2">
+      <ol className="stagger-slide grid gap-2">
         {leaderboard.map((row, i) => (
           <li
             key={row.name}

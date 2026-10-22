@@ -14,7 +14,7 @@ export function HomeworkBadge({ status }: { status: HomeworkStatus }) {
   return (
     <span
       className={cn(
-        "rounded-full px-3 py-1 font-bold text-sm",
+        "anim-pop rounded-full px-3 py-1 font-bold text-sm",
         status === "de-facut"
           ? "bg-primary text-primary-foreground"
           : status === "corectata"

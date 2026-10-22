@@ -28,7 +28,7 @@ export function CodeEditor({ starter }: { starter: string }) {
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="stagger-rise grid gap-4">
       <div className="overflow-hidden rounded-3xl border-2 border-code bg-code text-code-foreground shadow-[0_5px_0_0_var(--primary-shadow)]">
         <div className="flex items-center justify-between gap-3 border-code-foreground/10 border-b-2 px-4 py-2.5">
           <div className="flex items-center gap-2" aria-hidden="true">

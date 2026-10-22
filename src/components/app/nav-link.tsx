@@ -30,7 +30,7 @@ export function NavLink({
       className={cn(
         "group flex shrink-0 items-center gap-3 rounded-2xl px-2 py-1.5 font-bold font-heading text-lg outline-none transition-all focus-visible:ring-4 focus-visible:ring-primary-foreground/50",
         active
-          ? "animate-pop bg-card text-foreground shadow-[0_4px_0_0_var(--primary-shadow)]"
+          ? "bg-card text-foreground shadow-[0_4px_0_0_var(--primary-shadow)]"
           : "text-primary-foreground hover:bg-primary-foreground/15",
       )}
     >

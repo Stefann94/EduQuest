@@ -85,8 +85,8 @@ export function setPrefs(
           ],
         },
         {
-          duration: 480,
-          easing: "cubic-bezier(0.22, 1, 0.36, 1)",
+          duration: 800,
+          easing: "cubic-bezier(0.65, 0, 0.35, 1)",
           pseudoElement: "::view-transition-new(root)",
         },
       );

@@ -31,7 +31,7 @@ export function SidebarContent({
         className="relative px-2 pt-2"
       />
 
-      <nav className="relative flex flex-col gap-1.5">
+      <nav className="stagger-slide relative flex flex-col gap-1.5">
         {nav.map((item) =>
           item.href ? (
             <NavLink
@@ -63,7 +63,7 @@ export function SidebarContent({
         )}
       </nav>
 
-      <div className="relative mt-auto flex items-center gap-3 rounded-3xl bg-primary-foreground/15 p-2.5">
+      <div className="anim-fade relative mt-auto flex items-center gap-3 rounded-3xl bg-primary-foreground/15 p-2.5 [--c:5]">
         <UserAvatar className="size-11 bg-card text-2xl shadow-none" />
         <div className="min-w-0 flex-1">
           <p className="truncate font-bold font-heading text-lg leading-tight">
