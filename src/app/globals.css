@@ -540,3 +540,38 @@
   transform-origin: center;
   animation: blink 4.5s infinite;
 }
+
+/*
+ * Pe telefon și tabletă nu există hover, deci efectele de „ridicare” de pe
+ * desktop nu apar. În schimb, orice element apăsabil se strânge puțin la atingere,
+ * cu un mic arc. Doar pe ecranele tactile (hover: none).
+ */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+@media (hover: none) {
+  :is(
+      a[href],
+      button:not(:disabled),
+      [role="button"],
+      [role="tab"],
+      summary,
+      label[for]
+    ) {
+    transition-property:
+      scale, translate, rotate, box-shadow, background-color, color,
+      border-color, opacity;
+    transition-duration: 0.18s;
+    transition-timing-function: var(--ease-bounce);
+  }
+  :is(
+      a[href],
+      button:not(:disabled),
+      [role="button"],
+      [role="tab"],
+      summary,
+      label[for]
+    ):active {
+    scale: 0.97;
+  }
+}

@@ -32,12 +32,12 @@ export function TopBar({
   return (
     <header className="sticky top-0 z-[45] border-b-2 bg-background px-3 py-3 md:top-4 md:w-fit md:max-w-full md:self-end md:rounded-[2rem] md:border-2 md:bg-card md:p-3.5 md:shadow-[0_6px_0_0_var(--border)]">
       <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
-        <div className="md:hidden">
+        <div className="anim-drop md:hidden">
           <MobileNav nav={nav} user={user} />
         </div>
         <Logo
           href={nav[0]?.href ?? "/"}
-          className="md:hidden [&>span]:hidden sm:[&>span]:inline"
+          className="anim-drop md:hidden [&>span]:hidden sm:[&>span]:inline [--c:1]"
         />
 
         <div className="stagger-drop hidden min-w-0 items-center gap-2 overflow-hidden lg:flex">

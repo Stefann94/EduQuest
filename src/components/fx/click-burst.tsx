@@ -60,8 +60,14 @@ export function ClickBurst() {
       }
     }
 
+    // Safari pe iPhone aplică stilurile :active (apăsarea) doar dacă pagina ascultă touchstart.
+    const enableActive = () => {};
     document.addEventListener("pointerdown", onPointerDown);
-    return () => document.removeEventListener("pointerdown", onPointerDown);
+    document.addEventListener("touchstart", enableActive, { passive: true });
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("touchstart", enableActive);
+    };
   }, []);
 
   return null;

@@ -25,7 +25,7 @@ export function MobileNav({ nav, user }: { nav: NavItem[]; user: ShellUser }) {
       <SheetContent
         side="left"
         showCloseButton={false}
-        className="w-80 max-w-[85vw] border-0 bg-primary p-0 text-primary-foreground"
+        className="w-80 max-w-[85vw] rounded-r-[2rem] border-0 bg-primary p-0 text-primary-foreground shadow-[6px_0_0_0_var(--primary-shadow)]"
       >
         <SheetTitle className="sr-only">Meniu</SheetTitle>
         <SidebarContent
