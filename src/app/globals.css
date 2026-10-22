@@ -548,6 +548,10 @@
  */
 * {
   -webkit-tap-highlight-color: transparent;
+  /* Scrollbar-uri subțiri, în culoarea temei (și în ferestrele din bara de sus). */
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklch, var(--primary) 75%, transparent)
+    transparent;
 }
 @media (hover: none) {
   :is(
