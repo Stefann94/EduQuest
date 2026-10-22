@@ -3,41 +3,66 @@
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import {
+  AvatarPicker,
+  ColorPicker,
+} from "@/components/personalize/theme-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 const PIN_LENGTH = 6;
 const NICKNAME_MAX = 16;
+const STEPS = ["pin", "nickname", "style"] as const;
+type Step = (typeof STEPS)[number];
 
 export function JoinForm() {
   const router = useRouter();
-  const [step, setStep] = useState<"pin" | "nickname">("pin");
+  const [step, setStep] = useState<Step>("pin");
   const [pin, setPin] = useState("");
   const [nickname, setNickname] = useState("");
 
   const pinReady = pin.length === PIN_LENGTH;
   const nicknameReady = nickname.trim().length >= 2;
+  const stepIndex = STEPS.indexOf(step);
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (step === "pin") {
-      if (pinReady) setStep("nickname");
-      return;
-    }
+    if (step === "pin" && pinReady) setStep("nickname");
+    else if (step === "nickname" && nicknameReady) setStep("style");
     // Demo: deocamdată nu există sesiuni reale, așa că mergem direct la quiz-ul demo.
-    if (nicknameReady) router.push("/live");
+    else if (step === "style") router.push("/live");
   }
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="animate-pop rounded-3xl border bg-card p-6 shadow-xl shadow-primary/5 sm:p-8"
-    >
-      {step === "pin" ? (
-        <>
-          <h1 className="font-bold text-2xl tracking-tight">Intră în joc</h1>
-          <p className="mt-1 text-muted-foreground">
+    <form onSubmit={handleSubmit} className="sticker p-6 sm:p-8">
+      <div className="mb-6 flex gap-2" aria-hidden="true">
+        {STEPS.map((s, i) => (
+          <span
+            key={s}
+            className={cn(
+              "h-2.5 flex-1 rounded-full transition-colors",
+              i <= stepIndex ? "bg-primary" : "bg-secondary",
+            )}
+          />
+        ))}
+      </div>
+
+      {step !== "pin" ? (
+        <button
+          type="button"
+          onClick={() => setStep(STEPS[stepIndex - 1])}
+          className="-ml-1 mb-2 flex items-center gap-1 rounded-lg px-1 font-bold text-muted-foreground text-sm hover:text-foreground"
+        >
+          <ArrowLeft className="size-4" /> Înapoi
+        </button>
+      ) : null}
+
+      {step === "pin" && (
+        <div key="pin" className="animate-pop">
+          <h1 className="font-bold text-3xl">Intră în joc! 🎟️</h1>
+          <p className="mt-1 font-semibold text-muted-foreground">
             Scrie PIN-ul de pe ecranul mentorului.
           </p>
           <Label htmlFor="pin" className="sr-only">
@@ -53,33 +78,23 @@ export function JoinForm() {
             autoComplete="off"
             autoFocus
             placeholder="000000"
-            aria-describedby="pin-help"
-            className="mt-6 h-16 text-center font-bold font-mono text-3xl tracking-[0.4em] md:text-3xl"
+            className="mt-6 h-18 text-center font-bold font-mono text-4xl tracking-[0.35em]"
           />
-          <p id="pin-help" className="mt-2 text-muted-foreground text-sm">
-            {PIN_LENGTH} cifre
-          </p>
           <Button
             type="submit"
+            size="lg"
             disabled={!pinReady}
-            className="mt-6 h-12 w-full gap-2 text-base"
+            className="mt-6 w-full"
           >
             Continuă <ArrowRight />
           </Button>
-        </>
-      ) : (
-        <>
-          <button
-            type="button"
-            onClick={() => setStep("pin")}
-            className="-ml-1 flex items-center gap-1 rounded-md px-1 text-muted-foreground text-sm hover:text-foreground"
-          >
-            <ArrowLeft className="size-4" /> PIN {pin}
-          </button>
-          <h1 className="mt-3 font-bold text-2xl tracking-tight">
-            Cum te cheamă în joc?
-          </h1>
-          <p className="mt-1 text-muted-foreground">
+        </div>
+      )}
+
+      {step === "nickname" && (
+        <div key="nickname" className="animate-pop">
+          <h1 className="font-bold text-3xl">Cum te cheamă? ✏️</h1>
+          <p className="mt-1 font-semibold text-muted-foreground">
             Alege un nickname. Nu folosi numele complet.
           </p>
           <Label htmlFor="nickname" className="sr-only">
@@ -92,16 +107,33 @@ export function JoinForm() {
             autoComplete="off"
             autoFocus
             placeholder="ex. PythonNinja"
-            className="mt-6 h-14 text-center font-semibold text-xl md:text-xl"
+            className="mt-6 h-16 text-center font-bold text-2xl"
           />
           <Button
             type="submit"
+            size="lg"
             disabled={!nicknameReady}
-            className="mt-6 h-12 w-full gap-2 text-base"
+            className="mt-6 w-full"
           >
-            Intră în joc <ArrowRight />
+            Continuă <ArrowRight />
           </Button>
-        </>
+        </div>
+      )}
+
+      {step === "style" && (
+        <div key="style" className="grid animate-pop gap-6">
+          <div>
+            <h1 className="font-bold text-3xl">Arată-ne stilul tău! ✨</h1>
+            <p className="mt-1 font-semibold text-muted-foreground">
+              Așa te vor vedea ceilalți în joc, {nickname.trim()}.
+            </p>
+          </div>
+          <ColorPicker />
+          <AvatarPicker />
+          <Button type="submit" size="lg" className="w-full">
+            Hai în joc! 🚀
+          </Button>
+        </div>
       )}
     </form>
   );

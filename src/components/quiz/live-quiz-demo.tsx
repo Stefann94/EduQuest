@@ -1,9 +1,11 @@
 "use client";
 
-import { ArrowRight, Check, Crown, RotateCcw, Star, X } from "lucide-react";
+import { ArrowRight, Check, RotateCcw, X } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { LogoMark } from "@/components/brand/logo";
+import { Mascot } from "@/components/brand/mascot";
+import { UserAvatar } from "@/components/personalize/user-avatar";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { demoLiveQuiz } from "@/lib/demo-data";
 import { cn } from "@/lib/utils";
@@ -13,10 +15,10 @@ type Phase = "ready" | "question" | "reveal" | "final";
 
 // Adversari simulați: punctele lor la fiecare întrebare.
 const BOTS = [
-  { name: "Maria", points: [910, 780, 0, 850] },
-  { name: "Luca", points: [720, 0, 880, 640] },
-  { name: "Sofia", points: [0, 900, 690, 710] },
-  { name: "David", points: [650, 610, 0, 0] },
+  { name: "Maria", avatar: "🐼", points: [910, 780, 0, 850] },
+  { name: "Luca", avatar: "🦖", points: [720, 0, 880, 640] },
+  { name: "Sofia", avatar: "🦄", points: [0, 900, 690, 710] },
+  { name: "David", avatar: "🐙", points: [650, 610, 0, 0] },
 ];
 
 const MAX_POINTS = 1000;
@@ -89,57 +91,78 @@ export function LiveQuizDemo() {
   });
 
   const answeredCount = myPoints.length;
-  const leaderboard = [
-    { name: "Tu", isMe: true, total: sum(myPoints) },
+  const leaderboard: Row[] = [
+    { name: "Tu", avatar: null, isMe: true, total: sum(myPoints) },
     ...BOTS.map((b) => ({
       name: b.name,
+      avatar: b.avatar,
       isMe: false,
       total: sum(b.points.slice(0, answeredCount)),
     })),
   ].sort((a, b) => b.total - a.total);
 
   return (
-    <div className="flex min-h-dvh flex-col bg-background">
-      <header className="flex h-16 items-center justify-between border-b px-4">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-          <LogoMark className="size-7" />
+    <div className="relative flex min-h-dvh flex-col">
+      <div className="bg-dots absolute inset-0 -z-10 opacity-60" />
+      <header className="flex h-18 items-center justify-between gap-3 px-4">
+        <Link
+          href="/"
+          className="flex items-center gap-2 font-bold font-heading text-xl"
+        >
+          <LogoMark />
           <span className="hidden sm:inline">Quiz demo</span>
         </Link>
-        {phase !== "ready" && phase !== "final" ? (
-          <span className="rounded-full bg-secondary px-3 py-1 font-medium text-secondary-foreground text-sm">
-            Întrebarea {index + 1} din {demoLiveQuiz.length}
-          </span>
+        {phase === "question" || phase === "reveal" ? (
+          <div className="flex gap-1.5">
+            <span className="sr-only">
+              Întrebarea {index + 1} din {demoLiveQuiz.length}
+            </span>
+            {demoLiveQuiz.map((q, i) => (
+              <span
+                key={q.prompt}
+                aria-hidden="true"
+                className={cn(
+                  "h-3 w-8 rounded-full sm:w-12",
+                  i < index || (i === index && phase === "reveal")
+                    ? "bg-primary"
+                    : i === index
+                      ? "bg-primary/40"
+                      : "bg-secondary",
+                )}
+              />
+            ))}
+          </div>
         ) : null}
-        <span className="flex items-center gap-1.5 font-semibold tabular-nums">
-          <Star className="size-4 fill-xp text-xp" />
+        <span className="sticker flex items-center gap-2 rounded-full py-1 pr-4 pl-1 font-bold font-heading text-lg tabular-nums shadow-[0_3px_0_0_var(--border)]">
+          <UserAvatar className="size-8 text-lg shadow-none" />⭐{" "}
           {sum(myPoints)}
         </span>
       </header>
 
-      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 py-6 sm:py-10">
+      <main className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-4 pt-4 pb-8 sm:pt-6">
         {phase === "ready" && (
-          <div className="m-auto max-w-md animate-pop text-center">
-            <h1 className="font-bold text-3xl tracking-tight sm:text-4xl">
-              Quiz demo: Python
-            </h1>
-            <p className="mt-3 text-muted-foreground">
-              {demoLiveQuiz.length} întrebări. Răspunsurile corecte și rapide
-              aduc mai multe puncte. Poți folosi și tastele 1–4.
+          <div className="sticker m-auto max-w-md animate-pop p-8 text-center">
+            <Mascot className="mx-auto size-32 animate-float" />
+            <h1 className="mt-4 font-bold text-4xl">Quiz: Python 🐍</h1>
+            <p className="mt-3 font-semibold text-lg text-muted-foreground">
+              {demoLiveQuiz.length} întrebări. Răspunde corect și repede ca să
+              câștigi cât mai multe puncte! Poți folosi și tastele 1–4.
             </p>
             <Button
+              size="lg"
               onClick={() => startQuestion(0)}
-              className="mt-8 h-14 gap-2 px-10 text-lg"
+              className="mt-8 w-full"
             >
-              Start <ArrowRight />
+              Start! <ArrowRight />
             </Button>
           </div>
         )}
 
         {(phase === "question" || phase === "reveal") && (
-          <div key={index} className="flex flex-1 animate-pop flex-col">
-            <div className="flex items-start justify-between gap-6">
+          <div key={index} className="groups flex flex-1 flex-col">
+            <div className="anim-rise sticker flex items-start justify-between gap-6 p-5 sm:p-6">
               <div className="min-w-0">
-                <h1 className="text-balance font-bold text-2xl tracking-tight sm:text-3xl">
+                <h1 className="text-balance font-bold text-2xl sm:text-3xl">
                   {question.prompt}
                 </h1>
                 {question.code ? (
@@ -154,7 +177,7 @@ export function LiveQuizDemo() {
               />
             </div>
 
-            <div className="mt-8 grid flex-1 gap-3 sm:grid-cols-2 sm:gap-4">
+            <div className="stagger-flip mt-6 grid flex-1 gap-4 sm:grid-cols-2">
               {question.answers.map((text, i) => {
                 const style = ANSWER_STYLES[i];
                 const isCorrect = i === question.correct;
@@ -168,21 +191,29 @@ export function LiveQuizDemo() {
                     disabled={revealed}
                     aria-label={`${style.label}: ${text}`}
                     className={cn(
-                      "flex min-h-20 items-center gap-4 rounded-2xl px-5 py-4 text-left font-semibold text-lg text-white shadow-sm outline-none transition-all sm:min-h-28 sm:text-xl",
+                      "flex min-h-20 items-center gap-4 rounded-3xl px-6 py-4 text-left font-bold font-heading text-xl text-white outline-none transition-all sm:min-h-28 sm:text-2xl",
                       style.bg,
+                      style.shadow,
                       !revealed &&
-                        "hover:-translate-y-0.5 hover:shadow-lg focus-visible:ring-4 focus-visible:ring-ring/60 active:translate-y-0",
-                      revealed && !isCorrect && "opacity-35",
-                      revealed && isPicked && "ring-4 ring-foreground/70",
+                        "hover:-translate-y-1 focus-visible:ring-4 focus-visible:ring-foreground/50 active:translate-y-1 active:shadow-none",
+                      revealed && !isCorrect && "scale-95 opacity-30",
+                      revealed && isCorrect && "animate-wiggle",
+                      revealed &&
+                        isPicked &&
+                        "ring-4 ring-foreground/70 ring-offset-4 ring-offset-background",
                     )}
                   >
-                    <AnswerShape shape={style.shape} className="size-7" />
+                    <AnswerShape shape={style.shape} className="size-8" />
                     <span className="flex-1 font-mono">{text}</span>
                     {revealed && isCorrect ? (
-                      <Check className="size-7" strokeWidth={3} />
+                      <span className="grid size-10 place-items-center rounded-full bg-white/30">
+                        <Check className="size-7" strokeWidth={3.5} />
+                      </span>
                     ) : null}
                     {revealed && isPicked && !isCorrect ? (
-                      <X className="size-7" strokeWidth={3} />
+                      <span className="grid size-10 place-items-center rounded-full bg-white/30">
+                        <X className="size-7" strokeWidth={3.5} />
+                      </span>
                     ) : null}
                   </button>
                 );
@@ -224,7 +255,10 @@ function TimerRing({
     <div
       role="timer"
       aria-label={`${seconds} secunde rămase`}
-      className="relative grid size-20 shrink-0 place-items-center"
+      className={cn(
+        "relative grid size-20 shrink-0 place-items-center rounded-full bg-card",
+        urgent && seconds > 0 && "animate-wiggle",
+      )}
     >
       <svg
         viewBox="0 0 36 36"
@@ -235,8 +269,8 @@ function TimerRing({
           cx="18"
           cy="18"
           r="15.5"
-          className="fill-none stroke-muted"
-          strokeWidth="3"
+          className="fill-none stroke-secondary"
+          strokeWidth="4"
         />
         <circle
           cx="18"
@@ -246,7 +280,7 @@ function TimerRing({
             "fill-none transition-[stroke-dashoffset] duration-100 ease-linear",
             urgent ? "stroke-quiz-red" : "stroke-primary",
           )}
-          strokeWidth="3"
+          strokeWidth="4"
           strokeLinecap="round"
           strokeDasharray={circumference}
           strokeDashoffset={circumference * (1 - fraction)}
@@ -254,7 +288,7 @@ function TimerRing({
       </svg>
       <span
         className={cn(
-          "font-bold text-2xl tabular-nums",
+          "font-bold font-heading text-3xl tabular-nums",
           urgent && "text-quiz-red",
         )}
       >
@@ -264,7 +298,27 @@ function TimerRing({
   );
 }
 
-type Row = { name: string; isMe: boolean; total: number };
+type Row = {
+  name: string;
+  avatar: string | null;
+  isMe: boolean;
+  total: number;
+};
+
+function PlayerAvatar({ row, className }: { row: Row; className?: string }) {
+  if (row.isMe) return <UserAvatar className={className} />;
+  return (
+    <span
+      aria-hidden="true"
+      className={cn(
+        "grid size-11 shrink-0 place-items-center rounded-2xl bg-secondary text-2xl",
+        className,
+      )}
+    >
+      {row.avatar}
+    </span>
+  );
+}
 
 function RevealPanel({
   points,
@@ -281,40 +335,49 @@ function RevealPanel({
 }) {
   const correct = points > 0;
   return (
-    <div className="mt-6 grid animate-pop gap-4 rounded-3xl border bg-card p-5 sm:grid-cols-[1fr_1.3fr] sm:p-6">
-      <div className="flex flex-col justify-center">
+    <div className="anim-rise sticker mt-6 grid gap-5 p-5 sm:grid-cols-[1fr_1.3fr] sm:p-6">
+      <div className="flex flex-col items-start justify-center">
+        <p className="text-5xl" aria-hidden="true">
+          {correct ? "🎉" : timedOut ? "⏰" : "🙈"}
+        </p>
         <p
           className={cn(
-            "font-bold text-2xl",
+            "mt-2 font-bold font-heading text-3xl",
             correct ? "text-success" : "text-destructive",
           )}
         >
-          {correct ? "Corect!" : timedOut ? "Timpul a expirat" : "Greșit"}
+          {correct
+            ? "Corect!"
+            : timedOut
+              ? "Timpul a expirat!"
+              : "Ups, greșit!"}
         </p>
-        <p className="mt-1 text-muted-foreground">
+        <p className="mt-1 font-bold text-lg text-muted-foreground">
           {correct ? `+${points} puncte` : "Nu-i nimic, data viitoare!"}
         </p>
-        <Button
-          onClick={onNext}
-          className="mt-5 h-12 w-fit gap-2 px-6 text-base"
-        >
-          {isLast ? "Vezi rezultatele" : "Următoarea întrebare"} <ArrowRight />
+        <Button onClick={onNext} size="lg" className="mt-5">
+          {isLast ? "Vezi podiumul 🏆" : "Următoarea"} <ArrowRight />
         </Button>
       </div>
-      <ol className="grid gap-1.5">
+      <ol className="stagger-slide grid gap-2">
         {leaderboard.map((row, i) => (
           <li
             key={row.name}
             className={cn(
-              "flex items-center gap-3 rounded-xl px-3 py-2",
-              row.isMe ? "bg-secondary font-semibold" : "bg-muted/50",
+              "flex items-center gap-3 rounded-2xl border-2 px-3 py-1.5",
+              row.isMe
+                ? "border-primary bg-primary-soft"
+                : "border-transparent bg-background",
             )}
           >
-            <span className="w-5 text-muted-foreground text-sm tabular-nums">
-              {i + 1}
+            <span className="w-6 text-center font-bold font-heading">
+              {["🥇", "🥈", "🥉"][i] ?? i + 1}
             </span>
-            <span className="flex-1">{row.name}</span>
-            <span className="tabular-nums">{row.total}</span>
+            <PlayerAvatar row={row} className="size-9 text-xl shadow-none" />
+            <span className="flex-1 font-bold">{row.name}</span>
+            <span className="font-bold font-heading tabular-nums">
+              {row.total}
+            </span>
           </li>
         ))}
       </ol>
@@ -333,42 +396,54 @@ function FinalPodium({
   const myPlace = leaderboard.findIndex((r) => r.isMe) + 1;
   // Ordinea vizuală pe podium: locul 2, 1, 3.
   const podium = [top[1], top[0], top[2]].filter(Boolean);
-  const heights = { 1: "h-40", 2: "h-28", 3: "h-20" } as const;
+  const steps = {
+    1: { h: "h-44", bg: "bg-primary", medal: "🥇" },
+    2: { h: "h-32", bg: "bg-primary/70", medal: "🥈" },
+    3: { h: "h-24", bg: "bg-primary/45", medal: "🥉" },
+  } as const;
 
   return (
     <div className="m-auto w-full max-w-xl animate-pop text-center">
-      <h1 className="font-bold text-3xl tracking-tight sm:text-4xl">
-        {myPlace === 1 ? "Ai câștigat! 🏆" : `Ai terminat pe locul ${myPlace}!`}
+      <p className="text-6xl" aria-hidden="true">
+        {myPlace === 1 ? "🏆" : "🎉"}
+      </p>
+      <h1 className="mt-2 font-bold text-4xl sm:text-5xl">
+        {myPlace === 1 ? "Ai câștigat!" : `Locul ${myPlace}! Bravo!`}
       </h1>
-      <p className="mt-2 text-muted-foreground">Iată podiumul grupei.</p>
+      <p className="mt-2 font-bold text-lg text-muted-foreground">
+        Iată podiumul grupei.
+      </p>
 
       <div className="mt-10 flex items-end justify-center gap-3">
         {podium.map((row) => {
           const place = (leaderboard.indexOf(row) + 1) as 1 | 2 | 3;
+          const step = steps[place];
           return (
             <div
               key={row.name}
-              className="flex w-28 flex-col items-center gap-2"
+              className="flex w-28 animate-pop flex-col items-center gap-2"
+              style={{ animationDelay: `${(4 - place) * 150}ms` }}
             >
-              {place === 1 ? <Crown className="size-7 text-xp" /> : null}
-              <span className={cn("font-semibold", row.isMe && "text-primary")}>
+              <PlayerAvatar row={row} className="size-14 text-3xl" />
+              <span
+                className={cn(
+                  "font-bold font-heading text-lg",
+                  row.isMe && "text-primary",
+                )}
+              >
                 {row.name}
               </span>
-              <span className="text-muted-foreground text-sm tabular-nums">
-                {row.total}
+              <span className="font-bold text-muted-foreground text-sm tabular-nums">
+                ⭐ {row.total}
               </span>
               <div
                 className={cn(
-                  "grid w-full place-items-start justify-center rounded-t-2xl pt-3 font-bold text-3xl text-white",
-                  heights[place],
-                  place === 1
-                    ? "bg-primary"
-                    : place === 2
-                      ? "bg-quiz-blue"
-                      : "bg-quiz-green",
+                  "grid w-full place-items-start justify-center rounded-t-3xl pt-3 text-4xl shadow-[inset_0_-6px_0_0_rgb(0_0_0/0.12)]",
+                  step.h,
+                  step.bg,
                 )}
               >
-                {place}
+                {step.medal}
               </div>
             </div>
           );
@@ -376,18 +451,11 @@ function FinalPodium({
       </div>
 
       <div className="mt-10 flex flex-wrap justify-center gap-3">
-        <Button
-          onClick={onRestart}
-          variant="outline"
-          className="h-12 gap-2 px-6 text-base"
-        >
-          <RotateCcw /> Joacă din nou
+        <Button onClick={onRestart} variant="outline" size="lg">
+          <RotateCcw /> Mai joc o dată
         </Button>
-        <Link
-          href="/elev"
-          className={cn(buttonVariants(), "h-12 gap-2 px-6 text-base")}
-        >
-          Înapoi acasă
+        <Link href="/" className={buttonVariants({ size: "lg" })}>
+          Înapoi acasă 🏠
         </Link>
       </div>
     </div>

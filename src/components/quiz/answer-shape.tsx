@@ -2,10 +2,32 @@ import { cn } from "@/lib/utils";
 
 // Fiecare variantă are culoare ȘI formă, ca să poată fi deosebită și de copiii daltoniști.
 export const ANSWER_STYLES = [
-  { shape: "triangle", label: "Triunghi", bg: "bg-quiz-red" },
-  { shape: "diamond", label: "Romb", bg: "bg-quiz-blue" },
-  { shape: "circle", label: "Cerc", bg: "bg-quiz-yellow" },
-  { shape: "square", label: "Pătrat", bg: "bg-quiz-green" },
+  {
+    shape: "triangle",
+    label: "Triunghi",
+    bg: "bg-quiz-red",
+    shadow: "shadow-[0_5px_0_0_color-mix(in_oklch,var(--quiz-red),black_25%)]",
+  },
+  {
+    shape: "diamond",
+    label: "Romb",
+    bg: "bg-quiz-blue",
+    shadow: "shadow-[0_5px_0_0_color-mix(in_oklch,var(--quiz-blue),black_25%)]",
+  },
+  {
+    shape: "circle",
+    label: "Cerc",
+    bg: "bg-quiz-yellow",
+    shadow:
+      "shadow-[0_5px_0_0_color-mix(in_oklch,var(--quiz-yellow),black_22%)]",
+  },
+  {
+    shape: "square",
+    label: "Pătrat",
+    bg: "bg-quiz-green",
+    shadow:
+      "shadow-[0_5px_0_0_color-mix(in_oklch,var(--quiz-green),black_25%)]",
+  },
 ] as const;
 
 export type AnswerShapeName = (typeof ANSWER_STYLES)[number]["shape"];
