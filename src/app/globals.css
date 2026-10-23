@@ -136,6 +136,14 @@
   body {
     @apply bg-background text-foreground antialiased;
   }
+  /*
+   * Coloana implicită a unui grid nu poate depăși lățimea disponibilă. Altfel, un
+   * conținut lat (un tabel, o bară de taburi) lățește toată pagina pe telefon.
+   * Coloanele explicite (grid-cols-*) au prioritate, fiind utilitare.
+   */
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
   /* Cursor „deget” peste tot ce se poate apăsa. */
   a[href],
   button:not(:disabled),

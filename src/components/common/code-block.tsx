@@ -23,6 +23,9 @@ export async function CodeBlock({
   language: string;
   className?: string;
 }) {
+  // Shiki citește intern ora curentă; cu cacheComponents asta ar bloca pre-generarea.
+  // Rezultatul depinde doar de cod și limbaj, deci se poate păstra în cache.
+  "use cache";
   const html = await codeToHtml(code, {
     lang: language in LANGS ? language : "text",
     theme: "github-dark-default",
