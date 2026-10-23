@@ -2,68 +2,72 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* Platforma folosește doar teme deschise; clasa .dark nu se aplică nicăieri. */
+/* O singură temă, deschisă; clasa .dark nu se aplică nicăieri. */
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
-  --font-heading: var(--font-display);
-  --color-sidebar-ring: var(--ring);
-  --color-sidebar-border: var(--border);
-  --color-sidebar-accent-foreground: var(--secondary-foreground);
-  --color-sidebar-accent: var(--secondary);
-  --color-sidebar-primary-foreground: var(--primary-foreground);
-  --color-sidebar-primary: var(--primary);
-  --color-sidebar-foreground: var(--foreground);
-  --color-sidebar: var(--card);
-  --color-chart-5: var(--fun-pink);
-  --color-chart-4: var(--fun-blue);
-  --color-chart-3: var(--fun-yellow);
-  --color-chart-2: var(--fun-green);
-  --color-chart-1: var(--primary);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-primary-shadow: var(--primary-shadow);
-  --color-primary-soft: var(--primary-soft);
-  --color-scrim: var(--scrim);
-  --color-popover-foreground: var(--foreground);
-  --color-popover: var(--card);
-  --color-card-foreground: var(--foreground);
-  --color-card: var(--card);
+  --font-heading: var(--font-sans);
 
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--foreground);
+  --color-popover: var(--card);
+  --color-popover-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Stări (mereu însoțite de iconiță sau text, nu doar de culoare). */
   --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-danger-soft: var(--danger-soft);
+
+  /* Accentul secundar: XP și recompense. */
   --color-xp: var(--xp);
+  --color-xp-soft: var(--xp-soft);
+  --color-xp-foreground: var(--xp-foreground);
+
   --color-code: var(--code);
   --color-code-foreground: var(--code-foreground);
+  --color-scrim: var(--scrim);
 
-  /* Culori „de joacă”, fixe, indiferent de tema aleasă. */
-  --color-fun-pink: var(--fun-pink);
-  --color-fun-purple: var(--fun-purple);
-  --color-fun-blue: var(--fun-blue);
-  --color-fun-teal: var(--fun-teal);
-  --color-fun-green: var(--fun-green);
-  --color-fun-yellow: var(--fun-yellow);
-  --color-fun-orange: var(--fun-orange);
-
-  /* Culorile răspunsurilor la quiz (aceleași pentru toți). */
+  /* Variantele de răspuns din quiz-ul live (culoare + formă). */
   --color-quiz-red: var(--quiz-red);
   --color-quiz-blue: var(--quiz-blue);
   --color-quiz-yellow: var(--quiz-yellow);
   --color-quiz-green: var(--quiz-green);
+
+  --color-sidebar: var(--card);
+  --color-sidebar-foreground: var(--foreground);
+  --color-sidebar-primary: var(--primary);
+  --color-sidebar-primary-foreground: var(--primary-foreground);
+  --color-sidebar-accent: var(--accent);
+  --color-sidebar-accent-foreground: var(--accent-foreground);
+  --color-sidebar-border: var(--border);
+  --color-sidebar-ring: var(--ring);
+
+  --color-chart-1: var(--primary);
+  --color-chart-2: var(--xp);
+  --color-chart-3: var(--success);
+  --color-chart-4: var(--info);
+  --color-chart-5: var(--muted-foreground);
 
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
@@ -72,156 +76,73 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
-
-  --animate-pop: pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
-  --animate-float: float 4s ease-in-out infinite;
-  --animate-wiggle: wiggle 0.5s ease-in-out;
-
-  @keyframes pop {
-    0% {
-      transform: scale(0.85);
-      opacity: 0;
-    }
-    100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
-  @keyframes float {
-    0%,
-    100% {
-      transform: translateY(0);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
-  }
-  @keyframes wiggle {
-    0%,
-    100% {
-      transform: rotate(0);
-    }
-    25% {
-      transform: rotate(-8deg);
-    }
-    75% {
-      transform: rotate(8deg);
-    }
-  }
-}
-
-/*
- * Fiecare temă alege o nuanță (--h) și culoarea principală.
- * Restul culorilor (fundal, chenare, text) se calculează din nuanță,
- * așa că întreaga interfață se colorează după alegerea copilului.
- * Selectorul [data-theme] permite și mostre de culoare pe orice element.
- */
-:root,
-[data-theme] {
-  --radius: 1rem;
-
-  --primary-foreground: oklch(1 0 0);
-  --primary-shadow: color-mix(in oklch, var(--primary), black 22%);
-  --primary-soft: oklch(0.94 0.05 var(--h));
-  --ring: var(--primary);
-
-  /* Totul e nuanțat cu culoarea temei: fundal, carduri, chenare, text, cod. */
-  --background: oklch(0.955 0.045 var(--h));
-  --foreground: oklch(0.29 0.06 var(--h));
-  --card: oklch(0.995 0.008 var(--h));
-  --secondary: oklch(0.92 0.065 var(--h));
-  --secondary-foreground: oklch(0.38 0.13 var(--h));
-  --muted: oklch(0.945 0.04 var(--h));
-  --muted-foreground: oklch(0.5 0.06 var(--h));
-  --accent: oklch(0.92 0.065 var(--h));
-  --accent-foreground: oklch(0.38 0.13 var(--h));
-  --border: oklch(0.86 0.07 var(--h));
-  --input: oklch(0.84 0.08 var(--h));
-  /* Fundalul întunecat din spatele ferestrelor din bara de sus. */
-  --scrim: oklch(0.24 0.08 var(--h));
-  --code: oklch(0.29 0.07 var(--h));
-  --code-foreground: oklch(0.97 0.02 var(--h));
 }
 
 :root {
-  --h: 295;
-  --primary: oklch(0.6 0.21 295);
+  --radius: 0.625rem;
 
-  --destructive: oklch(0.6 0.21 22);
-  --success: oklch(0.62 0.16 150);
-  --warning: oklch(0.78 0.16 75);
-  --xp: oklch(0.8 0.16 80);
+  /* Neutre reci + indigo ca principală. */
+  --background: oklch(0.984 0.003 265);
+  --foreground: oklch(0.22 0.025 268);
+  --card: oklch(1 0 0);
+  --primary: oklch(0.5 0.2 276);
+  --primary-foreground: oklch(0.99 0 0);
+  --primary-soft: oklch(0.95 0.03 276);
+  --secondary: oklch(0.955 0.01 268);
+  --secondary-foreground: oklch(0.3 0.04 268);
+  --muted: oklch(0.965 0.005 265);
+  --muted-foreground: oklch(0.5 0.02 265);
+  --accent: oklch(0.955 0.02 276);
+  --accent-foreground: oklch(0.36 0.13 276);
+  --destructive: oklch(0.56 0.21 27);
+  --border: oklch(0.915 0.006 265);
+  --input: oklch(0.89 0.008 265);
+  --ring: oklch(0.5 0.2 276);
 
-  --fun-pink: oklch(0.72 0.17 355);
-  --fun-purple: oklch(0.66 0.19 295);
-  --fun-blue: oklch(0.68 0.15 245);
-  --fun-teal: oklch(0.72 0.12 190);
-  --fun-green: oklch(0.72 0.17 145);
-  --fun-yellow: oklch(0.85 0.16 90);
-  --fun-orange: oklch(0.75 0.16 55);
+  --success: oklch(0.55 0.14 155);
+  --success-soft: oklch(0.96 0.04 155);
+  --warning: oklch(0.6 0.14 65);
+  --warning-soft: oklch(0.965 0.05 85);
+  --info: oklch(0.54 0.15 245);
+  --info-soft: oklch(0.96 0.03 245);
+  --danger-soft: oklch(0.965 0.03 27);
 
-  --quiz-red: oklch(0.63 0.21 22);
-  --quiz-blue: oklch(0.6 0.17 250);
-  --quiz-yellow: oklch(0.76 0.16 75);
-  --quiz-green: oklch(0.64 0.16 150);
-}
+  --xp: oklch(0.76 0.15 72);
+  --xp-soft: oklch(0.97 0.045 85);
+  --xp-foreground: oklch(0.45 0.11 60);
 
-[data-theme="unicorn"] {
-  --h: 295;
-  --primary: oklch(0.6 0.21 295);
-}
-[data-theme="capsuna"] {
-  --h: 355;
-  --primary: oklch(0.64 0.21 358);
-}
-[data-theme="cireasa"] {
-  --h: 22;
-  --primary: oklch(0.62 0.21 25);
-}
-[data-theme="portocala"] {
-  --h: 50;
-  --primary: oklch(0.68 0.18 48);
-}
-[data-theme="soare"] {
-  --h: 88;
-  --primary: oklch(0.84 0.16 88);
-  --primary-foreground: oklch(0.36 0.08 65);
-  --primary-shadow: oklch(0.72 0.15 75);
-}
-[data-theme="jungla"] {
-  --h: 148;
-  --primary: oklch(0.63 0.17 148);
-}
-[data-theme="menta"] {
-  --h: 185;
-  --primary: oklch(0.64 0.12 188);
-}
-[data-theme="ocean"] {
-  --h: 245;
-  --primary: oklch(0.6 0.17 248);
+  --code: oklch(0.23 0.025 268);
+  --code-foreground: oklch(0.95 0.008 268);
+  --scrim: oklch(0.2 0.03 268);
+
+  --quiz-red: oklch(0.58 0.19 25);
+  --quiz-blue: oklch(0.55 0.16 250);
+  --quiz-yellow: oklch(0.7 0.14 70);
+  --quiz-green: oklch(0.58 0.14 155);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    -webkit-tap-highlight-color: transparent;
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklch, var(--foreground) 22%, transparent)
+      transparent;
   }
   html {
     @apply font-sans;
     color-scheme: light;
   }
   body {
-    @apply bg-background text-foreground;
-  }
-  h1,
-  h2,
-  h3 {
-    @apply font-heading;
+    @apply bg-background text-foreground antialiased;
   }
   /* Cursor „deget” peste tot ce se poate apăsa. */
   a[href],
   button:not(:disabled),
   [role="button"]:not([aria-disabled="true"]),
   [role="tab"],
+  [role="option"],
+  [role="menuitem"],
   label[for],
   select,
   summary {
@@ -231,351 +152,58 @@
   [aria-disabled="true"] {
     cursor: not-allowed;
   }
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      /* biome-ignore lint/complexity/noImportantStyles: trebuie să bată orice animație */
-      animation-duration: 0.01ms !important;
-      /* biome-ignore lint/complexity/noImportantStyles: trebuie să bată orice animație */
-      animation-iteration-count: 1 !important;
-      /* biome-ignore lint/complexity/noImportantStyles: trebuie să bată orice tranziție */
-      transition-duration: 0.01ms !important;
-    }
-  }
 }
 
-/* Card tip „sticker”: chenar gros și o umbră plină dedesubt. */
-@utility sticker {
-  border-width: 2px;
-  border-color: var(--border);
-  background-color: var(--card);
-  border-radius: var(--radius-3xl);
-  box-shadow: 0 5px 0 0 var(--border);
-}
-
-/* Fundal cu buline în culoarea temei. */
-@utility bg-dots {
-  background-image: radial-gradient(
-    color-mix(in oklch, var(--primary) 22%, transparent) 1.5px,
-    transparent 1.5px
-  );
-  background-size: 24px 24px;
-}
-
-/*
- * Tranziția la schimbarea temei: setPrefs() animă noua „poză” a paginii
- * cu un cerc care se mărește (clip-path). Aici oprim fade-ul implicit.
+/* ---------- Mișcare subtilă ----------
+ * Pagina nouă și listele apar cu o estompare scurtă și o ridicare de câțiva pixeli.
+ * Fără sărituri, rotiri sau efecte decorative (vezi docs/PROJECT.md §13.1).
  */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation: none;
-  mix-blend-mode: normal;
-}
-::view-transition-old(root) {
-  z-index: 1;
-}
-::view-transition-new(root) {
-  z-index: 2;
-}
-
-/* ---------- Coregrafia animațiilor ----------
- *
- * Fiecare chenar (card, rând, cutie, buton din bară) intră individual, cu o
- * animație potrivită felului lui. Întârzierile se adună din trei „ceasuri”,
- * așa că pagina se construiește pe rând, dar sincronizat:
- *   --s  ordinea secțiunii în pagină   (pusă automat de .page-enter)
- *   --g  ordinea grupului / coloanei   (copiii unui .groups)
- *   --c  ordinea în listă              (copiii unui .stagger-*)
- *
- * Felurile de chenar:
- *   rise   carduri și panouri mari     se ridică
- *   slide  rânduri din liste           alunecă din stânga
- *   zoom   cutii mici (statistici,     apar cu un zoom blând, fără să se „umfle”
- *          culori, avatare, tab-uri)
- *   drop   butoanele din bara de sus   coboară de sus
- *   flip   variantele de răspuns       se întorc ca un cartonaș
- * Clase: .anim-<fel> pe un element, .stagger-<fel> pe părinte (animă copiii pe rând).
- * Iconițele și textele nu au animație proprie: se mișcă odată cu chenarul lor.
- *
- * Animăm doar transform și opacity: le calculează placa video, deci rămân
- * fluide. Totul stă în @layer components, ca utilitarele Tailwind
- * (ex. hover:animate-wiggle) să aibă prioritate atunci când sunt folosite.
- */
-:root {
-  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-smooth: cubic-bezier(0.22, 1, 0.36, 1);
-  --step-s: 90ms;
-  --step-g: 120ms;
-  --step-c: 70ms;
-}
-
-@keyframes rise {
-  0% {
-    opacity: 0;
-    transform: translateY(28px) scale(0.96);
-  }
-  60% {
-    opacity: 1;
-  }
-  100% {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes slide-in {
+@keyframes fade-up {
   from {
     opacity: 0;
-    transform: translateX(-22px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes zoom-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.88);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes drop-in {
-  from {
-    opacity: 0;
-    transform: translateY(-18px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes flip-in {
-  from {
-    opacity: 0;
-    transform: perspective(700px) rotateX(-60deg) translateY(18px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-@keyframes grow-x {
-  from {
-    transform: scaleX(0);
+    transform: translateY(6px);
   }
 }
 
 @layer components {
-  /* Secțiunile paginii (template.tsx) se ridică pe rând. Containerele care doar
-     grupează chenare (.groups, .stagger-*) nu se mișcă: își animă copiii. */
-  .page-enter > * > :not(.groups, [class*="stagger-"]) {
-    animation: rise 0.6s var(--ease-bounce) backwards;
-    animation-delay: calc(var(--s, 0) * var(--step-s));
+  /* Secțiunile unei pagini noi (template.tsx), cu un decalaj mic între ele. */
+  .page-enter > * > * {
+    animation: fade-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) backwards;
   }
   .page-enter > * > :nth-child(2) {
-    --s: 1;
+    animation-delay: 40ms;
   }
   .page-enter > * > :nth-child(3) {
-    --s: 2;
+    animation-delay: 80ms;
   }
-  .page-enter > * > :nth-child(4) {
-    --s: 3;
-  }
-  .page-enter > * > :nth-child(5) {
-    --s: 4;
-  }
-  .page-enter > * > :nth-child(n + 6) {
-    --s: 5;
+  .page-enter > * > :nth-child(n + 4) {
+    animation-delay: 120ms;
   }
 
-  /* Coloane / grupuri: fiecare pornește puțin după cel dinainte. */
-  .groups > :nth-child(2) {
-    --g: 1;
+  /* Listele: elementele apar unul după altul, foarte repede. */
+  .stagger > * {
+    animation: fade-up 0.25s cubic-bezier(0.22, 1, 0.36, 1) backwards;
   }
-  .groups > :nth-child(3) {
-    --g: 2;
+  .stagger > :nth-child(2) {
+    animation-delay: 30ms;
   }
-  .groups > :nth-child(n + 4) {
-    --g: 3;
+  .stagger > :nth-child(3) {
+    animation-delay: 60ms;
   }
-
-  /* Liste: copiii primesc indicele lor. */
-  :where(
-      .stagger,
-      .stagger-rise,
-      .stagger-slide,
-      .stagger-zoom,
-      .stagger-drop,
-      .stagger-flip
-    ) {
-    & > :nth-child(2) {
-      --c: 1;
-    }
-    & > :nth-child(3) {
-      --c: 2;
-    }
-    & > :nth-child(4) {
-      --c: 3;
-    }
-    & > :nth-child(5) {
-      --c: 4;
-    }
-    & > :nth-child(6) {
-      --c: 5;
-    }
-    & > :nth-child(7) {
-      --c: 6;
-    }
-    & > :nth-child(8) {
-      --c: 7;
-    }
-    & > :nth-child(9) {
-      --c: 8;
-    }
-    & > :nth-child(10) {
-      --c: 9;
-    }
-    & > :nth-child(11) {
-      --c: 10;
-    }
-    & > :nth-child(12) {
-      --c: 11;
-    }
-    & > :nth-child(n + 13) {
-      --c: 12;
-    }
+  .stagger > :nth-child(4) {
+    animation-delay: 90ms;
   }
-
-  /* Întârzierea se calculează pe fiecare chenar animat, din indicii moșteniți. */
-  .anim-rise,
-  .anim-slide,
-  .anim-zoom,
-  .anim-drop,
-  .anim-flip,
-  .stagger-rise > *,
-  .stagger-slide > *,
-  .stagger-zoom > *,
-  .stagger-drop > *,
-  .stagger-flip > *,
-  [data-slot="progress-indicator"] {
-    --delay: calc(
-      var(--s, 0) *
-      var(--step-s) +
-      var(--g, 0) *
-      var(--step-g) +
-      var(--c, 0) *
-      var(--step-c)
-    );
+  .stagger > :nth-child(5) {
+    animation-delay: 120ms;
   }
-
-  .anim-rise,
-  .stagger-rise > * {
-    animation: rise 0.6s var(--ease-bounce) backwards;
-    animation-delay: calc(var(--delay) + 80ms);
-  }
-  .anim-slide,
-  .stagger-slide > * {
-    animation: slide-in 0.5s var(--ease-smooth) backwards;
-    animation-delay: calc(var(--delay) + 120ms);
-  }
-  .anim-zoom,
-  .stagger-zoom > * {
-    animation: zoom-in 0.45s var(--ease-smooth) backwards;
-    animation-delay: calc(var(--delay) + 160ms);
-  }
-  .anim-drop,
-  .stagger-drop > * {
-    animation: drop-in 0.5s var(--ease-bounce) backwards;
-    animation-delay: calc(var(--delay) + 60ms);
-  }
-  .anim-flip,
-  .stagger-flip > * {
-    transform-origin: top center;
-    animation: flip-in 0.6s var(--ease-smooth) backwards;
-    animation-delay: calc(var(--delay) + 100ms);
-  }
-
-  /* Barele de progres se umplu după ce apare chenarul lor. */
-  [data-slot="progress-indicator"] {
-    transform-origin: left;
-    animation: grow-x 1s var(--ease-bounce) backwards;
-    animation-delay: calc(var(--delay) + 300ms);
+  .stagger > :nth-child(n + 6) {
+    animation-delay: 150ms;
   }
 
   @media (prefers-reduced-motion: reduce) {
     .page-enter > * > *,
-    .anim-rise,
-    .anim-slide,
-    .anim-zoom,
-    .anim-drop,
-    .anim-flip,
-    .stagger-rise > *,
-    .stagger-slide > *,
-    .stagger-zoom > *,
-    .stagger-drop > *,
-    .stagger-flip > *,
-    [data-slot="progress-indicator"] {
+    .stagger > * {
       animation: none;
     }
-  }
-}
-
-/* Mascota clipește din când în când. */
-@keyframes blink {
-  0%,
-  92%,
-  100% {
-    transform: scaleY(1);
-  }
-  95% {
-    transform: scaleY(0.1);
-  }
-}
-.mascot-eyes {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: blink 4.5s infinite;
-}
-
-/*
- * Pe telefon și tabletă nu există hover, deci efectele de „ridicare” de pe
- * desktop nu apar. În schimb, orice element apăsabil se strânge puțin la atingere,
- * cu un mic arc. Doar pe ecranele tactile (hover: none).
- */
-* {
-  -webkit-tap-highlight-color: transparent;
-  /* Scrollbar-uri subțiri, în culoarea temei (și în ferestrele din bara de sus). */
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklch, var(--primary) 75%, transparent)
-    transparent;
-}
-@media (hover: none) {
-  :is(
-      a[href],
-      button:not(:disabled),
-      [role="button"],
-      [role="tab"],
-      summary,
-      label[for]
-    ) {
-    transition-property:
-      scale, translate, rotate, box-shadow, background-color, color,
-      border-color, opacity;
-    transition-duration: 0.18s;
-    transition-timing-function: var(--ease-bounce);
-  }
-  :is(
-      a[href],
-      button:not(:disabled),
-      [role="button"],
-      [role="tab"],
-      summary,
-      label[for]
-    ):active {
-    scale: 0.97;
   }
 }

@@ -27,9 +27,9 @@ function PopoverContent({
     PopoverPrimitive.Positioner.Props,
     "align" | "alignOffset" | "side" | "sideOffset"
   > & {
-    /** O săgeată mică pe marginea ferestrei, centrată pe butonul care a deschis-o. */
+    /** Săgeată pe marginea ferestrei, centrată pe butonul care a deschis-o. */
     arrow?: boolean;
-    /** Întunecă și estompează restul ecranului, în culoarea temei. */
+    /** Întunecă ușor restul ecranului cât timp fereastra e deschisă. */
     backdrop?: boolean;
   }) {
   return (
@@ -37,7 +37,7 @@ function PopoverContent({
       {backdrop ? (
         <PopoverPrimitive.Backdrop
           data-slot="popover-backdrop"
-          className="fixed inset-0 z-40 bg-scrim/45 backdrop-blur-[3px] transition-opacity duration-200 data-ending-style:opacity-0 data-starting-style:opacity-0"
+          className="fixed inset-0 z-40 bg-scrim/25 backdrop-blur-[2px] transition-opacity duration-150 data-ending-style:opacity-0 data-starting-style:opacity-0"
         />
       ) : null}
       <PopoverPrimitive.Positioner
@@ -50,7 +50,7 @@ function PopoverContent({
         <PopoverPrimitive.Popup
           data-slot="popover-content"
           className={cn(
-            "z-50 flex w-72 origin-(--transform-origin) flex-col gap-2.5 rounded-lg bg-popover p-2.5 text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-hidden duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-pop data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+            "z-50 flex w-72 origin-(--transform-origin) flex-col gap-2.5 rounded-lg bg-popover p-2.5 text-sm text-popover-foreground shadow-md ring-1 ring-foreground/10 outline-hidden duration-100 data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
             className,
           )}
           {...props}
@@ -58,7 +58,7 @@ function PopoverContent({
           {arrow ? (
             <PopoverPrimitive.Arrow
               data-slot="popover-arrow"
-              className="size-4 rotate-45 rounded-tl-[5px] border-border border-t-2 border-l-2 bg-popover data-[side=bottom]:-top-[9px] data-[side=top]:-bottom-[9px] data-[side=top]:rotate-[225deg]"
+              className="size-3 rotate-45 rounded-tl-[3px] border-t border-l border-border bg-popover data-[side=bottom]:-top-[6.5px] data-[side=top]:-bottom-[6.5px] data-[side=top]:rotate-[225deg]"
             />
           ) : null}
           {children}

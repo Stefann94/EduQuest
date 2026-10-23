@@ -1,4 +1,4 @@
-// Vezi (elev)/template.tsx: reia animația de intrare la fiecare schimbare de pagină.
+// Vezi (student)/template.tsx: reia apariția discretă la fiecare schimbare de pagină.
 export default function MentorTemplate({
   children,
 }: {

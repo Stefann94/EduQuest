@@ -1,80 +1,136 @@
 import {
-  AppShell,
-  type NavItem,
-  type TopBarConfig,
-} from "@/components/app/app-shell";
+  Bell,
+  BookOpen,
+  ClipboardList,
+  LayoutDashboard,
+  ListChecks,
+  Radio,
+  Settings,
+  Users,
+} from "lucide-react";
+import Link from "next/link";
+import { AppShell } from "@/components/shell/app-shell";
+import type { NavGroup } from "@/components/shell/nav";
+import type { SearchItem } from "@/components/shell/search-menu";
+import { buttonVariants } from "@/components/ui/button";
 import {
-  demoGroups,
-  demoMentor,
-  demoMentorNotifications,
-  demoQuizzes,
-  demoToGrade,
-} from "@/lib/demo-data";
+  getMentorAssignments,
+  getMentorClasses,
+  getMentorContent,
+  getMentorQuizzes,
+  getNotifications,
+  getReviewQueue,
+  getViewer,
+} from "@/lib/data/queries";
+import { cn } from "@/lib/utils";
 
-const nav: NavItem[] = [
-  { label: "Panou", emoji: "📊", href: "/mentor" },
-  { label: "Sesiune live", emoji: "⚡", href: "/mentor/sesiune" },
-  { label: "Quiz-uri", emoji: "📝" },
-  { label: "Teme", emoji: "📚" },
-  { label: "Exerciții", emoji: "💻" },
-  { label: "Grupe", emoji: "👥" },
-];
+export default async function MentorLayout({
+  children,
+}: LayoutProps<"/mentor">) {
+  const me = await getViewer("mentor");
+  const [notifications, classes, assignments, content, quizzes, queue] =
+    await Promise.all([
+      getNotifications(me.id),
+      getMentorClasses(me.id),
+      getMentorAssignments(me.id),
+      getMentorContent(me.id),
+      getMentorQuizzes(me.id),
+      getReviewQueue(me.id),
+    ]);
+  const unread = notifications.filter((n) => !n.read).length;
 
-const nextGroup = demoGroups[0];
-
-const topBar: TopBarConfig = {
-  quick: "live",
-  searchPlaceholder: "Caută quiz-uri, grupe…",
-  status: [
+  const nav: NavGroup[] = [
     {
-      emoji: "🗓️",
-      label: nextGroup.schedule,
-      href: "/mentor",
+      items: [
+        {
+          label: "Panou",
+          href: "/mentor",
+          icon: <LayoutDashboard />,
+          exact: true,
+        },
+        { label: "Clasele mele", href: "/mentor/clase", icon: <Users /> },
+        { label: "Materiale", href: "/mentor/materiale", icon: <BookOpen /> },
+        {
+          label: "Teme",
+          href: "/mentor/teme",
+          icon: <ClipboardList />,
+          badge: queue.length,
+        },
+        { label: "Quiz-uri", href: "/mentor/quiz", icon: <ListChecks /> },
+      ],
     },
     {
-      emoji: "📬",
-      label: `${demoToGrade.length} de corectat`,
-      href: "/mentor",
+      label: "Cont",
+      items: [
+        {
+          label: "Notificări",
+          href: "/mentor/notificari",
+          icon: <Bell />,
+          badge: unread,
+        },
+        { label: "Setări cont", href: "/mentor/setari", icon: <Settings /> },
+      ],
     },
-  ],
-  notifications: demoMentorNotifications,
-  search: [
-    ...nav.flatMap((n) =>
-      n.href
-        ? [
-            {
-              label: n.label,
-              hint: "Pagină",
-              emoji: n.emoji,
-              href: n.href,
-              group: "Pagini",
-            },
-          ]
-        : [],
+  ];
+
+  const search: SearchItem[] = [
+    ...nav.flatMap((g) =>
+      g.items.map((i) => ({
+        label: i.label,
+        hint: "Pagină",
+        href: i.href,
+        kind: "page" as const,
+      })),
     ),
-    ...demoQuizzes.map((q) => ({
+    ...[...classes.active, ...classes.archived].map((c) => ({
+      label: c.name,
+      hint: `Clasă · ${c.studentIds.length} elevi`,
+      href: `/mentor/clase/${c.id}`,
+      kind: "class" as const,
+    })),
+    ...assignments.map((a) => ({
+      label: a.title,
+      hint: `Temă · ${a.className}`,
+      href: `/mentor/teme/${a.id}`,
+      kind: "assignment" as const,
+    })),
+    ...content.materials.map((m) => ({
+      label: m.title,
+      hint: `Material · ${m.className ?? "Resursă globală"}`,
+      href: `/mentor/materiale/${m.id}`,
+      kind: "material" as const,
+    })),
+    ...content.problems.map((p) => ({
+      label: p.title,
+      hint: `Problemă rezolvată · ${p.topic}`,
+      href: `/mentor/materiale/probleme/${p.id}`,
+      kind: "problem" as const,
+    })),
+    ...quizzes.map((q) => ({
       label: q.title,
-      hint: `Quiz · ${q.questions} întrebări`,
-      emoji: "📝",
-      href: "/mentor/sesiune",
-      group: "Quiz-uri",
+      hint: `Quiz · ${q.className ?? "Exersare globală"}`,
+      href: `/mentor/quiz/${q.id}`,
+      kind: "quiz" as const,
     })),
-    ...demoGroups.map((g) => ({
-      label: g.name,
-      hint: `Grupă · ${g.schedule}`,
-      emoji: g.emoji,
-      href: "/mentor",
-      group: "Grupe",
-    })),
-  ],
-};
+  ];
 
-export default function MentorLayout({ children }: LayoutProps<"/mentor">) {
   return (
     <AppShell
       nav={nav}
-      topBar={topBar}
-      user={{ firstName: demoMentor.name, role: "Mentor" }}
+      home="/mentor"
+      user={{ name: me.displayName, roleLabel: "Mentor", avatar: me.avatar }}
+      notifications={notifications}
+      notificationsHref="/mentor/notificari"
+      settingsHref="/mentor/setari"
+      search={search}
+      quickAction={
+        <Link
+          href="/mentor/live"
+          className={cn(buttonVariants(), "hidden sm:inline-flex")}
+        >
+          <Radio /> Quiz live
+        </Link>
+      }
     >
       {children}
     </AppShell>
