@@ -1,22 +1,28 @@
 # EduQuest
 
-Platformă web pentru mentori de programare și elevii lor: quiz-uri live sincronizate,
-jocuri rapide, teme cu cod și progres (XP, niveluri, insigne).
+Platformă web pentru învățarea programării: elevi și mentori, clase cu coduri de invitație,
+materiale și probleme rezolvate, teme cu feedback (fără note), prezență, XP, clasamente,
+quiz-uri individuale și sesiuni de quiz live.
 
-> **Stadiu:** primul design. Paginile folosesc date demonstrative din
-> [`src/lib/demo-data.ts`](src/lib/demo-data.ts). Urmează conectarea la Supabase.
+- **Specificația produsului:** [`docs/PROJECT.md`](docs/PROJECT.md)
+- **Convenții de cod și design:** [`docs/CONVENTIONS.md`](docs/CONVENTIONS.md)
+
+> **Stadiu:** interfața completă pe date demo ([`src/lib/data/demo.ts`](src/lib/data/demo.ts)).
+> Urmează conectarea la Supabase (autentificare, baza de date, fișiere).
 
 ## Stack
 
-| Strat      | Tehnologie                                                   |
-| ---------- | ------------------------------------------------------------ |
-| Framework  | Next.js 16 (App Router, Cache Components, React Compiler)    |
-| Limbaj     | TypeScript                                                   |
-| UI         | Tailwind CSS v4 + shadcn/ui (Base UI) + lucide-react         |
-| Backend    | Supabase: Postgres + RLS, Auth, Realtime, Storage (în curând) |
-| Hosting    | Vercel                                                       |
-| Calitate   | Biome (lint + format)                                        |
-| Pachete    | pnpm                                                         |
+| Strat     | Tehnologie                                                     |
+| --------- | -------------------------------------------------------------- |
+| Framework | Next.js 16 (App Router, Cache Components, React Compiler)      |
+| Limbaj    | TypeScript                                                     |
+| UI        | Tailwind CSS v4 + shadcn/ui (Base UI) + lucide-react + Geist   |
+| Cod       | Shiki (evidențierea sintaxei, doar pe server)                  |
+| Validare  | Zod                                                            |
+| Backend   | Supabase: Postgres + RLS, Auth, Storage, Realtime (în curând)  |
+| Hosting   | Vercel                                                         |
+| Calitate  | Biome (lint + format)                                          |
+| Pachete   | pnpm                                                           |
 
 ## Pornire rapidă
 
@@ -27,74 +33,62 @@ pnpm install
 pnpm dev          # http://localhost:3000
 ```
 
+În demo, fiecare rol are un utilizator fix. Comuți între ele din meniul contului
+(colțul din dreapta sus → „Vizualizare demo”):
+
+| Rol            | Pornește de la | Utilizator demo  |
+| -------------- | -------------- | ---------------- |
+| Elev           | `/`            | Tudor Popescu    |
+| Mentor         | `/mentor`      | Ana Ionescu      |
+| Administrator  | `/admin`       | Echipa EduQuest  |
+
 ### Scripturi
 
-| Comandă          | Ce face                                     |
-| ---------------- | ------------------------------------------- |
-| `pnpm dev`       | Server de dezvoltare                        |
-| `pnpm build`     | Build de producție                          |
-| `pnpm start`     | Pornește build-ul de producție              |
-| `pnpm lint`      | Verifică codul cu Biome                     |
-| `pnpm format`    | Formatează codul                            |
-| `pnpm typecheck` | Verifică tipurile TypeScript                |
+| Comandă          | Ce face                         |
+| ---------------- | ------------------------------- |
+| `pnpm dev`       | Server de dezvoltare            |
+| `pnpm build`     | Build de producție              |
+| `pnpm start`     | Pornește build-ul de producție  |
+| `pnpm lint`      | Verifică codul cu Biome         |
+| `pnpm format`    | Formatează codul                |
+| `pnpm typecheck` | Verifică tipurile TypeScript    |
 
-Înainte de un commit rulează `pnpm lint && pnpm typecheck`.
+Înainte de un commit: `pnpm lint && pnpm typecheck`.
 
-## Pagini
-
-| Rută               | Ce este                                        |
-| ------------------ | ---------------------------------------------- |
-| `/`                 | Acasă (elev): nivel, teme, exerciții, PIN      |
-| `/quiz`             | Quiz live cu PIN, exersare, istoric            |
-| `/teme`             | Temele: de făcut / trimise / corectate         |
-| `/exercitii`        | Exerciții de programare, filtrate pe teme      |
-| `/exercitii/[id]`   | Un exercițiu: cerință, indiciu, editor de cod  |
-| `/intra`            | Intrare în joc cu PIN + nickname (invitați)    |
-| `/autentificare`    | Login elev (utilizator) / mentor (email)       |
-| `/mentor`           | Panoul mentorului: grupe, teme, quiz-uri       |
-| `/mentor/sesiune`   | Lobby-ul quiz-ului live (PIN pe proiector)     |
-| `/live`             | Quiz live jucabil (demo, local)                |
+> **Atenție:** oprește `pnpm dev` înainte să schimbi ramura git. Altfel serverul poate păstra
+> în cache stiluri vechi. Dacă se întâmplă: oprește serverul, șterge `.next/dev/cache` și
+> pornește-l din nou.
 
 ## Structură
 
 ```
 src/
 ├── app/
-│   ├── (elev)/          # paginile elevului (rădăcina site-ului)
-│   └── mentor/          # paginile mentorului
+│   ├── (auth)/      # autentificare, înregistrare, aplicație mentor, parole
+│   ├── (student)/   # zona elevului, la rădăcina site-ului
+│   ├── live/        # quiz-ul live, pe tot ecranul
+│   ├── mentor/      # zona mentorului
+│   └── admin/       # zona administratorului
 ├── components/
-│   ├── ui/              # componente shadcn/ui (generate, le putem modifica)
-│   ├── app/             # meniul lateral, bara de sus, carduri comune
-│   ├── personalize/     # alegerea culorii și a avatarului
-│   ├── quiz/            # quiz live, formulare PIN
-│   ├── fx/              # efecte (steluțele la click)
-│   ├── brand/           # logo, mascota Bit
-│   ├── site/            # cadrul paginilor de intrare/login
-│   └── auth/            # formular de login
-└── lib/                 # teme, preferințe, utilitare, date demo
+│   ├── ui/          # componente shadcn/ui
+│   ├── shell/       # bara de navigare de sus, meniul de pe telefon, notificări, căutare, cont
+│   └── common/      # antet de pagină, stări, XP, avatar, cod, stări goale
+└── lib/
+    ├── data/        # tipuri, date demo, funcții de citire (singura sursă de date)
+    └── format.ts    # date în română, XP, pluraluri
 ```
-
-### Teme de culoare
-
-Cele 8 teme sunt în [`src/app/globals.css`](src/app/globals.css) (`[data-theme="..."]`).
-Fiecare definește o nuanță (`--h`) și culoarea principală; restul culorilor se
-calculează din nuanță. Folosiți clasele de temă (`bg-primary`, `bg-secondary`,
-`text-muted-foreground` etc.), nu culori fixe, ca toată interfața să urmeze
-alegerea copilului.
-
-Componente shadcn noi: `pnpm dlx shadcn@latest add <nume>`.
 
 ## Cum lucrăm în echipă
 
-1. `main` e mereu funcțional. Nu se face push direct pe `main`.
-2. Pentru fiecare lucru nou: `git switch -c feature/<ce-faci>` (ex. `feature/quiz-live`).
+1. `main` e mereu funcțional și se publică automat pe Vercel.
+2. Pentru fiecare lucru nou: `git switch -c feature/<ce-faci>`.
 3. Commit-uri mici, cu mesaje clare.
-4. Push pe ramură și deschizi un **Pull Request**. Celălalt îl citește, apoi se face merge.
-5. După conectarea la Vercel, fiecare PR primește automat un link de preview.
+4. Push pe ramură: Vercel face un link de preview. Apoi Pull Request și merge în `main`.
 
 ## Securitate (reguli de bază)
 
-- Nicio cheie secretă în cod. Fișierele `.env*` sunt ignorate de git.
-- Cheia `service_role` de la Supabase stă **doar** pe server, niciodată cu prefix `NEXT_PUBLIC_`.
-- Fiecare tabel din baza de date are **Row Level Security** activat.
-- Scorurile și răspunsurile corecte la quiz se verifică pe server, nu în browser.
+- Autorizarea se verifică **pe server**, în funcțiile de date și în Server Actions. Ascunderea
+  unui buton nu protejează datele.
+- Nicio cheie secretă în cod; fișierele `.env*` sunt ignorate de git.
+- Cheia `service_role` de la Supabase stă doar pe server, niciodată cu prefix `NEXT_PUBLIC_`.
+- Răspunsurile corecte la quiz-uri nu ajung în browser înainte de trimitere.

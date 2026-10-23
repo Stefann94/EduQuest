@@ -106,14 +106,14 @@ export function SearchMenu({ items }: { items: SearchItem[] }) {
         title="Caută (Ctrl+K)"
         className={cn(
           buttonVariants({ variant: "outline" }),
-          "w-9 px-0 text-muted-foreground md:w-64 md:justify-start md:px-3",
+          "w-9 px-0 text-muted-foreground md:max-lg:w-64 md:max-lg:justify-start md:max-lg:px-3",
         )}
       >
         <Search />
-        <span className="hidden flex-1 text-left font-normal md:inline">
+        <span className="hidden flex-1 text-left font-normal md:max-lg:inline">
           Caută…
         </span>
-        <kbd className="hidden rounded border bg-muted px-1.5 font-mono text-[11px] md:inline">
+        <kbd className="hidden rounded border bg-muted px-1.5 font-mono text-[11px] md:max-lg:inline">
           Ctrl K
         </kbd>
       </PopoverTrigger>

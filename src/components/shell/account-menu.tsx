@@ -32,10 +32,10 @@ export function AccountMenu({
     <DropdownMenu>
       <DropdownMenuTrigger
         aria-label="Contul meu"
-        className="flex items-center gap-2.5 rounded-lg p-1 text-left outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 lg:pr-2.5"
+        className="flex items-center gap-2.5 rounded-lg p-1 text-left outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/40 xl:pr-2.5"
       >
         <UserAvatar name={user.name} avatar={user.avatar} size="sm" />
-        <span className="hidden min-w-0 lg:block">
+        <span className="hidden min-w-0 xl:block">
           <span className="block max-w-36 truncate font-medium text-sm leading-tight">
             {user.name}
           </span>
@@ -43,7 +43,7 @@ export function AccountMenu({
             {user.roleLabel}
           </span>
         </span>
-        <ChevronsUpDown className="hidden size-4 text-muted-foreground lg:block" />
+        <ChevronsUpDown className="hidden size-4 text-muted-foreground xl:block" />
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" sideOffset={8} className="w-60">
         <DropdownMenuGroup>

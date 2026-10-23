@@ -19,7 +19,7 @@ src/
 │   └── admin/         # zona administratorului (/admin)
 ├── components/
 │   ├── ui/            # componente shadcn/ui (Base UI)
-│   ├── shell/         # meniul lateral, bara de sus, notificări, căutare, cont
+│   ├── shell/         # bara de sus (navigare), meniul de pe telefon, notificări, căutare, cont
 │   ├── common/        # piese reutilizabile: antet de pagină, stări, XP, avatar, cod
 │   ├── classes/ assignments/ learning/ ...   # componente pe domenii
 └── lib/
@@ -94,3 +94,10 @@ pnpm lint        # Biome
 pnpm typecheck   # tipuri
 pnpm build       # build de producție
 ```
+
+## Navigare
+
+Decizie (față de PROJECT.md §4.4, care propune un meniu lateral): **navigarea principală stă
+într-o bară orizontală, sus** — logo, secțiunile principale ale rolului, apoi căutare, acțiunea
+rapidă, notificări și cont. Pe ecrane sub 1024px, secțiunile se deschid din butonul de meniu
+(sertar din stânga). Secțiunile unei clase folosesc o a doua bară de taburi, sub antetul clasei.
