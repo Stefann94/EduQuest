@@ -12,15 +12,20 @@ const LANGS: Record<string, string> = {
 
 /**
  * Cod cu evidențierea sintaxei. Rulează doar pe server (la generarea paginii),
- * deci nu trimite niciun JavaScript în browser.
+ * deci nu trimite niciun JavaScript în browser. Opțional: o etichetă deasupra
+ * (ex. numele fișierului) și ce afișează programul, ca un terminal dedesubt.
  */
 export async function CodeBlock({
   code,
   language,
+  title,
+  output,
   className,
 }: {
   code: string;
   language: string;
+  title?: string;
+  output?: string;
   className?: string;
 }) {
   // Shiki citește intern ora curentă; cu cacheComponents asta ar bloca pre-generarea.
@@ -33,18 +38,29 @@ export async function CodeBlock({
   return (
     <figure
       className={cn(
-        "overflow-hidden rounded-lg border border-code bg-code text-code-foreground",
+        "cut-sm overflow-hidden border-cyan/70 border-l-4 bg-code text-code-foreground",
         className,
       )}
     >
-      <figcaption className="flex items-center justify-between border-white/10 border-b px-4 py-2 font-mono text-white/55 text-xs">
-        {LANGS[language] ?? language}
+      <figcaption className="flex items-center justify-between gap-3 border-white/10 border-b px-4 py-2 font-mono text-white/55 text-xs">
+        <span className="truncate">{title ?? LANGS[language] ?? language}</span>
+        {title ? <span>{LANGS[language] ?? language}</span> : null}
       </figcaption>
       <div
-        className="overflow-x-auto px-4 py-3.5 font-mono text-[13.5px] leading-6 [&_pre]:bg-transparent!"
+        className="overflow-x-auto px-4 py-3.5 font-mono text-[14px] leading-6 [&_pre]:bg-transparent!"
         // biome-ignore lint/security/noDangerouslySetInnerHtml: HTML generat de Shiki din codul nostru, cu caracterele escapate
         dangerouslySetInnerHTML={{ __html: html }}
       />
+      {output !== undefined ? (
+        <div className="border-white/10 border-t bg-black/30 px-4 py-3">
+          <p className="mb-1 font-bold font-heading text-[11px] text-success uppercase tracking-widest">
+            Rezultat
+          </p>
+          <pre className="overflow-x-auto whitespace-pre font-mono text-[14px] text-success/90 leading-6">
+            {output}
+          </pre>
+        </div>
+      ) : null}
     </figure>
   );
 }

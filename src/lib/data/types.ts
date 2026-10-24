@@ -1,6 +1,8 @@
 // Modelul de date al platformei (vezi docs/PROJECT.md).
 // Tipurile urmăresc schema viitoare din Supabase; deocamdată sunt populate cu date demo.
 
+import type { ContentBlock } from "../content/schema";
+
 export type Role = "student" | "mentor" | "admin";
 
 export type AccountStatus = "active" | "suspended" | "deactivated";
@@ -48,12 +50,9 @@ export type MaterialKind = "article" | "pdf" | "link" | "video";
 export type PublicationStatus = "published" | "draft";
 
 /** Conținut formatat, scris direct în platformă: paragrafe, titluri, cod. */
-export type ContentBlock =
-  | { type: "heading"; text: string }
-  | { type: "paragraph"; text: string }
-  | { type: "code"; language: string; code: string }
-  | { type: "list"; items: string[] }
-  | { type: "note"; text: string };
+// Blocurile de conținut (titluri, cod, tabele, exerciții…) sunt definite cu validare în
+// lib/content/schema.ts, ca autorul să nu poată salva un bloc greșit.
+export type { ContentBlock } from "../content/schema";
 
 export type Material = {
   id: string;

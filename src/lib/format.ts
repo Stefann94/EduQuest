@@ -85,6 +85,14 @@ export const formatXp = (amount: number) =>
 export const plural = (n: number, one: string, many: string) =>
   n === 1 ? `${n} ${one}` : `${n} ${n >= 20 ? `de ${many}` : many}`;
 
+/** „35 min”, „2 h”, „7 h 5 min” */
+export function formatDuration(min: number) {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  if (h === 0) return `${m} min`;
+  return m === 0 ? `${h} h` : `${h} h ${m} min`;
+}
+
 export function formatFileSize(kb: number) {
   return kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb} KB`;
 }

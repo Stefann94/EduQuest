@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/common/page-header";
+import { CourseCard } from "@/components/learning/course-card";
 import { LearningBrowser } from "@/components/student-learning/learning-browser";
+import { getCourses } from "@/lib/data/course-queries";
 import {
   getStudentClasses,
   getStudentMaterials,
@@ -12,7 +14,8 @@ export const metadata: Metadata = { title: "Învățare" };
 
 export default async function LearningPage() {
   const me = await getViewer("student");
-  const [materials, problems, classes] = await Promise.all([
+  const [courses, materials, problems, classes] = await Promise.all([
+    getCourses(),
     getStudentMaterials(me.id),
     getStudentWorkedProblems(me.id),
     getStudentClasses(me.id),
@@ -50,8 +53,30 @@ export default async function LearningPage() {
     <div className="grid gap-6">
       <PageHeader
         title="Învățare"
-        description="Lecții, fișe și probleme rezolvate din clasele tale, plus resurse globale pe care le poate folosi oricine."
+        description="Cursuri pas cu pas, lecții, fișe și probleme rezolvate din clasele tale, plus resurse pentru toți elevii."
       />
+      {courses.length > 0 ? (
+        <section aria-labelledby="cursuri" className="grid gap-4">
+          <h2
+            id="cursuri"
+            className="flex items-center gap-3 font-extrabold text-[28px] leading-none"
+          >
+            <span
+              aria-hidden="true"
+              className="size-3.5 rotate-45 bg-primary"
+            />
+            Cursuri
+          </h2>
+          <ul className="grid gap-4">
+            {courses.map((c) => (
+              <li key={c.id}>
+                <CourseCard course={c} />
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
       <LearningBrowser
         materials={materialItems}
         problems={problemItems}

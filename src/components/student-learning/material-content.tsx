@@ -1,65 +1,11 @@
-import {
-  Download,
-  ExternalLink,
-  FileText,
-  Info,
-  PlayCircle,
-} from "lucide-react";
-import { CodeBlock } from "@/components/common/code-block";
+import { Download, ExternalLink, FileText, PlayCircle } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
-import type { ContentBlock, Material } from "@/lib/data/types";
+import type { Material } from "@/lib/data/types";
 import { formatFileSize } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-/** Conținutul formatat al unei lecții: titluri, paragrafe, cod, liste și observații. */
-export function ArticleBlocks({ blocks }: { blocks: ContentBlock[] }) {
-  return (
-    <div className="grid gap-5 leading-relaxed">
-      {blocks.map((b, i) => {
-        // Blocurile nu au id propriu; ordinea lor e fixă, deci indexul e o cheie stabilă.
-        const key = `${b.type}-${i}`;
-        switch (b.type) {
-          case "heading":
-            return (
-              <h2 key={key} className="mt-2 font-semibold text-lg">
-                {b.text}
-              </h2>
-            );
-          case "paragraph":
-            return <p key={key}>{b.text}</p>;
-          case "code":
-            return <CodeBlock key={key} code={b.code} language={b.language} />;
-          case "list":
-            return (
-              <ul key={key} className="grid list-disc gap-1.5 pl-5">
-                {b.items.map((item) => (
-                  <li key={item}>{item}</li>
-                ))}
-              </ul>
-            );
-          case "note":
-            return (
-              <aside
-                key={key}
-                className="flex gap-3 rounded-lg border border-info/20 bg-info-soft px-4 py-3 text-sm"
-              >
-                <Info
-                  className="mt-0.5 size-4 shrink-0 text-info"
-                  aria-hidden="true"
-                />
-                <p>
-                  <span className="font-medium">De reținut: </span>
-                  {b.text}
-                </p>
-              </aside>
-            );
-          default:
-            return null;
-        }
-      })}
-    </div>
-  );
-}
+/** Conținutul formatat al unui material: același afișaj ca lecțiile din cursuri. */
+export { ContentBlocks as ArticleBlocks } from "@/components/learning/content-blocks";
 
 /** Fișierul PDF al unui material. În demo nu există un fișier real de descărcat. */
 export function PdfCard({ file }: { file: NonNullable<Material["file"]> }) {

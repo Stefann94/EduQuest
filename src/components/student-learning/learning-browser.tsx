@@ -164,7 +164,7 @@ export function LearningBrowser({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <TabsList>
             <TabsTrigger value="materials" className="px-3">
-              Cursuri și materiale ({shownMaterials.length})
+              Materiale ({shownMaterials.length})
             </TabsTrigger>
             <TabsTrigger value="problems" className="px-3">
               Probleme rezolvate ({shownProblems.length})
