@@ -8,12 +8,12 @@ import {
   resetPassword,
 } from "@/app/(auth)/resetare-parola/actions";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { DemoNote, ResultPanel } from "./auth-card";
+import { ResultPanel } from "./auth-card";
 import { FormAlert, NewPasswordFields } from "./form-fields";
 
 const INITIAL: ResetState = { status: "idle" };
 
-export function ResetForm({ token }: { token: string }) {
+export function ResetForm() {
   const [state, action, pending] = useActionState(resetPassword, INITIAL);
 
   if (state.status === "success")
@@ -31,7 +31,6 @@ export function ResetForm({ token }: { token: string }) {
         >
           <LogIn aria-hidden="true" /> Mergi la autentificare
         </Link>
-        <DemoNote>Demo: parola nu se salvează.</DemoNote>
       </div>
     );
 
@@ -39,7 +38,6 @@ export function ResetForm({ token }: { token: string }) {
 
   return (
     <form action={action} noValidate className="grid gap-4">
-      <input type="hidden" name="token" value={token} />
       {failed?.message ? (
         <FormAlert title={failed.title}>{failed.message}</FormAlert>
       ) : null}

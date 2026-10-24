@@ -109,32 +109,26 @@ function RoleForm({ kind: role }: { kind: LoginRole }) {
         </p>
       )}
 
-      <DemoNote>
-        {student ? (
-          <>
-            Demo: <span className="font-mono text-foreground">tudor.p</span> sau{" "}
-            <span className="font-mono text-foreground">
-              tudor.p@exemplu.ro
-            </span>
-            , parola{" "}
-            <span className="font-mono text-foreground">parola123</span>. Cu{" "}
-            <span className="font-mono text-foreground">george.i</span> vezi
-            mesajul pentru un cont suspendat.
-          </>
-        ) : (
-          <>
-            Demo:{" "}
-            <span className="font-mono text-foreground">
-              ana.ionescu@exemplu.ro
-            </span>
-            , parola{" "}
-            <span className="font-mono text-foreground">parola123</span>.
-            Administrator:{" "}
-            <span className="font-mono text-foreground">admin@eduquest.ro</span>
-            .
-          </>
-        )}
-      </DemoNote>
+      {/* Doar local: conturile demo din pnpm db:seed (parola e în .env.local). */}
+      {process.env.NODE_ENV === "development" ? (
+        <DemoNote>
+          Conturi demo:{" "}
+          <span className="font-mono text-foreground">
+            {student ? "tudor.p" : "ana.ionescu@exemplu.ro"}
+          </span>
+          {student ? null : (
+            <>
+              {" "}
+              sau{" "}
+              <span className="font-mono text-foreground">
+                admin@eduquest.ro
+              </span>
+            </>
+          )}
+          . Parola e în <span className="font-mono">.env.local</span>, la{" "}
+          <span className="font-mono">DEMO_PASSWORD</span>.
+        </DemoNote>
+      ) : null}
     </div>
   );
 }

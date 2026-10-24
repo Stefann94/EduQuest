@@ -1,7 +1,9 @@
 "use server";
 
 import { z } from "zod";
-import { getUsers } from "@/lib/data/queries";
+import { siteOrigin } from "@/lib/site-url";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
   emailSchema,
   type FormState,
@@ -40,7 +42,7 @@ const schema = z.object({
   email: emailSchema,
 });
 
-/** Creează un cont de elev. În demo verifică datele și simulează emailul de verificare. */
+/** Creează un cont de elev și trimite emailul de confirmare. */
 export async function register(
   _prev: RegisterState,
   formData: FormData,
@@ -52,12 +54,19 @@ export async function register(
     ...passwordErrors(values.password, values.confirm),
   };
 
-  if (parsed.success) {
-    // Unicitatea se verifică pe server (cu Supabase: constrângeri unice în baza de date).
-    const users = await getUsers();
-    if (users.some((u) => u.username === parsed.data.username))
-      errors.username = "Username-ul este deja folosit. Alege altul.";
-    if (users.some((u) => u.email === parsed.data.email))
+  const admin = supabaseAdmin();
+  if (parsed.success && admin) {
+    // Unicitatea se verifică pe server; baza de date o garantează oricum (username unic).
+    const [{ data: taken }, { data: emailTaken }] = await Promise.all([
+      admin
+        .from("profiles")
+        .select("id")
+        .eq("username", parsed.data.username)
+        .maybeSingle(),
+      admin.rpc("email_taken", { p_email: parsed.data.email }),
+    ]);
+    if (taken) errors.username = "Username-ul este deja folosit. Alege altul.";
+    if (emailTaken)
       errors.email =
         "Există deja un cont cu această adresă. Intră în cont sau recuperează-ți parola.";
   }
@@ -65,11 +74,49 @@ export async function register(
   if (!parsed.success || Object.keys(errors).length > 0)
     return { status: "error", errors, values: withoutPasswords(values) };
 
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.signUp({
+    email: parsed.data.email,
+    password: values.password,
+    options: {
+      emailRedirectTo: `${await siteOrigin()}/auth/confirm?next=/`,
+      // Rolul nu se trimite: orice cont nou e de elev (vezi trigger-ul din baza de date).
+      data: {
+        display_name: parsed.data.displayName,
+        username: parsed.data.username,
+      },
+    },
+  });
+  if (error?.code === "email_address_invalid")
+    return {
+      status: "error",
+      errors: { email: "Adresa de email nu pare corectă." },
+      values: withoutPasswords(values),
+    };
+  if (error)
+    return {
+      status: "error",
+      title: "Contul nu a putut fi creat",
+      message:
+        error.code === "over_email_send_rate_limit"
+          ? "Am trimis prea multe emailuri într-un timp scurt. Încearcă din nou peste câteva minute."
+          : "A apărut o problemă la crearea contului. Încearcă din nou peste puțin timp.",
+      errors: {},
+      values: withoutPasswords(values),
+    };
+
   return { status: "success", email: parsed.data.email };
 }
 
-/** Retrimite emailul de verificare (demo). */
+/** Retrimite emailul de confirmare. */
 export async function resendVerification(email: string) {
-  const ok = emailSchema.safeParse(email).success;
-  return { ok };
+  const parsed = emailSchema.safeParse(email);
+  if (!parsed.success) return { ok: false };
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase.auth.resend({
+    type: "signup",
+    email: parsed.data,
+    options: { emailRedirectTo: `${await siteOrigin()}/auth/confirm?next=/` },
+  });
+  return { ok: !error };
 }

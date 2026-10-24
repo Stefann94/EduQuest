@@ -70,9 +70,6 @@ export default function AuthLayout({
         <main className="flex flex-1 items-start justify-center px-4 py-6 sm:items-center sm:px-6 sm:py-10">
           {children}
         </main>
-        <footer className="px-6 pb-6 text-center text-muted-foreground text-xs">
-          Versiune demo: conturile și emailurile sunt simulate.
-        </footer>
       </div>
     </div>
   );

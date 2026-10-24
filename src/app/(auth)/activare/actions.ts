@@ -1,21 +1,30 @@
 "use server";
 
+import { redirect } from "next/navigation";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { type FormState, passwordErrors, readForm } from "../_lib/validation";
 
 type Field = "password" | "confirm";
 export type ActivationState = FormState<Field>;
 
 /**
- * Setează parola unui mentor aprobat. Cu Supabase, tokenul din link se verifică
- * pe server (o singură folosire, valabilitate limitată), iar emailul vine din token,
- * nu din formular.
+ * Setează parola unui mentor aprobat. Sesiunea și emailul vin din invitația primită
+ * pe email (verificată în /auth/confirm), nu din formular.
  */
 export async function activateMentor(
   _prev: ActivationState,
   formData: FormData,
 ): Promise<ActivationState> {
-  const values = readForm(formData, ["token", "password", "confirm"] as const);
-  if (!values.token)
+  const values = readForm(formData, ["password", "confirm"] as const);
+  const errors = passwordErrors(values.password, values.confirm);
+  if (Object.keys(errors).length > 0)
+    return { status: "error", errors, values: {} };
+
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user)
     return {
       status: "error",
       title: "Linkul nu mai este valabil",
@@ -25,10 +34,15 @@ export async function activateMentor(
       values: {},
     };
 
-  const errors = passwordErrors(values.password, values.confirm);
-  if (Object.keys(errors).length > 0)
-    return { status: "error", errors, values: {} };
-
-  // Demo: aici s-ar salva parola (doar ca hash) și s-ar invalida tokenul.
-  return { status: "success" };
+  const { error } = await supabase.auth.updateUser({
+    password: values.password,
+  });
+  if (error)
+    return {
+      status: "error",
+      message: "Parola nu a putut fi salvată. Încearcă din nou.",
+      errors: {},
+      values: {},
+    };
+  redirect("/mentor");
 }

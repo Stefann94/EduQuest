@@ -1,5 +1,7 @@
 "use server";
 
+import { siteOrigin } from "@/lib/site-url";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { emailSchema, type FormState, readForm } from "../_lib/validation";
 
 export type RecoveryState = FormState<"email">;
@@ -22,6 +24,10 @@ export async function requestPasswordReset(
       values: { email },
     };
 
-  // Demo: dacă adresa are cont, aici s-ar trimite un link valabil 60 de minute.
+  const supabase = await createSupabaseServerClient();
+  // Eventualele erori (ex. adresă fără cont) nu se arată, din același motiv.
+  await supabase.auth.resetPasswordForEmail(parsed.data, {
+    redirectTo: `${await siteOrigin()}/auth/confirm?next=/resetare-parola`,
+  });
   return { status: "success" };
 }

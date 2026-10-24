@@ -10,7 +10,7 @@ import {
   resendVerification,
 } from "@/app/(auth)/inregistrare/actions";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { DemoNote, linkClass, ResultPanel } from "./auth-card";
+import { linkClass, ResultPanel } from "./auth-card";
 import { NewPasswordFields, TextField } from "./form-fields";
 
 const INITIAL: RegisterState = { status: "idle" };
@@ -77,13 +77,6 @@ function Register({ onRestart }: { onRestart: () => void }) {
           {pending ? "Se creează contul…" : "Creează contul"}
         </Button>
       </form>
-      <DemoNote>
-        Demo: username-uri deja folosite, de exemplu{" "}
-        <span className="font-mono text-foreground">tudor.p</span> sau{" "}
-        <span className="font-mono text-foreground">maria.i</span>, și emailuri
-        precum{" "}
-        <span className="font-mono text-foreground">maria.i@exemplu.ro</span>.
-      </DemoNote>
     </div>
   );
 }

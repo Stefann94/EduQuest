@@ -1,6 +1,7 @@
 import { LogOut } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { Logo } from "@/components/brand/logo";
 import { buttonVariants } from "@/components/ui/button";
 
@@ -20,7 +21,10 @@ export default function LiveLayout({ children }: LayoutProps<"/live">) {
         </Link>
       </header>
       <main className="w-full flex-1 px-4 py-6 sm:px-6 lg:py-10">
-        <div className="mx-auto w-full max-w-5xl">{children}</div>
+        {/* Pagina citește sesiunea, deci stă într-un <Suspense>. */}
+        <div className="mx-auto w-full max-w-5xl">
+          <Suspense>{children}</Suspense>
+        </div>
       </main>
     </div>
   );

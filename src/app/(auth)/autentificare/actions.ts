@@ -1,19 +1,31 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { getUsers } from "@/lib/data/queries";
+import { HOME, safeNext } from "@/lib/auth";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { FormState } from "../_lib/validation";
 import { readForm } from "../_lib/validation";
 
 type LoginField = "identifier" | "password";
 export type LoginState = FormState<LoginField>;
 
-// Demo: o singură parolă pentru toate conturile. Cu Supabase, verificarea se face
-// de serviciul de autentificare, iar parolele sunt stocate doar ca hash.
-const DEMO_PASSWORD = "parola123";
-
 const WRONG =
   "Datele de autentificare nu sunt corecte. Verifică-le și încearcă din nou.";
+
+/** Emailul unui elev după username (doar pe server; emailul nu ajunge în browser). */
+async function emailForUsername(username: string) {
+  const admin = supabaseAdmin();
+  if (!admin) return null;
+  const { data } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("username", username)
+    .maybeSingle();
+  if (!data) return null;
+  const { data: user } = await admin.auth.admin.getUserById(data.id);
+  return user.user?.email ?? null;
+}
 
 /** Autentificare pentru elevi (username sau email) și mentori (email). */
 export async function login(
@@ -37,40 +49,61 @@ export async function login(
   if (Object.keys(errors).length > 0)
     return { status: "error", errors, values: kept };
 
-  const users = await getUsers();
-  const user = users.find((u) =>
-    role === "student"
-      ? u.role === "student" &&
-        (u.username === identifier || u.email === identifier)
-      : // Administratorii folosesc tot autentificarea cu email.
-        (u.role === "mentor" || u.role === "admin") && u.email === identifier,
-  );
-
+  const email = identifier.includes("@")
+    ? identifier
+    : await emailForUsername(identifier);
   // Același mesaj pentru cont inexistent și parolă greșită: nu dezvăluim care câmp e greșit.
-  if (!user || values.password !== DEMO_PASSWORD)
+  if (!email)
     return { status: "error", message: WRONG, errors: {}, values: kept };
 
-  if (user.status === "suspended")
-    return {
-      status: "error",
-      title: "Cont suspendat",
-      message:
-        "Contul tău este suspendat temporar, așa că nu te poți autentifica deocamdată. Scrie-ne la admin@eduquest.ro și te ajutăm să lămurim situația.",
-      errors: {},
-      values: kept,
-    };
-  if (user.status === "deactivated")
-    return {
-      status: "error",
-      title: "Cont dezactivat",
-      message:
-        "Contul tău a fost dezactivat. Dacă vrei să îl folosești din nou, scrie-ne la admin@eduquest.ro.",
-      errors: {},
-      values: kept,
-    };
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password: values.password,
+  });
+  if (error) {
+    if (error.code === "email_not_confirmed")
+      return {
+        status: "error",
+        title: "Confirmă adresa de email",
+        message:
+          "Ți-am trimis un email cu un link de confirmare. Deschide-l, apoi intră în cont.",
+        errors: {},
+        values: kept,
+      };
+    return { status: "error", message: WRONG, errors: {}, values: kept };
+  }
 
-  // Demo: aici s-ar crea sesiunea (cookie securizat, httpOnly).
-  redirect(
-    user.role === "admin" ? "/admin" : user.role === "mentor" ? "/mentor" : "/",
-  );
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, status")
+    .eq("id", data.user.id)
+    .single();
+  if (!profile || profile.status !== "active") {
+    await supabase.auth.signOut();
+    return {
+      status: "error",
+      title:
+        profile?.status === "deactivated"
+          ? "Cont dezactivat"
+          : "Cont suspendat",
+      message:
+        profile?.status === "deactivated"
+          ? "Contul tău a fost dezactivat. Dacă vrei să îl folosești din nou, scrie-ne la admin@eduquest.ro."
+          : "Contul tău este suspendat temporar, așa că nu te poți autentifica deocamdată. Scrie-ne la admin@eduquest.ro și te ajutăm să lămurim situația.",
+      errors: {},
+      values: kept,
+    };
+  }
+
+  const home = HOME[profile.role as keyof typeof HOME];
+  const next = safeNext(formData.get("next"), home);
+  redirect(next === "/" ? home : next);
+}
+
+/** Ieșirea din cont, din meniul contului. */
+export async function logout() {
+  const supabase = await createSupabaseServerClient();
+  await supabase.auth.signOut();
+  redirect("/autentificare");
 }

@@ -10,18 +10,12 @@ import {
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { DemoNote, ResultPanel } from "./auth-card";
+import { ResultPanel } from "./auth-card";
 import { FormAlert, NewPasswordFields } from "./form-fields";
 
 const INITIAL: ActivationState = { status: "idle" };
 
-export function ActivationForm({
-  email,
-  token,
-}: {
-  email: string;
-  token: string;
-}) {
+export function ActivationForm({ email }: { email: string }) {
   const [state, action, pending] = useActionState(activateMentor, INITIAL);
 
   if (state.status === "success")
@@ -43,7 +37,6 @@ export function ActivationForm({
         >
           <LogIn aria-hidden="true" /> Mergi la autentificare
         </Link>
-        <DemoNote>Demo: parola nu se salvează.</DemoNote>
       </div>
     );
 
@@ -51,7 +44,6 @@ export function ActivationForm({
 
   return (
     <form action={action} noValidate className="grid gap-4">
-      <input type="hidden" name="token" value={token} />
       {failed?.message ? (
         <FormAlert title={failed.title}>{failed.message}</FormAlert>
       ) : null}

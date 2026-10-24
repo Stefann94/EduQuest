@@ -9,9 +9,11 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { Suspense } from "react";
 import { AppShell } from "@/components/shell/app-shell";
 import type { NavGroup } from "@/components/shell/nav";
 import type { SearchItem } from "@/components/shell/search-menu";
+import { ShellFallback } from "@/components/shell/shell-fallback";
 import { XpMeter } from "@/components/shell/xp-meter";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -26,7 +28,17 @@ import {
 } from "@/lib/data/queries";
 import { cn } from "@/lib/utils";
 
-export default async function StudentLayout({ children }: LayoutProps<"/">) {
+// Sesiunea se citește în interiorul unui <Suspense>, ca restul paginii să nu aștepte
+// (cerință Cache Components). Vezi lib/auth.ts.
+export default function Layout({ children }: LayoutProps<"/">) {
+  return (
+    <Suspense fallback={<ShellFallback />}>
+      <StudentShell>{children}</StudentShell>
+    </Suspense>
+  );
+}
+
+async function StudentShell({ children }: { children: React.ReactNode }) {
   const me = await getViewer("student");
   const [
     notifications,

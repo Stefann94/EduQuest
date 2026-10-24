@@ -1,14 +1,26 @@
 import { LayoutDashboard, Settings, UserCheck, Users } from "lucide-react";
+import { Suspense } from "react";
 import { AppShell } from "@/components/shell/app-shell";
 import type { NavGroup } from "@/components/shell/nav";
 import type { SearchItem } from "@/components/shell/search-menu";
+import { ShellFallback } from "@/components/shell/shell-fallback";
 import {
   getMentorApplications,
   getNotifications,
   getViewer,
 } from "@/lib/data/queries";
 
-export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
+// Sesiunea se citește în interiorul unui <Suspense>, ca restul paginii să nu aștepte
+// (cerință Cache Components). Vezi lib/auth.ts.
+export default function Layout({ children }: LayoutProps<"/admin">) {
+  return (
+    <Suspense fallback={<ShellFallback />}>
+      <AdminShell>{children}</AdminShell>
+    </Suspense>
+  );
+}
+
+async function AdminShell({ children }: { children: React.ReactNode }) {
   const me = await getViewer("admin");
   const [notifications, applications] = await Promise.all([
     getNotifications(me.id),

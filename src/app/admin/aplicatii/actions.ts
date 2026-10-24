@@ -1,7 +1,11 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { getMentorApplication, getViewer } from "@/lib/data/queries";
 import type { ApplicationStatus } from "@/lib/data/types";
+import { siteOrigin } from "@/lib/site-url";
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export type ReviewDecision = "approve" | "request_info" | "reject";
 
@@ -29,7 +33,7 @@ const NOTE_REQUIRED: Record<ReviewDecision, string | null> = {
 
 /**
  * Decizia unui administrator asupra unei aplicații de mentor.
- * Verifică pe server rolul, existența aplicației și starea ei. În demo nu salvează nimic.
+ * Verifică pe server rolul, existența aplicației și starea ei, apoi salvează decizia.
  */
 export async function reviewApplication(
   _prev: ReviewState,
@@ -74,8 +78,43 @@ export async function reviewApplication(
       note,
     };
 
-  // Demo: aici s-ar salva decizia și s-ar trimite emailul către aplicant.
-  // La aprobare: cont de mentor creat, plus un link de activare unic, cu termen limitat.
+  // La aprobare: contul de mentor se creează printr-o invitație pe email (link unic,
+  // cu termen limitat), în care mentorul își alege singur parola.
+  if (decision === "approve") {
+    const admin = supabaseAdmin();
+    if (!admin)
+      return { status: "error", message: "Serverul nu are cheile Supabase." };
+    const { data: invited, error: inviteError } =
+      await admin.auth.admin.inviteUserByEmail(application.email, {
+        data: { display_name: application.fullName },
+        redirectTo: `${await siteOrigin()}/auth/confirm?next=/activare`,
+      });
+    if (inviteError || !invited.user)
+      return {
+        status: "error",
+        message:
+          inviteError?.code === "email_exists"
+            ? "Există deja un cont cu această adresă de email. Verifică-l în pagina Utilizatori."
+            : "Invitația nu a putut fi trimisă. Încearcă din nou.",
+      };
+    // Rolul se schimbă doar aici, pe server: un cont nou e mereu de elev.
+    const { error: roleError } = await admin
+      .from("profiles")
+      .update({ role: "mentor" })
+      .eq("id", invited.user.id);
+    if (roleError)
+      return { status: "error", message: "Contul nu a putut fi făcut mentor." };
+  }
+
+  const supabase = await createSupabaseServerClient();
+  const { error } = await supabase
+    .from("mentor_applications")
+    .update({ status: NEW_STATUS[decision], review_note: note || null })
+    .eq("id", application.id);
+  if (error)
+    return { status: "error", message: "Decizia nu a putut fi salvată." };
+  revalidatePath("/admin", "layout");
+
   return {
     status: "success",
     decision,

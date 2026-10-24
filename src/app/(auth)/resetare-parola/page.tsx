@@ -25,8 +25,8 @@ export default function ResetPasswordPage() {
         Linkul de resetare este valabil 60 de minute și poate fi folosit o
         singură dată.
       </p>
-      {/* Demo: tokenul ar veni din linkul primit pe email și s-ar verifica pe server. */}
-      <ResetForm token="demo-token" />
+      {/* Sesiunea vine din linkul primit pe email (verificat în /auth/confirm). */}
+      <ResetForm />
     </AuthCard>
   );
 }

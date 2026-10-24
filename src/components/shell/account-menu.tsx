@@ -1,14 +1,8 @@
 "use client";
 
-import {
-  ChevronsUpDown,
-  GraduationCap,
-  LogOut,
-  Presentation,
-  Settings,
-  ShieldCheck,
-} from "lucide-react";
+import { ChevronsUpDown, LogOut, Settings } from "lucide-react";
 import Link from "next/link";
+import { logout } from "@/app/(auth)/autentificare/actions";
 import { UserAvatar } from "@/components/common/user-avatar";
 import {
   DropdownMenu,
@@ -61,20 +55,8 @@ export function AccountMenu({
           <Settings /> Setări cont
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuGroup>
-          <DropdownMenuLabel>Vizualizare demo</DropdownMenuLabel>
-          <DropdownMenuItem render={<Link href="/" />}>
-            <GraduationCap /> Ca elev
-          </DropdownMenuItem>
-          <DropdownMenuItem render={<Link href="/mentor" />}>
-            <Presentation /> Ca mentor
-          </DropdownMenuItem>
-          <DropdownMenuItem render={<Link href="/admin" />}>
-            <ShieldCheck /> Ca administrator
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
         <DropdownMenuSeparator />
-        <DropdownMenuItem render={<Link href="/autentificare" />}>
+        <DropdownMenuItem onClick={() => logout()}>
           <LogOut /> Deconectare
         </DropdownMenuItem>
       </DropdownMenuContent>

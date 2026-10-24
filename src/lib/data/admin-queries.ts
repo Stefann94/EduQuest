@@ -2,6 +2,7 @@
 // cererea vine de la un administrator (ascunderea din interfață nu este suficientă).
 
 import * as db from "./demo";
+import { getMentorApplications } from "./queries";
 import type { User } from "./types";
 
 function assertAdmin(viewer: User) {
@@ -12,7 +13,7 @@ function assertAdmin(viewer: User) {
 /** Cifrele pentru prezentarea generală. */
 export async function getAdminStats(viewer: User) {
   assertAdmin(viewer);
-  const apps = db.mentorApplications;
+  const apps = await getMentorApplications();
   const users = db.users;
   return {
     pendingApplications: apps.filter((a) => a.status === "pending").length,

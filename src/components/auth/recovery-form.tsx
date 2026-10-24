@@ -8,7 +8,7 @@ import {
   requestPasswordReset,
 } from "@/app/(auth)/recuperare-parola/actions";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { DemoNote, ResultPanel } from "./auth-card";
+import { ResultPanel } from "./auth-card";
 import { TextField } from "./form-fields";
 
 const INITIAL: RecoveryState = { status: "idle" };
@@ -39,16 +39,6 @@ export function RecoveryForm() {
         >
           Înapoi la autentificare
         </Link>
-        <DemoNote>
-          Demo: niciun email nu este trimis. Pagina de resetare este la{" "}
-          <Link
-            href="/resetare-parola"
-            className="font-medium text-foreground underline underline-offset-2"
-          >
-            /resetare-parola
-          </Link>
-          .
-        </DemoNote>
       </div>
     );
 

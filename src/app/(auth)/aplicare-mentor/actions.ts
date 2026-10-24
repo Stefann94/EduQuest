@@ -1,6 +1,7 @@
 "use server";
 
 import { z } from "zod";
+import { supabaseAdmin } from "@/lib/supabase/admin";
 import {
   emailSchema,
   type FormState,
@@ -72,7 +73,47 @@ export async function applyAsMentor(
   if (!parsed.success || Object.keys(errors).length > 0)
     return { status: "error", errors, values };
 
-  // Demo: aici s-ar salva aplicația cu starea „În așteptare” și s-ar anunța administratorii.
+  // Formularul e public, deci aplicația se salvează din server (cheia secretă),
+  // după validare; browserul nu are acces la tabel.
+  const failed: MentorApplicationState = {
+    status: "error",
+    message:
+      "Aplicația nu a putut fi trimisă acum. Încearcă din nou peste câteva minute.",
+    errors: {},
+    values,
+  };
+  const admin = supabaseAdmin();
+  if (!admin) return failed;
+  const { data: saved, error } = await admin
+    .from("mentor_applications")
+    .insert({
+      full_name: parsed.data.fullName,
+      email: parsed.data.email,
+      phone: parsed.data.phone,
+      background: parsed.data.background,
+      intended_use: parsed.data.intendedUse,
+      evidence: parsed.data.evidence,
+    })
+    .select("id")
+    .single();
+  if (error || !saved) return failed;
+
+  // Administratorii primesc o notificare în platformă.
+  const { data: admins } = await admin
+    .from("profiles")
+    .select("id")
+    .eq("role", "admin")
+    .eq("status", "active");
+  if (admins?.length)
+    await admin.from("notifications").insert(
+      admins.map((a) => ({
+        user_id: a.id,
+        kind: "application" as const,
+        title: `Aplicație nouă de mentor: ${parsed.data.fullName}`,
+        href: `/admin/aplicatii/${saved.id}`,
+      })),
+    );
+
   return {
     status: "success",
     fullName: parsed.data.fullName,

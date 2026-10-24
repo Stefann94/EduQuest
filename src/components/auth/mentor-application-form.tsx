@@ -10,7 +10,7 @@ import {
 import { ApplicationStatusBadge } from "@/components/common/status";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { DemoNote, ResultPanel } from "./auth-card";
+import { ResultPanel } from "./auth-card";
 import { FieldError, TextareaField, TextField } from "./form-fields";
 
 const INITIAL: MentorApplicationState = { status: "idle" };
@@ -220,11 +220,6 @@ function Submitted({ fullName, email }: { fullName: string; email: string }) {
         Până atunci nu ai un cont de mentor activ, deci nu te poți autentifica
         încă.
       </p>
-
-      <DemoNote>
-        Demo: aplicația nu se salvează. Verificarea poate fi văzută în zona de
-        administrator.
-      </DemoNote>
 
       <Link
         href="/autentificare"

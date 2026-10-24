@@ -1,19 +1,20 @@
 import { Clock, Link2Off } from "lucide-react";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { ActivationForm } from "@/components/auth/activation-form";
 import { AuthCard } from "@/components/auth/auth-card";
-import { getMentorApplication } from "@/lib/data/queries";
+import { getSessionProfile } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Activează contul de mentor" };
 
-// Demo: emailul vine din aplicația aprobată. Cu Supabase, linkul din email conține un
-// token verificat pe server, iar emailul se citește din token.
-const DEMO_APPLICATION = "app-4";
+// Emailul vine din invitația primită pe email (sesiunea creată de /auth/confirm),
+// nu dintr-un câmp pe care l-ar putea schimba utilizatorul.
+async function SessionActivationForm() {
+  const profile = await getSessionProfile();
+  return <ActivationForm email={profile?.email ?? ""} />;
+}
 
-export default async function ActivationPage() {
-  const application = await getMentorApplication(DEMO_APPLICATION);
-  const email = application?.email ?? "";
-
+export default function ActivationPage() {
   return (
     <AuthCard
       title="Activează contul de mentor"
@@ -39,7 +40,9 @@ export default async function ActivationPage() {
           </span>
         </li>
       </ul>
-      <ActivationForm email={email} token="demo-token" />
+      <Suspense>
+        <SessionActivationForm />
+      </Suspense>
     </AuthCard>
   );
 }

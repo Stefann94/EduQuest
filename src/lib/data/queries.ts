@@ -2,12 +2,15 @@
 // trecerea pe Supabase se schimbă doar implementarea de aici.
 // Fiecare funcție primește utilizatorul care cere datele și verifică accesul.
 
+import { requireUser as requireSessionUser } from "../auth";
 import { isPast } from "../format";
+import { createSupabaseServerClient } from "../supabase/server";
 import * as db from "./demo";
 import type {
   Assignment,
   ClassRoom,
   Material,
+  MentorApplication,
   Quiz,
   Role,
   Submission,
@@ -18,9 +21,9 @@ import type {
 
 /* ---------- Utilizatori ---------- */
 
-/** Utilizatorul „logat”. În demo, câte unul fix pentru fiecare rol. */
+/** Utilizatorul logat, cu rolul cerut (altfel redirecționează). Vezi lib/auth.ts. */
 export async function getViewer(role: Role): Promise<User> {
-  return requireUser(db.DEMO_VIEWERS[role]);
+  return requireSessionUser(role);
 }
 
 export async function getUser(id: string) {
@@ -522,14 +525,58 @@ export async function getNotifications(userId: string) {
 
 /* ---------- Administrare ---------- */
 
-export async function getMentorApplications() {
-  return [...db.mentorApplications].sort((a, b) =>
-    b.submittedAt.localeCompare(a.submittedAt),
-  );
+// Aplicațiile de mentor stau în Supabase. Regulile RLS le arată doar administratorilor,
+// deci citim cu sesiunea utilizatorului (fără cheia secretă).
+const APPLICATION_FIELDS =
+  "id, full_name, email, phone, background, intended_use, evidence, status, submitted_at, review_note";
+
+type ApplicationRow = {
+  id: string;
+  full_name: string;
+  email: string;
+  phone: string;
+  background: string;
+  intended_use: string;
+  evidence: string;
+  status: MentorApplication["status"];
+  submitted_at: string;
+  review_note: string | null;
+};
+
+const toApplication = (r: ApplicationRow): MentorApplication => ({
+  id: r.id,
+  fullName: r.full_name,
+  email: r.email,
+  phone: r.phone,
+  background: r.background,
+  intendedUse: r.intended_use,
+  evidence: r.evidence,
+  status: r.status,
+  submittedAt: r.submitted_at,
+  reviewNote: r.review_note ?? undefined,
+});
+
+export async function getMentorApplications(): Promise<MentorApplication[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("mentor_applications")
+    .select(APPLICATION_FIELDS)
+    .order("submitted_at", { ascending: false });
+  if (error)
+    throw new Error(`Aplicațiile nu s-au putut încărca: ${error.message}`);
+  return (data as ApplicationRow[]).map(toApplication);
 }
 
 export async function getMentorApplication(id: string) {
-  return db.mentorApplications.find((a) => a.id === id);
+  // Un id care nu e uuid (ex. un link vechi) înseamnă „nu există”, nu o eroare.
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return undefined;
+  const supabase = await createSupabaseServerClient();
+  const { data } = await supabase
+    .from("mentor_applications")
+    .select(APPLICATION_FIELDS)
+    .eq("id", id)
+    .maybeSingle();
+  return data ? toApplication(data as ApplicationRow) : undefined;
 }
 
 /* ---------- Ajutătoare ---------- */
@@ -556,5 +603,6 @@ export const demoIds = {
   assignments: () => db.assignments.map((a) => ({ id: a.id })),
   submissions: () => db.submissions.map((s) => ({ id: s.id })),
   quizzes: () => db.quizzes.map((q) => ({ id: q.id })),
-  applications: () => db.mentorApplications.map((a) => ({ id: a.id })),
+  // Aplicațiile vin din Supabase la cerere; un id fix ajunge pentru validarea build-ului.
+  applications: () => [{ id: "aplicatie" }],
 };
