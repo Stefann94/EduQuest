@@ -3,42 +3,55 @@ import type { Accent } from "@/lib/content/schema";
 /** Clasele pentru fiecare culoare de accent (aceleași în lecții, carduri și cursuri). */
 export const ACCENT: Record<
   Accent,
-  { bar: string; text: string; soft: string; border: string; gradient: string }
+  {
+    bar: string;
+    /** Textul pus peste `bar` (alb pe culori închise, cerneală pe muștar). */
+    fg: string;
+    text: string;
+    soft: string;
+    border: string;
+    gradient: string;
+  }
 > = {
   pink: {
     bar: "bg-primary",
+    fg: "text-white",
     text: "text-primary",
     soft: "bg-primary-soft",
     border: "border-primary",
-    gradient: "bg-[linear-gradient(140deg,var(--primary),#c42a8f_70%)]",
+    gradient: "bg-[linear-gradient(140deg,var(--primary),#8a3a22_75%)]",
   },
   cyan: {
     bar: "bg-cyan",
+    fg: "text-white",
     text: "text-cyan",
     soft: "bg-info-soft",
     border: "border-cyan",
-    gradient: "bg-[linear-gradient(140deg,#1fb5a8,#2a2f8f_80%)]",
+    gradient: "bg-[linear-gradient(140deg,#3a7559,#1f3d31_80%)]",
   },
   yellow: {
-    bar: "bg-xp",
+    bar: "bg-cta",
+    fg: "text-cta-foreground",
     text: "text-xp",
     soft: "bg-xp-soft",
     border: "border-xp",
-    gradient: "bg-[linear-gradient(140deg,#e0a400,#a8452e_85%)]",
+    gradient: "bg-[linear-gradient(140deg,#c99a10,#8f5a14_85%)]",
   },
   orange: {
     bar: "bg-warning",
+    fg: "text-white",
     text: "text-warning",
     soft: "bg-warning-soft",
     border: "border-warning",
-    gradient: "bg-[linear-gradient(140deg,#ff8a3d,#b8325f_85%)]",
+    gradient: "bg-[linear-gradient(140deg,#c4702c,#8a3a22_85%)]",
   },
   green: {
     bar: "bg-success",
+    fg: "text-white",
     text: "text-success",
     soft: "bg-success-soft",
     border: "border-success",
-    gradient: "bg-[linear-gradient(140deg,#24b27a,#1f5d8f_85%)]",
+    gradient: "bg-[linear-gradient(140deg,#3f8a5c,#24503d_85%)]",
   },
 };
 

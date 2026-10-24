@@ -127,7 +127,7 @@ async function Content({ params }: { params: Props["params"] }) {
                         className={cn(
                           "grid grid-cols-[1.5rem_minmax(0,1fr)] gap-2 px-2 py-1.5 text-sm transition-colors",
                           current
-                            ? cn("font-semibold text-background", a.bar)
+                            ? cn("font-semibold", a.bar, a.fg)
                             : "text-muted-foreground hover:bg-muted hover:text-foreground",
                         )}
                       >

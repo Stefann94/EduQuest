@@ -49,7 +49,7 @@ export function LeaderboardCard({
               )}
             >
               {r.rank === 1 ? (
-                <span className="grid size-6 place-items-center bg-xp font-extrabold font-heading text-cta-foreground text-sm [clip-path:polygon(50%_0,100%_50%,50%_100%,0_50%)]">
+                <span className="grid size-6 place-items-center bg-cta font-extrabold font-heading text-cta-foreground text-sm [clip-path:polygon(50%_0,100%_50%,50%_100%,0_50%)]">
                   1
                 </span>
               ) : (

@@ -26,7 +26,7 @@ export default function AuthLayout({
 }) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-      <aside className="relative hidden overflow-hidden bg-[linear-gradient(140deg,var(--primary),#c42a8f_70%)] text-primary-foreground lg:sticky lg:top-0 lg:block lg:h-dvh">
+      <aside className="relative hidden overflow-hidden bg-[linear-gradient(140deg,var(--primary),#8a3a22_75%)] text-primary-foreground lg:sticky lg:top-0 lg:block lg:h-dvh">
         {/* Dungi oblice în colț, ca pe cardul arenei. */}
         <div
           aria-hidden="true"
@@ -43,7 +43,7 @@ export default function AuthLayout({
             <ul className="grid gap-6">
               {BENEFITS.map(({ icon: Icon, title, text }) => (
                 <li key={title} className="flex gap-3.5">
-                  <span className="hex grid size-10 shrink-0 place-items-center bg-background/35">
+                  <span className="hex grid size-10 shrink-0 place-items-center bg-black/15">
                     <Icon className="size-[18px]" aria-hidden="true" />
                   </span>
                   <div>

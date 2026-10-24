@@ -32,14 +32,14 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#1a0f2e",
+  themeColor: "#ece6d9",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="ro"
-      className={`${saira.variable} ${sairaCondensed.variable} ${geistMono.variable} dark h-full`}
+      className={`${saira.variable} ${sairaCondensed.variable} ${geistMono.variable} h-full`}
     >
       <body className="flex min-h-full flex-col">
         <TooltipProvider>{children}</TooltipProvider>

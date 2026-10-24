@@ -9,11 +9,11 @@ import {
 } from "lucide-react";
 import { Toaster as Sonner, type ToasterProps } from "sonner";
 
-// Platforma are o singură temă (întunecată), deci nu avem nevoie de next-themes.
+// Platforma are o singură temă (deschisă), deci nu avem nevoie de next-themes.
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
     <Sonner
-      theme="dark"
+      theme="light"
       className="toaster group"
       icons={{
         success: <CircleCheckIcon className="size-4 text-success" />,

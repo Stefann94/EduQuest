@@ -3,8 +3,9 @@
 @import "shadcn/tailwind.css";
 
 /*
- * O singură temă, întunecată: stilul „meniu de joc” (violet închis, magenta, cyan, galben).
- * Clasa .dark e pusă pe <html>, ca variantele dark: din componentele shadcn să se aplice.
+ * O singură temă, deschisă: stilul „meniu de joc” (forme tăiate, titluri condensate)
+ * pe hârtie caldă, cu teracotă, verde de pădure și muștar. Clasa .dark nu se folosește.
+ * Numele unor token-uri (cyan, cta) vin din tema anterioară; contează rolul, nu numele.
  */
 @custom-variant dark (&:is(.dark *));
 
@@ -91,49 +92,50 @@
   /* Colțuri aproape drepte; forma vine din colțurile tăiate (utilitarele cut-*). */
   --radius: 0.25rem;
 
-  --background: #1a0f2e;
-  --foreground: #f6f0ff;
-  --card: #251641;
-  --popover: #2a1949;
-  --primary: #ff3e8a;
+  /* Hârtie caldă, cerneală verde-închis; accente: teracotă, verde de pădure, muștar. */
+  --background: #ece6d9;
+  --foreground: #1d2a22;
+  --card: #f7f3ea;
+  --popover: #fbf8f1;
+  --primary: #b5532f;
   --primary-foreground: #ffffff;
-  --primary-soft: color-mix(in oklch, #ff3e8a 18%, #251641);
-  --secondary: #2f1d55;
-  --secondary-foreground: #e4d9fb;
-  --muted: #2f1d55;
-  --muted-foreground: #a898c8;
-  --accent: #36225f;
-  --accent-foreground: #ff7aae;
-  --destructive: #ff5468;
-  --border: #3d2a66;
-  --input: #4a347a;
-  --ring: #2ee6d6;
+  --primary-soft: color-mix(in oklch, #b5532f 13%, #f7f3ea);
+  --secondary: #e2dbcb;
+  --secondary-foreground: #33433a;
+  --muted: #e4ddce;
+  --muted-foreground: #626456;
+  --accent: #e8dfcf;
+  --accent-foreground: #96421f;
+  --destructive: #b3261e;
+  --border: #d5ccb9;
+  --input: #c6baa2;
+  --ring: #2b5e4a;
 
-  --cyan: #2ee6d6;
-  --cyan-foreground: #1a0f2e;
-  --cta: #ffd23f;
-  --cta-foreground: #1a0f2e;
+  --cyan: #2b5e4a;
+  --cyan-foreground: #ffffff;
+  --cta: #dcb514;
+  --cta-foreground: #1d2a22;
 
-  --success: #3ddc97;
-  --success-soft: color-mix(in oklch, #3ddc97 16%, #251641);
-  --warning: #ff8a3d;
-  --warning-soft: color-mix(in oklch, #ff8a3d 16%, #251641);
-  --info: #2ee6d6;
-  --info-soft: color-mix(in oklch, #2ee6d6 14%, #251641);
-  --danger-soft: color-mix(in oklch, #ff5468 16%, #251641);
+  --success: #2f7a4c;
+  --success-soft: color-mix(in oklch, #2f7a4c 13%, #f7f3ea);
+  --warning: #b25c1c;
+  --warning-soft: color-mix(in oklch, #b25c1c 13%, #f7f3ea);
+  --info: #2a6878;
+  --info-soft: color-mix(in oklch, #2a6878 12%, #f7f3ea);
+  --danger-soft: color-mix(in oklch, #b3261e 12%, #f7f3ea);
 
-  --xp: #ffd23f;
-  --xp-soft: color-mix(in oklch, #ffd23f 16%, #251641);
-  --xp-foreground: #ffd23f;
+  --xp: #a27800;
+  --xp-soft: color-mix(in oklch, #dcb514 20%, #f7f3ea);
+  --xp-foreground: #7f5e00;
 
-  --code: #120a21;
-  --code-foreground: #efe8ff;
-  --scrim: #0b0615;
+  --code: #1e2a23;
+  --code-foreground: #eef0e7;
+  --scrim: #1d2a22;
 
-  --quiz-red: #ff4d6d;
-  --quiz-blue: #3d7bff;
-  --quiz-yellow: #e9a200;
-  --quiz-green: #18b47b;
+  --quiz-red: #c2412d;
+  --quiz-blue: #2f63b0;
+  --quiz-yellow: #c59300;
+  --quiz-green: #2f7a4c;
 }
 
 /* Colțuri tăiate și forme oblice (plate, fără 3D). */
@@ -185,7 +187,7 @@
   }
   html {
     @apply font-sans;
-    color-scheme: dark;
+    color-scheme: light;
   }
   body {
     @apply bg-background text-foreground antialiased;
@@ -193,7 +195,7 @@
     background-image: repeating-linear-gradient(
       -45deg,
       transparent 0 22px,
-      rgb(255 255 255 / 0.018) 22px 44px
+      rgb(29 42 34 / 0.02) 22px 44px
     );
     background-attachment: fixed;
   }

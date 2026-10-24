@@ -30,7 +30,7 @@ export function RichText({ text }: { text: string }) {
           return (
             <code
               key={key}
-              className="rounded-sm bg-background/70 px-1.5 py-0.5 font-mono text-[0.88em] text-cyan"
+              className="rounded-sm bg-muted px-1.5 py-0.5 font-mono text-[0.88em] text-cyan"
             >
               {part.slice(1, -1)}
             </code>
@@ -218,8 +218,9 @@ function Boxes({
             <div key={b.name} className="min-w-36">
               <span
                 className={cn(
-                  "slant inline-block px-3 py-0.5 font-bold font-mono text-[13px] text-background",
+                  "slant inline-block px-3 py-0.5 font-bold font-mono text-[13px]",
                   a.bar,
+                  a.fg,
                 )}
               >
                 {b.name}
@@ -276,7 +277,7 @@ function Machine({
         >
           →
         </span>
-        <div className="cut bg-[linear-gradient(140deg,var(--primary),#c42a8f_70%)] px-4 py-4 text-center text-primary-foreground">
+        <div className="cut bg-[linear-gradient(140deg,var(--primary),#8a3a22_75%)] px-4 py-4 text-center text-primary-foreground">
           <p className="font-bold font-heading text-xs uppercase tracking-widest opacity-85">
             Funcția
           </p>
@@ -441,8 +442,9 @@ function Steps({ items }: { items: { title: string; text: string }[] }) {
             />
             <span
               className={cn(
-                "hex relative grid size-10 place-items-center font-extrabold font-heading text-background text-lg",
+                "hex relative grid size-10 place-items-center font-extrabold font-heading text-lg",
                 a.bar,
+                a.fg,
               )}
             >
               {i + 1}
@@ -473,7 +475,7 @@ function Exercise(b: Extract<ContentBlock, { type: "exercise" }>) {
         className="absolute inset-y-0 left-0 w-1.5 bg-xp"
       />
       <div className="flex flex-wrap items-center gap-3">
-        <span className="slant inline-flex items-center gap-1.5 bg-xp px-3 py-0.5 font-bold font-heading text-[13px] text-cta-foreground uppercase tracking-widest">
+        <span className="slant inline-flex items-center gap-1.5 bg-cta px-3 py-0.5 font-bold font-heading text-[13px] text-cta-foreground uppercase tracking-widest">
           <Dumbbell className="size-3.5" aria-hidden="true" />
           Exercițiu
         </span>

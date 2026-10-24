@@ -60,7 +60,7 @@ export function ArenaCard({
     );
 
   return (
-    <section className="relative cut overflow-hidden bg-[linear-gradient(140deg,var(--primary),#c42a8f_70%)] p-6 text-primary-foreground">
+    <section className="relative cut overflow-hidden bg-[linear-gradient(140deg,var(--primary),#8a3a22_75%)] p-6 text-primary-foreground">
       <span
         aria-hidden="true"
         className="pointer-events-none absolute -top-5 -right-5 size-40 bg-[repeating-linear-gradient(-45deg,rgb(255_255_255/0.12)_0_8px,transparent_8px_16px)]"
@@ -80,7 +80,7 @@ export function ArenaCard({
       </p>
 
       {session.live ? (
-        <p className="relative mt-4 inline-block bg-background/35 px-3 py-1.5 font-bold font-heading uppercase tracking-wide">
+        <p className="relative mt-4 inline-block bg-black/15 px-3 py-1.5 font-bold font-heading uppercase tracking-wide">
           A început, intră acum
         </p>
       ) : (
@@ -95,7 +95,7 @@ export function ArenaCard({
             {countdown(session.startsAt).map((c) => (
               <span
                 key={c.label}
-                className="min-w-16 bg-background/35 px-3 py-1.5 text-center"
+                className="min-w-16 bg-black/15 px-3 py-1.5 text-center"
               >
                 <b className="block font-extrabold font-heading text-3xl tabular-nums leading-none">
                   {String(c.value).padStart(2, "0")}
@@ -115,7 +115,7 @@ export function ArenaCard({
           <span
             // biome-ignore lint/suspicious/noArrayIndexKey: locuri fixe
             key={i}
-            className="grid h-12 flex-1 -skew-x-6 place-items-center bg-background/35 font-extrabold font-heading text-2xl text-primary-foreground/50"
+            className="grid h-12 flex-1 -skew-x-6 place-items-center bg-black/15 font-extrabold font-heading text-2xl text-primary-foreground/50"
           >
             ·
           </span>

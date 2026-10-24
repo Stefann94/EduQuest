@@ -38,7 +38,7 @@ export async function CodeBlock({
   return (
     <figure
       className={cn(
-        "cut-sm overflow-hidden border-cyan/70 border-l-4 bg-code text-code-foreground",
+        "cut-sm overflow-hidden border-l-4 border-l-cta bg-code text-code-foreground",
         className,
       )}
     >
@@ -53,10 +53,10 @@ export async function CodeBlock({
       />
       {output !== undefined ? (
         <div className="border-white/10 border-t bg-black/30 px-4 py-3">
-          <p className="mb-1 font-bold font-heading text-[11px] text-success uppercase tracking-widest">
+          <p className="mb-1 font-bold font-heading text-[#8fd6a3] text-[11px] uppercase tracking-widest">
             Rezultat
           </p>
-          <pre className="overflow-x-auto whitespace-pre font-mono text-[14px] text-success/90 leading-6">
+          <pre className="overflow-x-auto whitespace-pre font-mono text-[#b7e8c2] text-[14px] leading-6">
             {output}
           </pre>
         </div>

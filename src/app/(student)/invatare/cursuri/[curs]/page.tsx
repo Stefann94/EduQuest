@@ -116,8 +116,9 @@ async function Content({ params }: { params: Props["params"] }) {
               <span
                 aria-hidden="true"
                 className={cn(
-                  "hex relative mt-2 grid size-12 place-items-center font-extrabold font-heading text-background text-xl",
+                  "hex relative mt-2 grid size-12 place-items-center font-extrabold font-heading text-xl",
                   a.bar,
+                  a.fg,
                 )}
               >
                 {l.position}

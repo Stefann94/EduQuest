@@ -4,12 +4,12 @@ import type { AvatarId } from "@/lib/data/types";
 import { plural } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-// Culoarea fiecărei clase, pe rând: galben, cyan, magenta, portocaliu.
+// Culoarea fiecărei clase, pe rând: muștar, verde, teracotă, portocaliu.
 const ACCENTS = [
-  { badge: "bg-xp text-cta-foreground", bar: "bg-xp" },
+  { badge: "bg-cta text-cta-foreground", bar: "bg-cta" },
   { badge: "bg-cyan text-cyan-foreground", bar: "bg-cyan" },
   { badge: "bg-primary text-primary-foreground", bar: "bg-primary" },
-  { badge: "bg-warning text-cta-foreground", bar: "bg-warning" },
+  { badge: "bg-warning text-white", bar: "bg-warning" },
 ];
 
 export const teamAccent = (index: number) => ACCENTS[index % ACCENTS.length];
@@ -64,7 +64,7 @@ export function TeamCard({
             />
           ))}
           {memberCount > members.length ? (
-            <span className="hex -mr-1.5 grid size-8 place-items-center bg-warning font-extrabold font-heading text-cta-foreground text-xs">
+            <span className="hex -mr-1.5 grid size-8 place-items-center bg-warning font-extrabold font-heading text-white text-xs">
               +{memberCount - members.length}
             </span>
           ) : null}
