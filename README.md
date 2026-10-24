@@ -55,6 +55,22 @@ pnpm dev          # http://localhost:3000
 
 Înainte de un commit: `pnpm lint && pnpm typecheck`.
 
+### Baza de date (Supabase)
+
+Schema stă în `supabase/migrations/`: tabele, reguli de acces (RLS) și funcțiile pentru
+acțiunile sensibile (trimiteri, review, prezență, XP, quiz). Nu modifica tabelele din
+dashboard; adaugă o migrare nouă și aplic-o cu `pnpm db:push`.
+
+1. Copiază `.env.example` ca `.env.local` și completează valorile din Supabase.
+2. Folosește comenzile:
+
+| Comandă         | Ce face                                                        |
+| --------------- | -------------------------------------------------------------- |
+| `pnpm db:push`  | Aplică migrările noi pe baza de date                           |
+| `pnpm db:lint`  | Verifică funcțiile din baza de date                            |
+| `pnpm db:seed`  | Încarcă datele demo (parola conturilor ajunge în `.env.local`) |
+| `pnpm db:check` | Verifică regulile de acces cu conturile demo                   |
+
 > **Atenție:** oprește `pnpm dev` înainte să schimbi ramura git. Altfel serverul poate păstra
 > în cache stiluri vechi. Dacă se întâmplă: oprește serverul, șterge `.next/dev/cache` și
 > pornește-l din nou.
