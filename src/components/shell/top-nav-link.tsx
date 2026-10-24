@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import type { NavItem } from "./nav";
 
-/** Un link din bara de navigare de sus; secțiunea curentă e subliniată. */
+/** Un link din bara de sus, ca un paralelogram; secțiunea curentă e magenta. */
 export function TopNavLink({ item }: { item: NavItem }) {
   const pathname = usePathname();
   const active = item.exact
@@ -17,26 +17,18 @@ export function TopNavLink({ item }: { item: NavItem }) {
       href={item.href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "relative flex h-16 items-center gap-2 whitespace-nowrap px-3 font-medium text-sm outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/40 focus-visible:ring-inset [&_svg]:size-4 [&_svg]:shrink-0",
+        "slant flex h-10 items-center gap-2 whitespace-nowrap px-5 font-bold font-heading text-base uppercase tracking-wide outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/70 focus-visible:ring-inset",
         active
-          ? "text-foreground"
-          : "text-muted-foreground hover:text-foreground",
+          ? "bg-primary text-primary-foreground"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
     >
-      <span className={active ? "text-primary" : undefined}>{item.icon}</span>
       {item.label}
       {item.badge ? (
-        <span className="grid h-5 min-w-5 place-items-center rounded-full bg-primary px-1.5 font-semibold text-[11px] text-primary-foreground tabular-nums">
+        <span className="grid h-5 min-w-5 place-items-center bg-cta px-1.5 font-bold text-[12px] text-cta-foreground tabular-nums">
           {item.badge}
         </span>
       ) : null}
-      <span
-        aria-hidden="true"
-        className={cn(
-          "absolute inset-x-3 bottom-0 h-0.5 rounded-full transition-colors",
-          active ? "bg-primary" : "bg-transparent",
-        )}
-      />
     </Link>
   );
 }

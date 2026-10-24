@@ -12,6 +12,7 @@ import Link from "next/link";
 import { AppShell } from "@/components/shell/app-shell";
 import type { NavGroup } from "@/components/shell/nav";
 import type { SearchItem } from "@/components/shell/search-menu";
+import { XpMeter } from "@/components/shell/xp-meter";
 import { buttonVariants } from "@/components/ui/button";
 import {
   getNotifications,
@@ -21,30 +22,39 @@ import {
   getStudentQuizzes,
   getStudentWorkedProblems,
   getViewer,
+  getXpTotal,
 } from "@/lib/data/queries";
 import { cn } from "@/lib/utils";
 
 export default async function StudentLayout({ children }: LayoutProps<"/">) {
   const me = await getViewer("student");
-  const [notifications, classes, assignments, materials, problems, quizzes] =
-    await Promise.all([
-      getNotifications(me.id),
-      getStudentClasses(me.id),
-      getStudentAssignments(me.id),
-      getStudentMaterials(me.id),
-      getStudentWorkedProblems(me.id),
-      getStudentQuizzes(me.id),
-    ]);
+  const [
+    notifications,
+    classes,
+    assignments,
+    materials,
+    problems,
+    quizzes,
+    xp,
+  ] = await Promise.all([
+    getNotifications(me.id),
+    getStudentClasses(me.id),
+    getStudentAssignments(me.id),
+    getStudentMaterials(me.id),
+    getStudentWorkedProblems(me.id),
+    getStudentQuizzes(me.id),
+    getXpTotal(me.id),
+  ]);
   const unread = notifications.filter((n) => !n.read).length;
 
   const nav: NavGroup[] = [
     {
       items: [
         { label: "Acasă", href: "/", icon: <House />, exact: true },
-        { label: "Clasele mele", href: "/clase", icon: <Users /> },
+        { label: "Clase", href: "/clase", icon: <Users /> },
         { label: "Învățare", href: "/invatare", icon: <BookOpen /> },
         { label: "Quiz-uri", href: "/quiz", icon: <ListChecks /> },
-        { label: "Progresul meu", href: "/progres", icon: <TrendingUp /> },
+        { label: "Progres", href: "/progres", icon: <TrendingUp /> },
       ],
     },
     {
@@ -111,10 +121,14 @@ export default async function StudentLayout({ children }: LayoutProps<"/">) {
       notificationsHref="/notificari"
       settingsHref="/setari"
       search={search}
+      status={<XpMeter xp={xp} href="/progres" />}
       quickAction={
         <Link
           href="/live"
-          className={cn(buttonVariants(), "hidden sm:inline-flex")}
+          className={cn(
+            buttonVariants({ variant: "cta" }),
+            "hidden sm:inline-flex",
+          )}
         >
           <Radio /> Quiz live
         </Link>

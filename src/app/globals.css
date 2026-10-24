@@ -2,19 +2,22 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/* O singură temă, deschisă; clasa .dark nu se aplică nicăieri. */
+/*
+ * O singură temă, întunecată: stilul „meniu de joc” (violet închis, magenta, cyan, galben).
+ * Clasa .dark e pusă pe <html>, ca variantele dark: din componentele shadcn să se aplice.
+ */
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
-  --font-heading: var(--font-sans);
+  --font-heading: var(--font-heading);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--foreground);
-  --color-popover: var(--card);
+  --color-popover: var(--popover);
   --color-popover-foreground: var(--foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
@@ -30,6 +33,12 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+  /* Accentele jocului. */
+  --color-cyan: var(--cyan);
+  --color-cyan-foreground: var(--cyan-foreground);
+  --color-cta: var(--cta);
+  --color-cta-foreground: var(--cta-foreground);
+
   /* Stări (mereu însoțite de iconiță sau text, nu doar de culoare). */
   --color-success: var(--success);
   --color-success-soft: var(--success-soft);
@@ -39,7 +48,7 @@
   --color-info-soft: var(--info-soft);
   --color-danger-soft: var(--danger-soft);
 
-  /* Accentul secundar: XP și recompense. */
+  /* XP și recompense: galben. */
   --color-xp: var(--xp);
   --color-xp-soft: var(--xp-soft);
   --color-xp-foreground: var(--xp-foreground);
@@ -65,8 +74,8 @@
 
   --color-chart-1: var(--primary);
   --color-chart-2: var(--xp);
-  --color-chart-3: var(--success);
-  --color-chart-4: var(--info);
+  --color-chart-3: var(--cyan);
+  --color-chart-4: var(--warning);
   --color-chart-5: var(--muted-foreground);
 
   --radius-sm: calc(var(--radius) * 0.6);
@@ -79,46 +88,91 @@
 }
 
 :root {
-  --radius: 0.625rem;
+  /* Colțuri aproape drepte; forma vine din colțurile tăiate (utilitarele cut-*). */
+  --radius: 0.25rem;
 
-  /* Neutre reci + indigo ca principală. */
-  --background: oklch(0.984 0.003 265);
-  --foreground: oklch(0.22 0.025 268);
-  --card: oklch(1 0 0);
-  --primary: oklch(0.5 0.2 276);
-  --primary-foreground: oklch(0.99 0 0);
-  --primary-soft: oklch(0.95 0.03 276);
-  --secondary: oklch(0.955 0.01 268);
-  --secondary-foreground: oklch(0.3 0.04 268);
-  --muted: oklch(0.965 0.005 265);
-  --muted-foreground: oklch(0.5 0.02 265);
-  --accent: oklch(0.955 0.02 276);
-  --accent-foreground: oklch(0.36 0.13 276);
-  --destructive: oklch(0.56 0.21 27);
-  --border: oklch(0.915 0.006 265);
-  --input: oklch(0.89 0.008 265);
-  --ring: oklch(0.5 0.2 276);
+  --background: #1a0f2e;
+  --foreground: #f6f0ff;
+  --card: #251641;
+  --popover: #2a1949;
+  --primary: #ff3e8a;
+  --primary-foreground: #ffffff;
+  --primary-soft: color-mix(in oklch, #ff3e8a 18%, #251641);
+  --secondary: #2f1d55;
+  --secondary-foreground: #e4d9fb;
+  --muted: #2f1d55;
+  --muted-foreground: #a898c8;
+  --accent: #36225f;
+  --accent-foreground: #ff7aae;
+  --destructive: #ff5468;
+  --border: #3d2a66;
+  --input: #4a347a;
+  --ring: #2ee6d6;
 
-  --success: oklch(0.55 0.14 155);
-  --success-soft: oklch(0.96 0.04 155);
-  --warning: oklch(0.6 0.14 65);
-  --warning-soft: oklch(0.965 0.05 85);
-  --info: oklch(0.54 0.15 245);
-  --info-soft: oklch(0.96 0.03 245);
-  --danger-soft: oklch(0.965 0.03 27);
+  --cyan: #2ee6d6;
+  --cyan-foreground: #1a0f2e;
+  --cta: #ffd23f;
+  --cta-foreground: #1a0f2e;
 
-  --xp: oklch(0.76 0.15 72);
-  --xp-soft: oklch(0.97 0.045 85);
-  --xp-foreground: oklch(0.45 0.11 60);
+  --success: #3ddc97;
+  --success-soft: color-mix(in oklch, #3ddc97 16%, #251641);
+  --warning: #ff8a3d;
+  --warning-soft: color-mix(in oklch, #ff8a3d 16%, #251641);
+  --info: #2ee6d6;
+  --info-soft: color-mix(in oklch, #2ee6d6 14%, #251641);
+  --danger-soft: color-mix(in oklch, #ff5468 16%, #251641);
 
-  --code: oklch(0.23 0.025 268);
-  --code-foreground: oklch(0.95 0.008 268);
-  --scrim: oklch(0.2 0.03 268);
+  --xp: #ffd23f;
+  --xp-soft: color-mix(in oklch, #ffd23f 16%, #251641);
+  --xp-foreground: #ffd23f;
 
-  --quiz-red: oklch(0.58 0.19 25);
-  --quiz-blue: oklch(0.55 0.16 250);
-  --quiz-yellow: oklch(0.7 0.14 70);
-  --quiz-green: oklch(0.58 0.14 155);
+  --code: #120a21;
+  --code-foreground: #efe8ff;
+  --scrim: #0b0615;
+
+  --quiz-red: #ff4d6d;
+  --quiz-blue: #3d7bff;
+  --quiz-yellow: #e9a200;
+  --quiz-green: #18b47b;
+}
+
+/* Colțuri tăiate și forme oblice (plate, fără 3D). */
+@utility cut {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 18px) 0,
+    100% 18px,
+    100% 100%,
+    18px 100%,
+    0 calc(100% - 18px)
+  );
+}
+@utility cut-sm {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% 100%,
+    10px 100%,
+    0 calc(100% - 10px)
+  );
+}
+@utility cut-xs {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 6px) 0,
+    100% 6px,
+    100% 100%,
+    6px 100%,
+    0 calc(100% - 6px)
+  );
+}
+/* Paralelogram (taburi, linkuri din bara de sus, etichete). */
+@utility slant {
+  clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
+}
+@utility hex {
+  clip-path: polygon(25% 0, 75% 0, 100% 50%, 75% 100%, 25% 100%, 0 50%);
 }
 
 @layer base {
@@ -131,10 +185,28 @@
   }
   html {
     @apply font-sans;
-    color-scheme: light;
+    color-scheme: dark;
   }
   body {
     @apply bg-background text-foreground antialiased;
+    /* Dungi diagonale foarte discrete, ca fundalul unui meniu de joc. */
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent 0 22px,
+      rgb(255 255 255 / 0.018) 22px 44px
+    );
+    background-attachment: fixed;
+  }
+  /* Titlurile: condensat, majuscule. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-heading);
+    text-transform: uppercase;
+    letter-spacing: 0.01em;
+  }
+  ::selection {
+    background: color-mix(in oklch, var(--primary) 45%, transparent);
   }
   /*
    * Coloana implicită a unui grid nu poate depăși lățimea disponibilă. Altfel, un

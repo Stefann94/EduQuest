@@ -20,20 +20,20 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
     {
       items: [
         {
-          label: "Prezentare generală",
+          label: "Panou",
           href: "/admin",
           icon: <LayoutDashboard />,
           exact: true,
         },
         {
-          label: "Aplicații mentori",
+          label: "Aplicații",
           href: "/admin/aplicatii",
           icon: <UserCheck />,
           badge: pending,
         },
         { label: "Utilizatori", href: "/admin/utilizatori", icon: <Users /> },
         {
-          label: "Setări platformă",
+          label: "Setări",
           href: "/admin/setari",
           icon: <Settings />,
         },

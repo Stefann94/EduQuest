@@ -1,284 +1,318 @@
-import {
-  ArrowRight,
-  CalendarClock,
-  PartyPopper,
-  Radio,
-  Star,
-} from "lucide-react";
+import { ArrowRight, PartyPopper } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AssignmentRow } from "@/components/assignments/assignment-row";
-import { ClassCard } from "@/components/classes/class-card";
 import { EmptyState } from "@/components/common/empty-state";
-import { PageHeader } from "@/components/common/page-header";
-import { Section } from "@/components/common/section";
-import { MaterialRow } from "@/components/learning/material-row";
-import { NotificationIcon } from "@/components/shell/notification-icon";
-import { buttonVariants } from "@/components/ui/button";
+import { MATERIAL_KIND } from "@/components/learning/material-kind";
+import { ArenaCard } from "@/components/student-home/arena-card";
+import { LeaderboardCard } from "@/components/student-home/leaderboard-card";
+import { MissionRow } from "@/components/student-home/mission-row";
+import { PlayerCard } from "@/components/student-home/player-card";
+import { TeamCard } from "@/components/student-home/team-card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   getLeaderboard,
   getLiveSessions,
-  getNotifications,
   getStudentAssignments,
+  getStudentAttendance,
   getStudentClasses,
   getStudentMaterials,
+  getUser,
   getViewer,
   getXpTotal,
+  type StudentAssignment,
 } from "@/lib/data/queries";
 import {
-  formatDateTime,
   formatDay,
+  formatTime,
   formatWeekday,
   now,
   plural,
+  relativeDays,
 } from "@/lib/format";
-import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Acasă" };
 
+function SectionTitle({
+  children,
+  action,
+}: {
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="mb-3 flex items-center justify-between gap-3">
+      <h2 className="flex items-center gap-3 font-extrabold text-[28px] leading-none">
+        <span aria-hidden="true" className="size-3.5 rotate-45 bg-primary" />
+        {children}
+      </h2>
+      {action}
+    </div>
+  );
+}
+
+function SectionLink({
+  href,
+  children,
+}: {
+  href: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-1 font-bold font-heading text-cyan text-sm uppercase tracking-wide hover:underline"
+    >
+      {children} <ArrowRight className="size-4" aria-hidden="true" />
+    </Link>
+  );
+}
+
+function MissionList({
+  items,
+  empty,
+}: {
+  items: StudentAssignment[];
+  empty: string;
+}) {
+  if (items.length === 0)
+    return (
+      <EmptyState
+        icon={PartyPopper}
+        title={empty}
+        description="Când mentorul publică o temă nouă, apare aici."
+      />
+    );
+  return (
+    <ul className="stagger grid gap-2.5">
+      {items.map((a) => (
+        <li key={a.id}>
+          <MissionRow assignment={a} />
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default async function StudentHomePage() {
   const me = await getViewer("student");
-  const [assignments, classes, materials, sessions, notifications, totalXp] =
+  const [assignments, classes, materials, sessions, totalXp, attendance] =
     await Promise.all([
       getStudentAssignments(me.id),
       getStudentClasses(me.id),
       getStudentMaterials(me.id),
       getLiveSessions(me),
-      getNotifications(me.id),
       getXpTotal(me.id),
+      getStudentAttendance(me.id),
     ]);
 
-  const todo = assignments.filter(
+  const active = assignments.filter(
     (a) =>
       a.submissionState === "not_started" ||
       a.submissionState === "needs_changes",
   );
-  const upcoming = sessions.filter((s) => s.status !== "ended").reverse();
+  const submitted = assignments.filter(
+    (a) => a.submissionState === "submitted",
+  );
+  const done = assignments.filter((a) => a.submissionState === "reviewed");
+
   const perClass = await Promise.all(
-    classes.active.map(async (c) => {
+    classes.active.map(async (c, index) => {
       const board = await getLeaderboard(c.id);
-      const row = board.find((r) => r.student.id === me.id);
+      const mine = board.find((r) => r.student.id === me.id);
+      const classmates = await Promise.all(
+        [me.id, ...c.studentIds.filter((id) => id !== me.id)]
+          .slice(0, 3)
+          .map((id) => getUser(id)),
+      );
       return {
         classRoom: c,
-        xp: row?.xp ?? 0,
-        rank: row?.rank ?? 0,
-        size: board.length,
+        index,
+        board,
+        rank: mine?.rank ?? 0,
+        xp: mine?.xp ?? 0,
+        classmates: classmates.filter((u) => u !== undefined),
+        attendance: attendance.find((x) => x.classRoom.id === c.id),
       };
     }),
   );
+
+  // Clasa în care elevul stă cel mai bine, pentru card și pentru „rivalul” de deasupra.
+  const best = [...perClass].sort((a, b) => a.rank - b.rank || b.xp - a.xp)[0];
+  // Cel mai apropiat elev care are mai mult XP (la egalitate nu e „în fața ta”).
+  const rival = best?.board.filter((r) => r.xp > best.xp).at(-1);
+
+  const attended = attendance.reduce((s, x) => s + x.attended, 0);
+  const meetings = attendance.reduce((s, x) => s + x.total, 0);
+
+  const next = sessions
+    .filter((s) => s.status !== "ended")
+    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0];
+  const newest = [...materials].sort((a, b) =>
+    b.publishedAt.localeCompare(a.publishedAt),
+  )[0];
+  const newestAuthor = newest ? await getUser(newest.authorId) : undefined;
+
   const firstName = me.displayName.split(" ")[0];
 
   return (
     <div className="grid gap-8">
-      <PageHeader
-        title={`Bună, ${firstName}!`}
-        description={
-          <>
-            {formatWeekday(now().toISOString())} ·{" "}
-            {todo.length > 0
-              ? `Ai ${plural(todo.length, "temă", "teme")} de lucru.`
-              : "Ești la zi cu toate temele."}
-          </>
-        }
-      />
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="grid content-start gap-6 lg:col-span-2">
-          <Section
-            title="De făcut"
-            description="Teme neîncepute sau care au nevoie de corecturi"
-            actions={
-              <Link
-                href="/clase"
-                className={buttonVariants({ variant: "ghost", size: "sm" })}
-              >
-                Toate clasele <ArrowRight />
-              </Link>
-            }
-            bodyClassName="p-3"
-          >
-            {todo.length > 0 ? (
-              <ul className="stagger grid gap-2">
-                {todo.map((a) => (
-                  <li key={a.id}>
-                    <AssignmentRow assignment={a} />
-                  </li>
-                ))}
-              </ul>
+      <div className="grid items-center gap-6 lg:grid-cols-[minmax(0,1fr)_400px]">
+        <header>
+          <p className="font-bold font-heading text-cyan text-sm uppercase tracking-[0.12em]">
+            {formatWeekday(now().toISOString())}
+          </p>
+          <h1 className="mt-2 font-extrabold text-6xl leading-[0.9] sm:text-[84px]">
+            Bună, <span className="text-primary">{firstName}</span>
+          </h1>
+          <p className="mt-3 max-w-xl text-lg text-muted-foreground">
+            {active.length > 0 ? (
+              <>
+                Ai{" "}
+                <b className="text-foreground">
+                  {plural(active.length, "misiune activă", "misiuni active")}
+                </b>
+              </>
             ) : (
-              <EmptyState
-                icon={PartyPopper}
-                title="Nicio temă în așteptare"
-                description="Când mentorul publică o temă nouă, o vei vedea aici."
-                className="border-0"
-              />
+              "Ești la zi cu toate misiunile"
             )}
-          </Section>
-
-          <Section
-            title="Materiale noi"
-            actions={
-              <Link
-                href="/invatare"
-                className={buttonVariants({ variant: "ghost", size: "sm" })}
-              >
-                Învățare <ArrowRight />
-              </Link>
-            }
-            bodyClassName="p-2"
-          >
-            <ul className="stagger">
-              {materials.slice(0, 4).map((m) => (
-                <li key={m.id}>
-                  <MaterialRow
-                    material={m}
-                    href={`/invatare/materiale/${m.id}`}
-                  />
-                </li>
-              ))}
-            </ul>
-          </Section>
-        </div>
-
-        <div className="grid content-start gap-6">
-          <section className="rounded-xl border bg-card p-5 shadow-xs">
-            <div className="flex items-center justify-between">
-              <h2 className="font-semibold">XP-ul tău</h2>
-              <Link
-                href="/progres"
-                className="font-medium text-primary text-sm hover:underline"
-              >
-                Detalii
-              </Link>
-            </div>
-            <p className="mt-3 flex items-baseline gap-2">
-              <Star
-                className="size-6 self-center fill-xp text-xp"
-                aria-hidden="true"
-              />
-              <span className="font-semibold text-4xl tabular-nums tracking-tight">
-                {totalXp}
-              </span>
-              <span className="text-muted-foreground">XP în total</span>
-            </p>
-            <ul className="mt-4 grid gap-3 border-t pt-4">
-              {perClass.map((p) => (
-                <li
-                  key={p.classRoom.id}
-                  className="flex items-center justify-between gap-3 text-sm"
-                >
-                  <span className="min-w-0 truncate">{p.classRoom.name}</span>
-                  <span className="shrink-0 text-muted-foreground tabular-nums">
-                    {p.xp} XP · locul {p.rank} din {p.size}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
-
-          <Section title="Quiz-uri programate" bodyClassName="p-3">
-            {upcoming.length > 0 ? (
-              <ul className="grid gap-2">
-                {upcoming.map((s) => (
-                  <li key={s.id} className="rounded-lg border p-3">
-                    <div className="flex items-start gap-3">
-                      <span className="grid size-9 shrink-0 place-items-center rounded-full bg-primary-soft text-primary">
-                        <Radio className="size-4" aria-hidden="true" />
-                      </span>
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm">{s.title}</p>
-                        <p className="text-muted-foreground text-xs">
-                          {s.className}
-                        </p>
-                        <p className="mt-1 flex items-center gap-1 text-sm">
-                          <CalendarClock
-                            className="size-3.5 text-muted-foreground"
-                            aria-hidden="true"
-                          />
-                          {formatDateTime(s.startsAt)}
-                        </p>
-                      </div>
-                    </div>
-                    <Link
-                      href="/live"
-                      className={cn(
-                        buttonVariants({ variant: "outline", size: "sm" }),
-                        "mt-3 w-full",
-                      )}
-                    >
-                      Intră cu codul sesiunii
-                    </Link>
-                  </li>
-                ))}
-              </ul>
+            {next ? (
+              <>
+                {" "}
+                și o arenă live {relativeDays(next.startsAt)} la{" "}
+                {formatTime(next.startsAt)}.
+              </>
             ) : (
-              <p className="px-2 py-4 text-center text-muted-foreground text-sm">
-                Niciun quiz live programat.
-              </p>
-            )}
-          </Section>
+              "."
+            )}{" "}
+            {rival ? (
+              <>
+                {rival.student.displayName.split(" ")[0]} e doar la{" "}
+                <b className="text-foreground">{rival.xp - best.xp} XP</b> în
+                fața ta.
+              </>
+            ) : best?.rank === 1 ? (
+              <>Ești pe primul loc la {best.classRoom.name}.</>
+            ) : null}
+          </p>
+        </header>
+        <PlayerCard
+          name={me.displayName}
+          avatar={me.avatar}
+          rankLine={
+            best ? `Locul ${best.rank} · ${best.classRoom.name}` : undefined
+          }
+          stats={[
+            { value: String(totalXp), label: "XP total" },
+            {
+              value:
+                meetings > 0
+                  ? `${Math.round((attended / meetings) * 100)}%`
+                  : "–",
+              label: "prezență",
+            },
+            { value: String(done.length), label: "teme evaluate" },
+          ]}
+        />
+      </div>
 
-          <Section
-            title="Notificări recente"
-            actions={
-              <Link
-                href="/notificari"
-                className="font-medium text-primary text-sm hover:underline"
-              >
-                Toate
-              </Link>
-            }
-            bodyClassName="p-2"
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
+        <section>
+          <SectionTitle
+            action={<SectionLink href="/clase">Toate clasele</SectionLink>}
           >
-            <ul>
-              {notifications.slice(0, 3).map((n) => (
-                <li key={n.id}>
-                  <Link
-                    href={n.href}
-                    className="flex gap-3 rounded-lg p-2.5 hover:bg-muted/60"
-                  >
-                    <NotificationIcon kind={n.kind} className="size-8" />
-                    <span className="min-w-0">
-                      <span
-                        className={cn(
-                          "block text-sm leading-snug",
-                          !n.read && "font-medium",
-                        )}
-                      >
-                        {n.title}
-                      </span>
-                      <span className="text-muted-foreground text-xs">
-                        {formatDay(n.at)}
-                      </span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </Section>
+            Misiuni
+          </SectionTitle>
+          <Tabs defaultValue="active">
+            <TabsList className="mb-1">
+              <TabsTrigger value="active">Active · {active.length}</TabsTrigger>
+              <TabsTrigger value="submitted">
+                Trimise · {submitted.length}
+              </TabsTrigger>
+              <TabsTrigger value="done">Terminate · {done.length}</TabsTrigger>
+            </TabsList>
+            <TabsContent value="active">
+              <MissionList items={active} empty="Nicio misiune activă" />
+            </TabsContent>
+            <TabsContent value="submitted">
+              <MissionList items={submitted} empty="Nimic trimis încă" />
+            </TabsContent>
+            <TabsContent value="done">
+              <MissionList items={done} empty="Nicio temă evaluată încă" />
+            </TabsContent>
+          </Tabs>
+        </section>
+
+        <div className="grid content-start gap-5">
+          <ArenaCard
+            session={
+              next
+                ? {
+                    title: next.title,
+                    className: next.className,
+                    startsAt: next.startsAt,
+                    players:
+                      classes.active.find((c) => c.id === next.classId)
+                        ?.studentIds.length ?? 0,
+                    live: next.status === "lobby" || next.status === "running",
+                  }
+                : undefined
+            }
+          />
+          {best ? (
+            <LeaderboardCard
+              title="Clasament"
+              subtitle={best.classRoom.name}
+              href={`/clase/${best.classRoom.id}/clasament`}
+              rows={best.board}
+              meId={me.id}
+            />
+          ) : null}
         </div>
       </div>
 
       <section>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-semibold text-base">Clasele tale</h2>
-          <Link
-            href="/clase"
-            className={buttonVariants({ variant: "ghost", size: "sm" })}
-          >
-            Clasele mele <ArrowRight />
-          </Link>
-        </div>
-        <ul className="stagger grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {classes.active.map((c) => (
-            <li key={c.id}>
-              <ClassCard
-                classRoom={c}
-                href={`/clase/${c.id}`}
-                viewAs="student"
+        <SectionTitle
+          action={<SectionLink href="/clase">Clasele mele</SectionLink>}
+        >
+          Echipele tale
+        </SectionTitle>
+        <ul className="stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {perClass.map((p) => (
+            <li key={p.classRoom.id}>
+              <TeamCard
+                href={`/clase/${p.classRoom.id}`}
+                index={p.index}
+                badge={p.classRoom.schedule}
+                title={p.classRoom.name}
+                subtitle={`Mentor: ${p.classRoom.mentor.displayName}`}
+                members={p.classmates.map((u) => ({
+                  name: u.displayName,
+                  avatar: u.avatar,
+                }))}
+                memberCount={p.classRoom.studentIds.length}
+                progress={
+                  p.attendance
+                    ? {
+                        done: p.attendance.attended,
+                        total: p.attendance.total,
+                        label: `Prezență: ${p.attendance.attended} din ${p.attendance.total} întâlniri`,
+                      }
+                    : undefined
+                }
               />
             </li>
           ))}
+          {newest ? (
+            <li>
+              <TeamCard
+                href={`/invatare/materiale/${newest.id}`}
+                index={3}
+                badge="Material nou"
+                title={newest.title}
+                subtitle={`${MATERIAL_KIND[newest.kind].label}${newestAuthor ? ` de la ${newestAuthor.displayName}` : ""} · ${formatDay(newest.publishedAt)}`}
+              />
+            </li>
+          ) : null}
         </ul>
       </section>
     </div>

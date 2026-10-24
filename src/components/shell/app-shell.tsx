@@ -24,6 +24,7 @@ export function AppShell({
   settingsHref,
   search,
   quickAction,
+  status,
   children,
 }: {
   nav: NavGroup[];
@@ -35,25 +36,24 @@ export function AppShell({
   search: SearchItem[];
   /** O acțiune importantă, mereu la îndemână (ex. „Quiz live”). */
   quickAction?: React.ReactNode;
+  /** Un indicator mic, lângă cont (ex. XP-ul elevului). */
+  status?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const primary = nav[0]?.items ?? [];
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <header className="sticky top-0 z-[45] border-b bg-card/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-2 px-4 sm:px-6 xl:px-0">
+      <header className="sticky top-0 z-[45] border-b-2 bg-background/90 backdrop-blur-sm">
+        <div className="mx-auto flex h-[68px] w-full max-w-6xl items-center gap-2 px-4 sm:px-6 xl:px-0">
           <div className="lg:hidden">
             <MobileNav groups={nav} home={home} />
           </div>
-          <Logo
-            href={home}
-            className="mr-2 [&>span:last-child]:hidden sm:[&>span:last-child]:inline"
-          />
+          <Logo href={home} className="mr-4" />
 
           <nav
             aria-label="Navigare principală"
-            className="hidden h-16 items-stretch lg:flex"
+            className="hidden items-center gap-0.5 lg:flex"
           >
             {primary.map((item) => (
               <TopNavLink key={item.href} item={item} />
@@ -61,6 +61,7 @@ export function AppShell({
           </nav>
 
           <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+            {status}
             <SearchMenu items={search} />
             {quickAction}
             <NotificationsMenu

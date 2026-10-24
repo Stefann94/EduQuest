@@ -48,7 +48,7 @@ export default async function MentorLayout({
           icon: <LayoutDashboard />,
           exact: true,
         },
-        { label: "Clasele mele", href: "/mentor/clase", icon: <Users /> },
+        { label: "Clase", href: "/mentor/clase", icon: <Users /> },
         { label: "Materiale", href: "/mentor/materiale", icon: <BookOpen /> },
         {
           label: "Teme",
@@ -126,7 +126,10 @@ export default async function MentorLayout({
       quickAction={
         <Link
           href="/mentor/live"
-          className={cn(buttonVariants(), "hidden sm:inline-flex")}
+          className={cn(
+            buttonVariants({ variant: "cta" }),
+            "hidden sm:inline-flex",
+          )}
         >
           <Radio /> Quiz live
         </Link>

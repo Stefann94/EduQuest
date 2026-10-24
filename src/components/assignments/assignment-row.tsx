@@ -8,7 +8,14 @@ import type { StudentAssignment } from "@/lib/data/queries";
 import { formatDay, relativeDays } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-/** Un rând de temă pentru elev: tip, titlu, clasă, termen și stare. */
+// Dunga din stânga: galben = obligatorie, cyan = opțională, portocaliu = de corectat.
+function stripe(a: StudentAssignment) {
+  if (a.overdue) return "bg-destructive";
+  if (a.submissionState === "needs_changes") return "bg-warning";
+  return a.type === "required" ? "bg-xp" : "bg-cyan";
+}
+
+/** Un rând de temă pentru elev, ca o „misiune”: tip, titlu, clasă, termen și stare. */
 export function AssignmentRow({
   assignment: a,
   showClass = true,
@@ -19,11 +26,20 @@ export function AssignmentRow({
   return (
     <Link
       href={`/teme/${a.id}`}
-      className="group flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-card px-4 py-3 outline-none transition-colors hover:border-foreground/15 hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/40"
+      className="group relative flex cut-sm flex-wrap items-center gap-x-4 gap-y-2 bg-card py-3.5 pr-4 pl-6 outline-none transition-[translate,background-color] duration-300 ease-out hover:translate-x-1.5 hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/70 focus-visible:ring-inset"
     >
+      <span
+        aria-hidden="true"
+        className={cn(
+          "absolute inset-y-0 left-0 w-1.5 transition-[width] group-hover:w-2.5",
+          stripe(a),
+        )}
+      />
       <div className="min-w-0 flex-1 basis-60">
         <div className="flex flex-wrap items-center gap-2">
-          <p className="font-medium group-hover:text-primary">{a.title}</p>
+          <p className="font-bold font-heading text-lg uppercase leading-tight tracking-wide">
+            {a.title}
+          </p>
           <AssignmentTypeBadge type={a.type} />
         </div>
         <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-muted-foreground text-sm">

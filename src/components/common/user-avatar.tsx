@@ -19,10 +19,11 @@ const SIZES = {
   sm: "size-8 text-sm",
   md: "size-10 text-lg",
   lg: "size-14 text-2xl",
+  xl: "size-18 text-3xl",
 } as const;
 
 /**
- * Avatarul unui utilizator. Cu `avatar` afișează personajul ales,
+ * Avatarul unui utilizator, într-un hexagon. Cu `avatar` afișează personajul ales,
  * altfel inițialele numelui.
  */
 export function UserAvatar({
@@ -41,7 +42,10 @@ export function UserAvatar({
       aria-hidden="true"
       title={name}
       className={cn(
-        "grid shrink-0 select-none place-items-center rounded-full bg-secondary font-medium text-secondary-foreground",
+        "hex grid shrink-0 select-none place-items-center font-extrabold font-heading",
+        avatar
+          ? "bg-secondary text-secondary-foreground"
+          : "bg-cyan text-cyan-foreground",
         SIZES[size],
         className,
       )}

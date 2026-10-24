@@ -1,6 +1,5 @@
 import { BookOpenText, MessageSquareText, ShieldCheck } from "lucide-react";
-import Link from "next/link";
-import { Logo, LogoMark } from "@/components/brand/logo";
+import { Logo } from "@/components/brand/logo";
 
 const BENEFITS = [
   {
@@ -27,34 +26,30 @@ export default function AuthLayout({
 }) {
   return (
     <div className="grid min-h-dvh lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
-      <aside className="relative hidden overflow-hidden bg-primary text-primary-foreground lg:sticky lg:top-0 lg:block lg:h-dvh">
-        {/* Un halou discret, fără elemente decorative în plus. */}
+      <aside className="relative hidden overflow-hidden bg-[linear-gradient(140deg,var(--primary),#c42a8f_70%)] text-primary-foreground lg:sticky lg:top-0 lg:block lg:h-dvh">
+        {/* Dungi oblice în colț, ca pe cardul arenei. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(120%_80%_at_0%_0%,rgb(255_255_255/0.12),transparent_60%)]"
+          className="pointer-events-none absolute -top-6 -right-6 size-64 bg-[repeating-linear-gradient(-45deg,rgb(255_255_255/0.12)_0_10px,transparent_10px_20px)]"
         />
         <div className="relative flex h-full flex-col justify-between gap-10 overflow-y-auto p-10 xl:p-14">
-          <Link
-            href="/autentificare"
-            className="flex w-fit items-center gap-2.5 rounded-lg font-semibold text-[17px] tracking-tight outline-none focus-visible:ring-3 focus-visible:ring-white/50"
-          >
-            <LogoMark className="bg-white/15 ring-1 ring-white/25" />
-            EduQuest
-          </Link>
+          <Logo href="/autentificare" className="w-fit" />
 
           <div className="grid max-w-md gap-10">
-            <p className="text-balance font-semibold text-3xl leading-tight tracking-tight xl:text-[34px]">
+            <p className="text-balance font-extrabold font-heading text-4xl uppercase leading-[0.95] xl:text-5xl">
               Învață programare în clase organizate de mentori, cu teme,
               quiz-uri și feedback personal.
             </p>
             <ul className="grid gap-6">
               {BENEFITS.map(({ icon: Icon, title, text }) => (
                 <li key={title} className="flex gap-3.5">
-                  <span className="grid size-9 shrink-0 place-items-center rounded-lg bg-white/10 ring-1 ring-white/15">
+                  <span className="hex grid size-10 shrink-0 place-items-center bg-background/35">
                     <Icon className="size-[18px]" aria-hidden="true" />
                   </span>
                   <div>
-                    <p className="font-medium">{title}</p>
+                    <p className="font-bold font-heading text-lg uppercase tracking-wide">
+                      {title}
+                    </p>
                     <p className="text-primary-foreground/75 text-sm">{text}</p>
                   </div>
                 </li>

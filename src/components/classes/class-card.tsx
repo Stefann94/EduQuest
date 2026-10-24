@@ -29,22 +29,20 @@ export function ClassCard({
     <Link
       href={href}
       className={cn(
-        "group flex h-full flex-col overflow-hidden rounded-xl border bg-card shadow-xs outline-none transition-[box-shadow,border-color] hover:border-foreground/15 hover:shadow-md focus-visible:ring-3 focus-visible:ring-ring/40",
+        "group flex h-full cut flex-col overflow-hidden bg-card outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/70 focus-visible:ring-inset",
         archived && "bg-muted/40",
       )}
     >
       <span
         aria-hidden="true"
         className={cn(
-          "h-1.5",
+          "h-1",
           archived ? "bg-muted-foreground/30" : classAccent(c.id),
         )}
       />
       <div className="flex flex-1 flex-col gap-4 p-5">
         <div>
-          <h3 className="font-semibold leading-snug group-hover:text-primary">
-            {c.name}
-          </h3>
+          <h3 className="font-extrabold text-2xl leading-none">{c.name}</h3>
           <p className="mt-1 line-clamp-2 text-muted-foreground text-sm">
             {c.description}
           </p>
