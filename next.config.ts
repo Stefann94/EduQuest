@@ -20,6 +20,11 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   reactCompiler: true,
+  experimental: {
+    // Fără cache Turbopack la build: Vercel îl refolosea între build-uri, iar un CSS
+    // vechi (tema anterioară) ajungea pe site. Fiecare build pornește de la zero.
+    turbopackFileSystemCacheForBuild: false,
+  },
   poweredByHeader: false,
   turbopack: {
     rules: {
