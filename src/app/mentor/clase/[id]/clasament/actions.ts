@@ -1,8 +1,10 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { db } from "@/lib/db/core";
 import { formatXp } from "@/lib/format";
-import { DEMO_NOTE, NO_ACCESS, ownedClass } from "../../access";
+import { NO_ACCESS, ownedClass } from "../../access";
 
 export type AdjustXpState =
   | { status: "idle" }
@@ -29,7 +31,7 @@ const schema = z.object({
 
 /**
  * Ajustare manuală de XP, făcută de mentorul clasei. Se înregistrează în istoricul
- * de XP cu sursa „Ajustare” și motivul scris. În demo nu salvează nimic.
+ * de XP cu sursa „Corectare” și motivul scris (adjust_xp, în baza de date).
  */
 export async function adjustXp(
   _prev: AdjustXpState,
@@ -61,9 +63,23 @@ export async function adjustXp(
     return { status: "error", errors };
   }
 
+  const supabase = await db();
+  const { error } = await supabase.rpc("adjust_xp", {
+    p_student: student.id,
+    p_class: owned.classRoom.id,
+    p_amount: parsed.data.amount,
+    p_label: parsed.data.reason,
+  });
+  if (error)
+    return {
+      status: "error",
+      message: "Ajustarea nu s-a putut salva. Încearcă din nou.",
+      errors: {},
+    };
+  revalidatePath(`/mentor/clase/${owned.classRoom.id}`, "layout");
   return {
     status: "success",
     message: `${formatXp(parsed.data.amount)} pentru ${student.displayName}`,
-    note: `Motiv: ${parsed.data.reason}. ${DEMO_NOTE}`,
+    note: `Motiv: ${parsed.data.reason}. Apare în istoricul de XP al elevului.`,
   };
 }

@@ -30,7 +30,7 @@ const count = async (c: SupabaseClient, table: string) => {
 
 // Vizitator: nu vede nimic.
 const guest = createClient(url, anonKey, { auth: { persistSession: false } });
-for (const t of ["profiles", "classes", "assignments", "quiz_answer_keys"]) {
+for (const t of ["profiles", "classes", "homeworks", "lesson_items", "quiz_answer_keys", "live_answers"]) {
   const { data } = await guest.from(t).select("*");
   check(`vizitator nu vede ${t}`, (data?.length ?? 0) === 0);
 }
@@ -65,7 +65,7 @@ check(
   (xp.data ?? []).length > 0 &&
     (xp.data ?? []).every((r) => r.student_id === me),
 );
-const subs = await tudor.from("submissions").select("student_id");
+const subs = await tudor.from("problem_submissions").select("student_id");
 check(
   "elevul vede doar trimiterile lui",
   (subs.data ?? []).every((r) => r.student_id === me),
@@ -125,8 +125,36 @@ check(
   "mentorul nu vede aplicațiile de mentor",
   (await count(ana, "mentor_applications")) === 0,
 );
-const anaSubs = await count(ana, "submissions");
+const anaSubs = await count(ana, "problem_submissions");
 check("mentorul vede trimiterile din clasele lui", anaSubs > 0, `${anaSubs}`);
+
+// v2: lecții, teme, joc live
+const items = await tudor.from("lesson_items").select("title, published");
+check(
+  "elevul nu vede materialele ascunse",
+  (items.data ?? []).every((i) => i.published),
+  `${items.data?.length ?? 0} materiale`,
+);
+const javaLessons = await tudor.from("lessons").select("title").eq("title", "Constructori");
+check("elevul nu vede lecțiile altor clase", (javaLessons.data ?? []).length === 0);
+const fakeSub = await tudor.from("problem_submissions").insert({
+  assignment_id: "00000000-0000-0000-0000-000000000000",
+  problem_id: "00000000-0000-0000-0000-000000000000",
+  student_id: me,
+});
+check("elevul nu poate scrie trimiteri direct", fakeSub.error !== null);
+const { data: lobby } = await tudor.from("live_sessions").select("id").eq("status", "lobby").limit(1);
+if (lobby?.[0]) {
+  const ctrl = await tudor.rpc("live_control", { p_session: lobby[0].id, p_action: "start" });
+  check("elevul nu poate porni jocul live", ctrl.error !== null);
+}
+const mihai = await login("mihai.dumitrescu@exemplu.ro");
+const anaLesson = await mihai
+  .from("lessons")
+  .update({ title: "Schimbat" })
+  .eq("title", "Cum citești un mesaj de eroare")
+  .select("id");
+check("mentorul nu poate edita lecția altui mentor", (anaLesson.data ?? []).length === 0);
 
 // Administrator
 const admin = await login("admin@eduquest.ro");
@@ -136,7 +164,7 @@ check(
 );
 check(
   "adminul nu vede temele claselor",
-  (await count(admin, "assignments")) === 0,
+  (await count(admin, "homework_assignments")) === 0,
 );
 
 console.log(

@@ -2,14 +2,14 @@ import { Archive, CalendarDays } from "lucide-react";
 import { PageHeader } from "@/components/common/page-header";
 import { StatusBadge } from "@/components/common/status";
 import { UserAvatar } from "@/components/common/user-avatar";
-import type { ClassRoom, User } from "@/lib/data/types";
+import type { ClassRoom, Person } from "@/lib/db/classes";
 import { ClassSectionNav } from "./class-section-nav";
 
 /** Antetul comun al paginilor unei clase: nume, mentor, program și secțiuni. */
 export function ClassHeader({
   classRoom: c,
 }: {
-  classRoom: ClassRoom & { mentor: User };
+  classRoom: ClassRoom & { mentor: Person };
 }) {
   const archived = c.status === "archived";
   return (
@@ -58,7 +58,7 @@ export function ClassHeader({
             <span className="font-medium">Clasă arhivată</span>
             <span className="text-muted-foreground">
               {" "}
-              — poți reciti materialele, dar nu mai poți trimite teme.
+              — poți reciti lecțiile, dar nu mai poți trimite teme.
             </span>
           </p>
         </div>

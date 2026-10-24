@@ -1,31 +1,27 @@
 import {
   ArrowRight,
+  BookOpen,
   CalendarDays,
   CircleCheckBig,
-  FolderOpen,
   Star,
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { AssignmentRow } from "@/components/assignments/assignment-row";
 import { EmptyState } from "@/components/common/empty-state";
 import { Section } from "@/components/common/section";
-import { MaterialRow } from "@/components/learning/material-row";
-import { UpcomingSessionCard } from "@/components/student-class/quiz-rows";
+import { HomeworkRow } from "@/components/homework/homework-row";
+import { LessonNumber, LessonTitle } from "@/components/lessons/lesson-card";
+import { OpenSessionCard } from "@/components/student-class/quiz-rows";
 import { SectionSkeleton } from "@/components/student-class/skeletons";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  getClassAssignmentsForStudent,
-  getClassAttendance,
-  getClassMaterials,
-} from "@/lib/data/queries";
-import {
-  getClassQuizzesForStudent,
-  getClassStanding,
-  getNextMeeting,
-} from "@/lib/data/student-class-queries";
+import { getClassAttendanceForStudent } from "@/lib/db/attendance";
+import { getStudentHomework } from "@/lib/db/homework";
+import { getClassLessons } from "@/lib/db/lessons";
+import { getLiveSessions } from "@/lib/db/quizzes";
+import { getClassStanding } from "@/lib/db/xp";
 import { formatDay, formatWeekday, relativeDays } from "@/lib/format";
+import { getNextMeeting } from "@/lib/meetings";
 import { loadStudentClass } from "./load-class";
 
 type Props = PageProps<"/clase/[id]">;
@@ -44,30 +40,29 @@ export default function ClassOverviewPage({ params }: Props) {
 
 async function Content({ params }: { params: Props["params"] }) {
   const { viewer, classRoom: c } = await loadStudentClass(params);
-  const [assignments, content, standing, quizzes, meetings] = await Promise.all(
+  const [homework, lessons, standing, sessions, attendance] = await Promise.all(
     [
-      getClassAssignmentsForStudent(c.id, viewer.id),
-      getClassMaterials(c.id),
+      getStudentHomework(viewer.id),
+      getClassLessons(c.id),
       getClassStanding(c.id, viewer.id),
-      getClassQuizzesForStudent(viewer, c.id),
-      getClassAttendance(c.id),
+      getLiveSessions(),
+      getClassAttendanceForStudent(viewer.id, c.id),
     ],
   );
 
   const archived = c.status === "archived";
   const todo = archived
     ? []
-    : assignments.filter(
-        (a) =>
-          a.submissionState === "not_started" ||
-          a.submissionState === "needs_changes",
+    : homework.filter(
+        (h) =>
+          h.classId === c.id &&
+          ((!h.complete && !h.overdue) ||
+            h.problems.some((p) => p.state === "needs_changes")),
       );
-  const latest = [...content.materials]
-    .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
-    .slice(0, 3);
+  const latest = [...lessons].reverse().slice(0, 3);
   const next = getNextMeeting(c);
-  const lastMeeting = meetings[0];
-  const live = quizzes.upcoming[0];
+  const lastMeeting = attendance.meetings[0];
+  const live = sessions.find((s) => s.classId === c.id && s.status !== "ended");
   const base = `/clase/${c.id}`;
 
   return (
@@ -75,7 +70,7 @@ async function Content({ params }: { params: Props["params"] }) {
       <div className="grid content-start gap-6 lg:col-span-2">
         <Section
           title="De făcut în această clasă"
-          description="Teme neîncepute sau care au nevoie de corecturi"
+          description="Teme cu probleme netrimise sau de refăcut"
           actions={
             <Link
               href={`${base}/teme`}
@@ -88,9 +83,9 @@ async function Content({ params }: { params: Props["params"] }) {
         >
           {todo.length > 0 ? (
             <ul className="stagger grid gap-2">
-              {todo.map((a) => (
-                <li key={a.id}>
-                  <AssignmentRow assignment={a} showClass={false} />
+              {todo.map((h) => (
+                <li key={h.id}>
+                  <HomeworkRow homework={h} showClass={false} />
                 </li>
               ))}
             </ul>
@@ -109,33 +104,45 @@ async function Content({ params }: { params: Props["params"] }) {
         </Section>
 
         <Section
-          title="Materiale recente"
+          title="Ultimele lecții"
           actions={
             <Link
-              href={`${base}/materiale`}
+              href={`${base}/lectii`}
               className={buttonVariants({ variant: "ghost", size: "sm" })}
             >
-              Toate materialele <ArrowRight />
+              Toate lecțiile <ArrowRight />
             </Link>
           }
           bodyClassName="p-2"
         >
           {latest.length > 0 ? (
-            <ul className="stagger">
-              {latest.map((m) => (
-                <li key={m.id}>
-                  <MaterialRow
-                    material={m}
-                    href={`/invatare/materiale/${m.id}`}
-                  />
+            <ul className="stagger grid gap-1">
+              {latest.map((l) => (
+                <li key={l.id}>
+                  <Link
+                    href={`${base}/lectii/${l.id}`}
+                    className="group flex items-center gap-4 px-3 py-2.5 outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/70"
+                  >
+                    <LessonNumber lesson={l} className="size-10 text-base" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-medium">
+                        <LessonTitle lesson={l} />
+                      </span>
+                      <span className="block text-muted-foreground text-sm">
+                        {l.items.length === 1
+                          ? "1 material"
+                          : `${l.items.length} materiale`}
+                      </span>
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
           ) : (
             <EmptyState
-              icon={FolderOpen}
-              title="Niciun material încă"
-              description="Când mentorul publică un material pentru clasă, îl vei găsi aici."
+              icon={BookOpen}
+              title="Nicio lecție încă"
+              description="Când mentorul publică o lecție pentru clasă, o găsești aici."
               className="border-0"
             />
           )}
@@ -214,8 +221,8 @@ async function Content({ params }: { params: Props["params"] }) {
         </Section>
 
         {live ? (
-          <Section title="Quiz live programat" bodyClassName="p-3">
-            <UpcomingSessionCard session={live} />
+          <Section title="Quiz live deschis" bodyClassName="p-3">
+            <OpenSessionCard session={live} />
           </Section>
         ) : null}
       </div>

@@ -1,66 +1,70 @@
 import Link from "next/link";
-import type { StudentAssignment } from "@/lib/data/queries";
+import type { StudentHomework } from "@/lib/db/homework";
 import { daysUntil, formatWeekday, plural } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
+const needsChanges = (h: StudentHomework) =>
+  h.problems.some((p) => p.state === "needs_changes");
+
 // Temele, în limbajul panoului: obligatorie = principală, opțională = secundară.
-function mission(a: StudentAssignment) {
-  if (a.submissionState === "needs_changes")
+function mission(h: StudentHomework) {
+  if (needsChanges(h))
     return {
       kind: "Revino la misiune · feedback de la mentor",
       accent: "bg-warning",
       text: "text-warning",
     };
-  return a.type === "required"
-    ? { kind: "Misiune principală", accent: "bg-xp", text: "text-xp" }
+  return h.required
+    ? {
+        kind: "Misiune principală",
+        accent: "bg-xp",
+        text: "text-xp-foreground",
+      }
     : { kind: "Misiune secundară", accent: "bg-cyan", text: "text-cyan" };
 }
 
-/** Timpul rămas, mare, în dreapta rândului. */
-function Remaining({ a }: { a: StudentAssignment }) {
-  if (a.submissionState === "needs_changes")
+/** Timpul rămas (sau starea), mare, în dreapta rândului. */
+function Remaining({ h }: { h: StudentHomework }) {
+  if (needsChanges(h))
     return (
       <>
         <b className="block font-extrabold font-heading text-3xl text-warning leading-none">
           Corecturi
         </b>
-        <span className="text-muted-foreground text-xs">retrimite tema</span>
+        <span className="text-muted-foreground text-xs">
+          retrimite problema
+        </span>
       </>
     );
-  if (a.submissionState === "submitted")
-    return (
-      <>
-        <b className="block font-extrabold font-heading text-3xl text-info leading-none">
-          Trimisă
-        </b>
-        <span className="text-muted-foreground text-xs">așteaptă review</span>
-      </>
-    );
-  if (a.submissionState === "reviewed")
+  if (h.complete)
     return (
       <>
         <b className="block font-extrabold font-heading text-3xl text-success leading-none">
-          Gata
+          Trimisă
         </b>
-        <span className="text-muted-foreground text-xs">cu feedback</span>
+        <span className="text-muted-foreground text-xs">
+          {h.problems.every((p) => p.state === "accepted")
+            ? "acceptată"
+            : "așteaptă evaluarea"}
+        </span>
       </>
     );
-  if (!a.deadline)
+  if (!h.deadline)
     return (
       <b className="block font-extrabold font-heading text-3xl leading-none">
         Oricând
       </b>
     );
-  const d = daysUntil(a.deadline);
+  const d = daysUntil(h.deadline);
   return (
     <>
       <b
         className={cn(
           "block font-extrabold font-heading text-3xl leading-none",
-          a.overdue && "text-destructive",
+          h.overdue && "text-destructive",
         )}
       >
-        {a.overdue
+        {h.overdue
           ? "Depășit"
           : d <= 0
             ? "Azi"
@@ -69,22 +73,19 @@ function Remaining({ a }: { a: StudentAssignment }) {
               : plural(d, "zi", "zile")}
       </b>
       <span className="text-muted-foreground text-xs">
-        {formatWeekday(a.deadline).toLowerCase()}
+        {h.progress.done} din {h.progress.total} ·{" "}
+        {formatWeekday(h.deadline).toLowerCase()}
       </span>
     </>
   );
 }
 
-/** O temă ca „misiune”: dungă colorată, tip, titlu, rezumat și timpul rămas. */
-export function MissionRow({
-  assignment: a,
-}: {
-  assignment: StudentAssignment;
-}) {
-  const m = mission(a);
+/** O temă ca „misiune”: dungă colorată, tip, titlu, problemele și timpul rămas. */
+export function MissionRow({ homework: h }: { homework: StudentHomework }) {
+  const m = mission(h);
   return (
     <Link
-      href={`/teme/${a.id}`}
+      href={`/teme/${h.id}`}
       className="group relative grid cut-sm grid-cols-[minmax(0,1fr)_auto] items-center gap-4 bg-card py-4 pr-5 pl-7 outline-none transition-[translate,background-color] duration-300 ease-out hover:translate-x-1.5 hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/70 focus-visible:ring-inset"
     >
       <span
@@ -101,19 +102,17 @@ export function MissionRow({
             m.text,
           )}
         >
-          {m.kind} · {a.className}
+          {m.kind} · {h.className}
         </p>
         <p className="font-bold font-heading text-[22px] uppercase leading-tight tracking-wide">
-          {a.title}
+          {h.title}
         </p>
         <p className="line-clamp-1 text-muted-foreground text-sm">
-          {a.submissionState === "needs_changes" && a.submission?.feedback
-            ? `„${a.submission.feedback.text}”`
-            : a.summary}
+          {h.problems.map((p) => p.title).join(" · ")}
         </p>
       </div>
       <div className="text-right">
-        <Remaining a={a} />
+        <Remaining h={h} />
       </div>
     </Link>
   );

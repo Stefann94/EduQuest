@@ -1,85 +1,94 @@
 "use client";
 
-import { Code2, Globe2, Lock, Users } from "lucide-react";
+import { Code2 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
-import { saveQuiz } from "@/app/mentor/quiz/actions";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
+import { type QuizInput, saveQuiz } from "@/app/mentor/quiz/actions";
 import { Section } from "@/components/common/section";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import { Callout } from "./callout";
-import type { QuestionDraft, QuizDraft } from "./drafts";
-import {
-  ChoiceGroup,
-  describe,
-  Field,
-  FieldError,
-  FieldSet,
-  FormMessage,
-  SelectField,
-} from "./field";
+import { Field, FieldError, FieldSet, SelectField } from "./field";
 import { AddButton, ItemControls, move, newKey } from "./list-controls";
 import { ANSWER_STYLES, AnswerShape } from "./quiz-shapes";
-import { useMentorForm } from "./use-mentor-form";
 
-const emptyQuestion = (): QuestionDraft => ({
-  key: newKey("q"),
+type QuestionDraft = {
+  key: string;
+  prompt: string;
+  code: string;
+  options: string[];
+  correct: number | null;
+  explanation: string;
+  lessonId: string | null;
+};
+
+export type QuizDraft = {
+  id?: string;
+  title: string;
+  description: string;
+  lessonIds: string[];
+  xp: number;
+  timeLimitSec: number | null;
+  classIds: string[];
+  questions: Omit<QuestionDraft, "key">[];
+};
+
+const emptyQuestion = (
+  lessonId: string | null,
+  key = newKey("q"),
+): QuestionDraft => ({
+  key,
   prompt: "",
   code: "",
-  options: ["", ""],
+  options: ["", "", "", ""],
   correct: null,
   explanation: "",
+  lessonId,
 });
 
+/**
+ * Un quiz: întrebări cu 2–4 variante (una corectă), fiecare etichetată pe lecția pe care
+ * o verifică; lecțiile acoperite (una = quiz de lecție, mai multe = recapitulare), XP-ul
+ * și clasele cărora le e dat (disponibil imediat, fără programare).
+ */
 export function QuizForm({
   draft,
+  lessons,
   classes,
-  readOnlyReason,
 }: {
   draft: QuizDraft;
+  lessons: { id: string; title: string }[];
   classes: { id: string; name: string }[];
-  readOnlyReason?: string;
 }) {
-  const [difficulty, setDifficulty] = useState(draft.difficulty);
-  const [scope, setScope] = useState(draft.scope);
-  const [classId, setClassId] = useState(draft.classId);
-  const [timeUnit, setTimeUnit] = useState<string>(draft.timeUnit);
-  const [questions, setQuestions] = useState<QuestionDraft[]>(draft.questions);
-  // Întrebările la care e deschis câmpul de cod (cele care au deja cod sunt deschise).
+  const [title, setTitle] = useState(draft.title);
+  const [description, setDescription] = useState(draft.description);
+  const [lessonIds, setLessonIds] = useState(draft.lessonIds);
+  const [classIds, setClassIds] = useState(draft.classIds);
+  const [xp, setXp] = useState(draft.xp);
+  const [minutes, setMinutes] = useState(
+    draft.timeLimitSec ? String(Math.round(draft.timeLimitSec / 60)) : "",
+  );
+  const [questions, setQuestions] = useState<QuestionDraft[]>(() =>
+    draft.questions.length
+      ? draft.questions.map((q, i) => ({ ...q, key: `q-${i}` }))
+      : [emptyQuestion(draft.lessonIds[0] ?? null, "q-0")],
+  );
   const [withCode, setWithCode] = useState<string[]>(() =>
-    draft.questions.filter((q) => q.code).map((q) => q.key),
+    questions.filter((q) => q.code).map((q) => q.key),
   );
-
-  const { errors, pending, formRef, onSubmit, state } = useMentorForm(
-    saveQuiz,
-    (fd) => {
-      fd.set(
-        "questions",
-        JSON.stringify(
-          questions.map((q) => ({
-            prompt: q.prompt,
-            code: withCode.includes(q.key) ? q.code : "",
-            options: q.options,
-            correct: q.correct,
-            explanation: q.explanation,
-          })),
-        ),
-      );
-    },
-  );
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [pending, startTransition] = useTransition();
 
   const update = (i: number, patch: Partial<QuestionDraft>) =>
     setQuestions((list) =>
       list.map((q, j) => (j === i ? { ...q, ...patch } : q)),
     );
-
-  function setOption(i: number, j: number, value: string) {
-    const q = questions[i];
-    update(i, { options: q.options.map((o, k) => (k === j ? value : o)) });
-  }
-
+  const setOption = (i: number, j: number, value: string) =>
+    update(i, {
+      options: questions[i].options.map((o, k) => (k === j ? value : o)),
+    });
   function removeOption(i: number, j: number) {
     const q = questions[i];
     const correct =
@@ -90,30 +99,56 @@ export function QuizForm({
           : q.correct;
     update(i, { options: q.options.filter((_, k) => k !== j), correct });
   }
+  const toggle = (list: string[], id: string, on: boolean) =>
+    on ? [...list, id] : list.filter((x) => x !== id);
+
+  const chosenLessons = lessons.filter((l) => lessonIds.includes(l.id));
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const input: QuizInput = {
+      title,
+      description,
+      lessonIds,
+      xp,
+      timeLimitSec: minutes.trim() ? Math.round(Number(minutes) * 60) : null,
+      classIds,
+      questions: questions.map((q) => ({
+        prompt: q.prompt,
+        code: withCode.includes(q.key) ? q.code : "",
+        options: q.options,
+        correct: q.correct ?? -1,
+        explanation: q.explanation,
+        lessonId:
+          q.lessonId && lessonIds.includes(q.lessonId) ? q.lessonId : null,
+      })),
+    };
+    startTransition(async () => {
+      const r = await saveQuiz(draft.id ?? null, input);
+      if (!r.ok) {
+        setErrors(r.errors ?? {});
+        toast.error(r.message);
+        return;
+      }
+      setErrors({});
+      toast.success(r.message);
+    });
+  }
 
   return (
-    <form ref={formRef} onSubmit={onSubmit} noValidate>
-      {draft.id ? <input type="hidden" name="id" value={draft.id} /> : null}
-      <fieldset
-        disabled={!!readOnlyReason}
-        className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start"
-      >
+    <form onSubmit={submit} noValidate>
+      <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
         <div className="grid min-w-0 gap-6">
-          {readOnlyReason ? (
-            <Callout icon={Lock} tone="warning">
-              {readOnlyReason}
-            </Callout>
-          ) : null}
-
           <Section title="Detalii">
             <div className="grid gap-5">
               <Field id="title" label="Titlu" error={errors.title}>
                 <Input
-                  {...describe("title", errors.title)}
-                  name="title"
-                  defaultValue={draft.title}
-                  placeholder="ex. Test: bucle"
+                  id="title"
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="ex. Recapitulare: bucle"
                   maxLength={120}
+                  aria-invalid={errors.title ? true : undefined}
                 />
               </Field>
               <Field
@@ -123,44 +158,19 @@ export function QuizForm({
                 error={errors.description}
               >
                 <Textarea
-                  {...describe("description", errors.description)}
-                  name="description"
-                  defaultValue={draft.description}
+                  id="description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
                   className="min-h-16"
                   maxLength={300}
                 />
               </Field>
-              <div className="grid gap-5 sm:grid-cols-2">
-                <Field id="topic" label="Temă" error={errors.topic}>
-                  <Input
-                    {...describe("topic", errors.topic)}
-                    name="topic"
-                    defaultValue={draft.topic}
-                    placeholder="ex. Python"
-                    maxLength={60}
-                  />
-                </Field>
-                <FieldSet legend="Dificultate" error={errors.difficulty}>
-                  <ChoiceGroup
-                    name="difficulty"
-                    value={difficulty}
-                    onChange={setDifficulty}
-                    className="grid-cols-3 sm:grid-flow-row"
-                    itemClassName="px-2.5 py-2"
-                    choices={[
-                      { value: "1", label: "Ușor" },
-                      { value: "2", label: "Mediu" },
-                      { value: "3", label: "Avansat" },
-                    ]}
-                  />
-                </FieldSet>
-              </div>
             </div>
           </Section>
 
           <Section
             title={`Întrebări (${questions.length})`}
-            description="Întrebări cu variante de răspuns: 2–4 variante, dintre care una corectă."
+            description="Fiecare întrebare are 2–4 variante, una corectă, și e etichetată pe o lecție."
           >
             <div className="grid gap-4">
               {errors.questions ? (
@@ -171,12 +181,9 @@ export function QuizForm({
                   const p = `questions.${i}`;
                   const codeOpen = withCode.includes(q.key);
                   return (
-                    <li
-                      key={q.key}
-                      className="grid gap-4 rounded-lg border bg-muted/20 p-4"
-                    >
+                    <li key={q.key} className="grid gap-4 bg-muted/40 p-4">
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-semibold text-sm">
+                        <p className="font-bold font-heading text-sm uppercase tracking-wide">
                           Întrebarea {i + 1}
                         </p>
                         <ItemControls
@@ -197,13 +204,16 @@ export function QuizForm({
                         error={errors[`${p}.prompt`]}
                       >
                         <Textarea
-                          {...describe(`${p}.prompt`, errors[`${p}.prompt`])}
+                          id={`${p}.prompt`}
                           value={q.prompt}
                           onChange={(e) =>
                             update(i, { prompt: e.target.value })
                           }
                           className="min-h-16"
                           placeholder="ex. Ce afișează programul?"
+                          aria-invalid={
+                            errors[`${p}.prompt`] ? true : undefined
+                          }
                         />
                       </Field>
 
@@ -216,7 +226,7 @@ export function QuizForm({
                               update(i, { code: e.target.value })
                             }
                             spellCheck={false}
-                            className="min-h-20 font-mono text-xs"
+                            className="min-h-20 font-mono text-sm"
                           />
                         </Field>
                       ) : null}
@@ -254,14 +264,14 @@ export function QuizForm({
                               <li key={j} className="grid gap-1">
                                 <div
                                   className={cn(
-                                    "flex items-center gap-2 rounded-lg border bg-card p-1.5 pl-2",
+                                    "flex items-center gap-2 border bg-card p-1.5 pl-2",
                                     isCorrect &&
                                       "border-success ring-1 ring-success/40",
                                   )}
                                 >
                                   <span
                                     className={cn(
-                                      "grid size-7 shrink-0 place-items-center rounded-md",
+                                      "grid size-7 shrink-0 place-items-center",
                                       style.bg,
                                       style.text,
                                     )}
@@ -273,27 +283,24 @@ export function QuizForm({
                                     />
                                   </span>
                                   <Input
-                                    {...describe(oid, errors[oid])}
                                     aria-label={`Varianta ${j + 1} (${style.label.toLowerCase()})`}
+                                    aria-invalid={
+                                      errors[oid] ? true : undefined
+                                    }
                                     value={o}
                                     onChange={(e) =>
                                       setOption(i, j, e.target.value)
                                     }
-                                    className="h-8 border-0 bg-transparent px-1 shadow-none focus-visible:ring-0"
+                                    className="h-8 border-0 bg-transparent px-1 font-mono shadow-none focus-visible:ring-0"
                                     placeholder={`Varianta ${j + 1}`}
                                   />
-                                  <label className="flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2 py-1 text-xs has-checked:bg-success-soft has-checked:font-medium has-checked:text-success has-focus-visible:ring-3 has-focus-visible:ring-ring/50">
+                                  <label className="flex shrink-0 cursor-pointer items-center gap-1.5 px-2 py-1 text-xs has-checked:bg-success-soft has-checked:font-medium has-checked:text-success has-focus-visible:ring-3 has-focus-visible:ring-ring/50">
                                     <input
                                       type="radio"
                                       name={`correct-${q.key}`}
                                       checked={isCorrect}
                                       onChange={() => update(i, { correct: j })}
                                       className="size-3.5 accent-success"
-                                      aria-describedby={
-                                        errors[`${p}.correct`]
-                                          ? `${p}.correct-error`
-                                          : undefined
-                                      }
                                     />
                                     {isCorrect ? "Corect" : "Corectă?"}
                                   </label>
@@ -306,9 +313,7 @@ export function QuizForm({
                                   />
                                 </div>
                                 {errors[oid] ? (
-                                  <FieldError id={`${oid}-error`}>
-                                    {errors[oid]}
-                                  </FieldError>
+                                  <FieldError>{errors[oid]}</FieldError>
                                 ) : null}
                               </li>
                             );
@@ -318,9 +323,7 @@ export function QuizForm({
                           <FieldError>{errors[`${p}.options`]}</FieldError>
                         ) : null}
                         {errors[`${p}.correct`] ? (
-                          <FieldError id={`${p}.correct-error`}>
-                            {errors[`${p}.correct`]}
-                          </FieldError>
+                          <FieldError>{errors[`${p}.correct`]}</FieldError>
                         ) : null}
                         <AddButton
                           disabled={q.options.length >= 4}
@@ -332,33 +335,63 @@ export function QuizForm({
                         </AddButton>
                       </fieldset>
 
-                      <Field
-                        id={`${p}.explanation`}
-                        label="Explicație"
-                        optional
-                        hint="Elevii o văd după ce răspund."
-                        error={errors[`${p}.explanation`]}
-                      >
-                        <Textarea
-                          {...describe(
-                            `${p}.explanation`,
-                            errors[`${p}.explanation`],
-                            "hint",
-                          )}
-                          value={q.explanation}
-                          onChange={(e) =>
-                            update(i, { explanation: e.target.value })
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <Field
+                          id={`${p}.lesson`}
+                          label="Lecția verificată"
+                          hint={
+                            chosenLessons.length
+                              ? undefined
+                              : "Alege întâi lecțiile quiz-ului (în dreapta)."
                           }
-                          className="min-h-14"
-                        />
-                      </Field>
+                        >
+                          <SelectField
+                            id={`${p}.lesson`}
+                            name={`${p}.lesson`}
+                            value={
+                              q.lessonId && lessonIds.includes(q.lessonId)
+                                ? q.lessonId
+                                : ""
+                            }
+                            onValueChange={(v) =>
+                              update(i, { lessonId: v || null })
+                            }
+                            items={chosenLessons.map((l) => ({
+                              value: l.id,
+                              label: l.title,
+                            }))}
+                            placeholder="Fără lecție"
+                          />
+                        </Field>
+                        <Field
+                          id={`${p}.explanation`}
+                          label="Explicație"
+                          optional
+                          hint="Elevii o văd după ce trimit."
+                          error={errors[`${p}.explanation`]}
+                        >
+                          <Textarea
+                            id={`${p}.explanation`}
+                            value={q.explanation}
+                            onChange={(e) =>
+                              update(i, { explanation: e.target.value })
+                            }
+                            className="min-h-10"
+                          />
+                        </Field>
+                      </div>
                     </li>
                   );
                 })}
               </ol>
               <AddButton
-                disabled={questions.length >= 30}
-                onClick={() => setQuestions((l) => [...l, emptyQuestion()])}
+                disabled={questions.length >= 40}
+                onClick={() =>
+                  setQuestions((l) => [
+                    ...l,
+                    emptyQuestion(l.at(-1)?.lessonId ?? lessonIds[0] ?? null),
+                  ])
+                }
               >
                 Adaugă o întrebare
               </AddButton>
@@ -367,164 +400,132 @@ export function QuizForm({
         </div>
 
         <div className="grid gap-6 lg:sticky lg:top-20">
-          <Section title="Disponibilitate">
-            <div className="grid gap-5">
-              <FieldSet legend="Pentru cine" error={errors.scope}>
-                <ChoiceGroup
-                  name="scope"
-                  value={scope}
-                  onChange={setScope}
-                  className="sm:grid-flow-row"
-                  choices={[
-                    {
-                      value: "global",
-                      label: "Exersare globală",
-                      description: "Orice elev îl poate rezolva, oricând.",
-                      icon: <Globe2 aria-hidden="true" />,
-                    },
-                    {
-                      value: "class",
-                      label: "O clasă",
-                      description: "Dat unei clase, cu termen și XP.",
-                      icon: <Users aria-hidden="true" />,
-                    },
-                  ]}
-                />
-              </FieldSet>
-
-              {scope === "class" ? (
-                <>
-                  <Field id="classId" label="Clasa" error={errors.classId}>
-                    <SelectField
-                      id="classId"
-                      name="classId"
-                      value={classId}
-                      onValueChange={setClassId}
-                      items={classes.map((c) => ({
-                        value: c.id,
-                        label: c.name,
-                      }))}
-                      placeholder="Alege clasa"
-                      error={errors.classId}
-                    />
-                  </Field>
-                  <Field
-                    id="opensAt"
-                    label="Disponibil de la"
-                    error={errors.opensAt}
-                  >
-                    <Input
-                      {...describe("opensAt", errors.opensAt)}
-                      type="datetime-local"
-                      name="opensAt"
-                      defaultValue={draft.opensAt}
-                    />
-                  </Field>
-                  <Field id="deadline" label="Termen" error={errors.deadline}>
-                    <Input
-                      {...describe("deadline", errors.deadline)}
-                      type="datetime-local"
-                      name="deadline"
-                      defaultValue={draft.deadline}
-                    />
-                  </Field>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Field
-                      id="maxAttempts"
-                      label="Încercări"
-                      error={errors.maxAttempts}
+          <Section title="Lecțiile verificate">
+            {lessons.length > 0 ? (
+              <FieldSet
+                legend={
+                  lessonIds.length > 1
+                    ? "Recapitulare pe mai multe lecții"
+                    : "Quiz pe o lecție"
+                }
+                hint="Alege una sau mai multe lecții din biblioteca ta."
+              >
+                <div className="grid max-h-64 gap-1 overflow-y-auto">
+                  {lessons.map((l) => (
+                    <label
+                      key={l.id}
+                      className="flex items-center gap-2 px-1 py-1 text-sm"
                     >
-                      <Input
-                        {...describe("maxAttempts", errors.maxAttempts)}
-                        type="number"
-                        name="maxAttempts"
-                        min={1}
-                        max={10}
-                        defaultValue={draft.maxAttempts}
+                      <input
+                        type="checkbox"
+                        className="size-4 accent-primary"
+                        checked={lessonIds.includes(l.id)}
+                        onChange={(e) =>
+                          setLessonIds(
+                            toggle(lessonIds, l.id, e.target.checked),
+                          )
+                        }
                       />
-                    </Field>
-                    <Field id="xp" label="XP" error={errors.xp}>
-                      <Input
-                        {...describe("xp", errors.xp)}
-                        type="number"
-                        name="xp"
-                        min={0}
-                        max={10}
-                        defaultValue={draft.xp}
-                      />
-                    </Field>
-                  </div>
-                  <p className="-mt-2 text-muted-foreground text-xs">
-                    XP-ul se acordă o singură dată, pentru quiz-ul terminat până
-                    la termen, oricâte încercări ar folosi elevul.
-                  </p>
-                </>
-              ) : null}
-
-              <div className="grid gap-2">
-                <div className="grid grid-cols-[minmax(0,1fr)_120px] items-end gap-2">
-                  <Field
-                    id="timeLimit"
-                    label="Limită de timp"
-                    optional
-                    error={errors.timeLimit}
-                  >
-                    <Input
-                      {...describe("timeLimit", errors.timeLimit, "hint")}
-                      type="number"
-                      name="timeLimit"
-                      min={1}
-                      defaultValue={draft.timeLimit}
-                      placeholder="Fără limită"
-                    />
-                  </Field>
-                  <SelectField
-                    id="timeUnit"
-                    ariaLabel="Unitatea de timp"
-                    name="timeUnit"
-                    value={timeUnit}
-                    onValueChange={setTimeUnit}
-                    items={[
-                      { value: "min", label: "minute" },
-                      { value: "sec", label: "secunde" },
-                    ]}
-                  />
+                      <span className="min-w-0 truncate">{l.title}</span>
+                    </label>
+                  ))}
                 </div>
-                {errors.timeLimit ? null : (
-                  <p
-                    id="timeLimit-hint"
-                    className="text-muted-foreground text-xs"
-                  >
-                    Pentru tot quiz-ul. În sesiunile live, limita se aplică
-                    fiecărei întrebări.
-                  </p>
-                )}
-              </div>
+              </FieldSet>
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                Nu ai încă lecții. Quiz-ul merge și fără, dar fără lecții nu
+                apare în tabelul „elevi × lecții”.
+              </p>
+            )}
+          </Section>
+
+          <Section title="XP și timp">
+            <div className="grid gap-4">
+              <Field
+                id="xp"
+                label="XP la prima rezolvare"
+                error={errors.xp}
+                hint="Între 0 și 5, după scor. O refacere aduce o singură dată +1."
+              >
+                <Input
+                  id="xp"
+                  type="number"
+                  min={0}
+                  max={5}
+                  value={xp}
+                  onChange={(e) => setXp(Number(e.target.value))}
+                  className="w-24"
+                />
+              </Field>
+              <Field
+                id="time"
+                label="Limită de timp (minute)"
+                optional
+                error={errors.timeLimitSec}
+              >
+                <Input
+                  id="time"
+                  type="number"
+                  min={1}
+                  max={120}
+                  value={minutes}
+                  onChange={(e) => setMinutes(e.target.value)}
+                  placeholder="Fără limită"
+                  className="w-32"
+                />
+              </Field>
             </div>
           </Section>
 
-          {readOnlyReason ? null : (
-            <div className="grid gap-2">
-              <Button type="submit" size="lg" disabled={pending}>
-                {pending
-                  ? "Se salvează…"
-                  : draft.id
-                    ? "Salvează modificările"
-                    : "Creează quiz-ul"}
-              </Button>
-              <Link
-                href="/mentor/quiz"
-                className={buttonVariants({ variant: "ghost" })}
+          <Section title="Dat claselor">
+            {classes.length > 0 ? (
+              <FieldSet
+                legend="Clasele care îl primesc"
+                hint="Elevii îl văd imediat și primesc o notificare."
               >
-                Anulează
-              </Link>
-              {state.status === "error" ? (
-                <FormMessage message={state.message} />
-              ) : null}
-            </div>
-          )}
+                <div className="grid gap-1">
+                  {classes.map((c) => (
+                    <label
+                      key={c.id}
+                      className="flex items-center gap-2 px-1 py-1 text-sm"
+                    >
+                      <input
+                        type="checkbox"
+                        className="size-4 accent-primary"
+                        checked={classIds.includes(c.id)}
+                        onChange={(e) =>
+                          setClassIds(toggle(classIds, c.id, e.target.checked))
+                        }
+                      />
+                      {c.name}
+                    </label>
+                  ))}
+                </div>
+              </FieldSet>
+            ) : (
+              <p className="text-muted-foreground text-sm">
+                Nu ai clase active.
+              </p>
+            )}
+          </Section>
+
+          <div className="grid gap-2">
+            <Button type="submit" variant="cta" size="lg" disabled={pending}>
+              {pending
+                ? "Se salvează…"
+                : draft.id
+                  ? "Salvează quiz-ul"
+                  : "Creează quiz-ul"}
+            </Button>
+            <Link
+              href="/mentor/quiz"
+              className={buttonVariants({ variant: "ghost" })}
+            >
+              Înapoi la quiz-uri
+            </Link>
+          </div>
         </div>
-      </fieldset>
+      </div>
     </form>
   );
 }

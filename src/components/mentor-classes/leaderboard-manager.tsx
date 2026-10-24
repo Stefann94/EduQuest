@@ -61,7 +61,7 @@ export function LeaderboardManager({
   initialRows: LeaderboardEntry[];
   canAdjust: boolean;
 }) {
-  // Demo: ajustările se văd doar în pagină. Cu Supabase, totalul se recalculează din istoric.
+  // Ajustarea apare imediat în pagină; totalul real se recalculează din istoricul de XP.
   const [rows, setRows] = useState(initialRows);
   const list = ranked(rows);
 

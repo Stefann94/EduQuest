@@ -56,8 +56,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import type { AdminUser } from "@/lib/data/admin-queries";
 import type { AccountStatus, Role } from "@/lib/data/types";
+import type { AdminUser } from "@/lib/db/admin";
 import { formatDate, plural } from "@/lib/format";
 import { AccountStatusBadge, RoleBadge } from "./account-badges";
 
@@ -141,7 +141,7 @@ export function UsersTable({
   const [query, setQuery] = useState("");
   const [role, setRole] = useState<RoleFilter>("all");
   const [status, setStatus] = useState<StatusFilter>("all");
-  // Demo: schimbările de stare rămân doar în pagină.
+  // Starea nouă apare imediat; pagina se reîncarcă apoi din baza de date.
   const [overrides, setOverrides] = useState<Record<string, AccountStatus>>({});
   const [pending, setPending] = useState<{
     user: AdminUser;
@@ -422,7 +422,7 @@ function AccountActionForm({
       const result = await changeAccountStatus(prev, formData);
       if (result.status === "success") {
         toast.success(c.toast, {
-          description: `${user.displayName}. Demo: modificarea nu se salvează.`,
+          description: user.displayName,
         });
         onDone(result.newStatus);
       } else if (result.status === "error" && result.message)

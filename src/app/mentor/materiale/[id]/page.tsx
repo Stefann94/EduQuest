@@ -2,66 +2,52 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/common/page-header";
-import { PublicationBadge } from "@/components/common/status";
-import { MATERIAL_KIND } from "@/components/learning/material-kind";
-import { materialDraft } from "@/components/mentor-content/drafts";
-import { MaterialForm } from "@/components/mentor-content/material-form";
+import { LessonEditor } from "@/components/lesson-editor/lesson-editor";
 import { FormSkeleton } from "@/components/mentor-content/skeletons";
-import { canEditContent } from "@/lib/data/mentor-content-queries";
-import {
-  demoIds,
-  getMaterial,
-  getMentorClasses,
-  getViewer,
-} from "@/lib/data/queries";
-import { formatDate } from "@/lib/format";
+import { requireUser } from "@/lib/auth";
+import { getMentorClasses } from "@/lib/db/classes";
+import { placeholderParams } from "@/lib/db/core";
+import { getLessonForEditor } from "@/lib/db/lessons";
+
+export const metadata: Metadata = { title: "Editează lecția" };
 
 type Props = PageProps<"/mentor/materiale/[id]">;
 
-export const metadata: Metadata = { title: "Editează materialul" };
-
 export function generateStaticParams() {
-  return demoIds.materials();
+  return placeholderParams("id");
 }
 
-export default function EditMaterialPage({ params }: Props) {
+export default function EditLessonPage({ params }: Props) {
   return (
     <Suspense fallback={<FormSkeleton />}>
-      <Content params={params} />
+      <Editor params={params} />
     </Suspense>
   );
 }
 
-async function Content({ params }: { params: Props["params"] }) {
+async function Editor({ params }: { params: Props["params"] }) {
   const { id } = await params;
-  const me = await getViewer("mentor");
-  const material = await getMaterial(me, id);
-  if (!material) notFound();
-  const { active, archived } = await getMentorClasses(me.id);
-  const editable = canEditContent(me.id, material);
-
-  // Clasa materialului rămâne în listă chiar dacă a fost arhivată între timp.
-  const classes = [
-    ...active,
-    ...archived.filter((c) => c.id === material.classId),
-  ].map((c) => ({ id: c.id, name: c.name }));
+  const me = await requireUser("mentor");
+  const [lesson, classes] = await Promise.all([
+    getLessonForEditor(me.id, id),
+    getMentorClasses(me.id),
+  ]);
+  if (!lesson) notFound();
 
   return (
     <div className="grid gap-6">
       <PageHeader
-        title={material.title}
-        description={`${MATERIAL_KIND[material.kind].label} · ${material.className ?? "Resursă globală"} · adăugat pe ${formatDate(material.publishedAt)}`}
-        back={{ href: "/mentor/materiale", label: "Materiale" }}
-        meta={<PublicationBadge status={material.status} />}
+        back={{ href: "/mentor/materiale", label: "Lecții și materiale" }}
+        title={lesson.title}
+        description="Materialele lecției, ce văd elevii și în ce clase apare."
       />
-      <MaterialForm
-        draft={materialDraft(material)}
-        classes={classes}
-        readOnlyReason={
-          editable
-            ? undefined
-            : `Această resursă globală a fost publicată de ${material.author.displayName}. O poți consulta, dar doar autorul o poate modifica.`
-        }
+      <LessonEditor
+        lesson={lesson}
+        classes={[...classes.active, ...classes.archived].map((c) => ({
+          id: c.id,
+          name: c.name,
+          archived: c.status === "archived",
+        }))}
       />
     </div>
   );

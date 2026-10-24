@@ -1,23 +1,20 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { AttendanceManager } from "@/components/mentor-classes/attendance-manager";
 import { dateKey } from "@/components/mentor-classes/dates";
 import { SectionSkeleton } from "@/components/mentor-classes/skeletons";
-import {
-  demoIds,
-  getClass,
-  getClassAttendance,
-  getViewer,
-} from "@/lib/data/queries";
+import { getClassMeetings, MAX_ABSENCES } from "@/lib/db/attendance";
+import { placeholderParams } from "@/lib/db/core";
+import { getClassLessons, lessonLabel } from "@/lib/db/lessons";
 import { now } from "@/lib/format";
+import { loadMentorClass } from "../load-class";
 
 export const metadata: Metadata = { title: "Prezență" };
 
 type Props = PageProps<"/mentor/clase/[id]/prezenta">;
 
 export function generateStaticParams() {
-  return demoIds.classes();
+  return placeholderParams("id");
 }
 
 export default function ClassAttendancePage({ params }: Props) {
@@ -29,20 +26,23 @@ export default function ClassAttendancePage({ params }: Props) {
 }
 
 async function Attendance({ params }: { params: Props["params"] }) {
-  const { id } = await params;
-  const me = await getViewer("mentor");
-  const c = await getClass(me, id);
-  if (!c) notFound();
-  const meetings = await getClassAttendance(c.id);
+  const { classRoom: c } = await loadMentorClass(params);
+  const [meetings, lessons] = await Promise.all([
+    getClassMeetings(c.id),
+    getClassLessons(c.id, { includeHidden: true }),
+  ]);
+  // Lecția planificată: prima lecție a clasei care nu are încă o întâlnire.
+  const done = new Set(meetings.map((m) => m.lessonId));
+  const suggested = lessons.find((l) => !done.has(l.id));
 
   return (
     <div className="grid gap-4">
       <div>
-        <h2 className="font-semibold text-lg">Prezență</h2>
+        <h2 className="text-2xl">Prezență</h2>
         <p className="text-muted-foreground text-sm">
           {c.status === "archived"
             ? "Clasa este arhivată: istoricul prezenței se poate doar consulta."
-            : "Înregistrează prezența după fiecare întâlnire și corecteaz-o dacă e nevoie. Elevii își văd doar propria prezență."}
+            : `Notează prezența pe lecția făcută, după fiecare întâlnire. Cu mai mult de ${MAX_ABSENCES} absențe, elevul nu poate termina cursul.`}
         </p>
       </div>
       <AttendanceManager
@@ -54,13 +54,11 @@ async function Attendance({ params }: { params: Props["params"] }) {
           displayName: s.displayName,
           username: s.username,
           avatar: s.avatar,
+          absences: meetings.filter((m) => m.records[s.id] === "absent").length,
         }))}
-        initialMeetings={meetings.map((m) => ({
-          id: m.id,
-          date: m.date,
-          topic: m.topic,
-          records: m.records,
-        }))}
+        lessons={lessons.map((l) => ({ id: l.id, label: lessonLabel(l) }))}
+        suggestedLessonId={suggested?.id}
+        meetings={meetings}
       />
     </div>
   );

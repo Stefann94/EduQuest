@@ -1,4 +1,10 @@
-import { ArrowLeft, ArrowRight, ChevronLeft, Clock } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  ChevronLeft,
+  Clock,
+  ListChecks,
+} from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -8,7 +14,9 @@ import {
   ContentBlocks,
   tableOfContents,
 } from "@/components/learning/content-blocks";
+import { LessonItemSection } from "@/components/lessons/lesson-item-view";
 import { DetailSkeleton } from "@/components/student-class/skeletons";
+import { buttonVariants } from "@/components/ui/button";
 import { getLesson, getLessonParams } from "@/lib/data/course-queries";
 import { formatDuration } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -36,7 +44,10 @@ async function Content({ params }: { params: Props["params"] }) {
   const { curs, lectie } = await params;
   const data = await getLesson(curs, lectie);
   if (!data) notFound();
-  const { course, lesson, blocks, previous, next } = data;
+  const { course, lesson, previous, next } = data;
+  const article = lesson.items.find((i) => i.kind === "article");
+  const blocks = article?.kind === "article" ? article.content.blocks : [];
+  const problems = lesson.items.filter((i) => i.kind === "problem");
   const a = ACCENT[course.accent];
   const toc = tableOfContents(blocks);
   const courseHref = `/invatare/cursuri/${course.slug}`;
@@ -100,6 +111,47 @@ async function Content({ params }: { params: Props["params"] }) {
           <article>
             <ContentBlocks blocks={blocks} />
           </article>
+
+          {problems.length > 0 ? (
+            <section
+              aria-labelledby="probleme-lectie"
+              className="mt-12 grid gap-10 border-t pt-8"
+            >
+              <h2 id="probleme-lectie" className="text-3xl">
+                Probleme de exersat
+              </h2>
+              {problems.map((p) => (
+                <LessonItemSection key={p.id} item={p} />
+              ))}
+            </section>
+          ) : null}
+
+          {lesson.quiz ? (
+            <section
+              id="quiz"
+              className="mt-12 flex cut flex-wrap items-center gap-4 bg-foreground p-6 text-background"
+            >
+              <ListChecks
+                className="size-8 shrink-0 text-xp"
+                aria-hidden="true"
+              />
+              <div className="min-w-0 flex-1 basis-56">
+                <h2 className="text-2xl">
+                  Verifică-te: {lesson.quiz.questions} întrebări
+                </h2>
+                <p className="text-background/80 text-sm">
+                  Prima rezolvare aduce până la {lesson.quiz.xp} XP, o refacere
+                  încă 1 XP.
+                </p>
+              </div>
+              <Link
+                href={`/quiz/${lesson.quiz.id}`}
+                className={buttonVariants({ variant: "cta", size: "lg" })}
+              >
+                Începe quiz-ul <ArrowRight />
+              </Link>
+            </section>
+          ) : null}
         </div>
 
         <aside className="hidden lg:block" aria-label="Navigare în lecție">

@@ -2,33 +2,20 @@ import { ArrowRight, PartyPopper } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { EmptyState } from "@/components/common/empty-state";
-import { MATERIAL_KIND } from "@/components/learning/material-kind";
 import { ArenaCard } from "@/components/student-home/arena-card";
 import { LeaderboardCard } from "@/components/student-home/leaderboard-card";
 import { MissionRow } from "@/components/student-home/mission-row";
 import { PlayerCard } from "@/components/student-home/player-card";
 import { TeamCard } from "@/components/student-home/team-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  getLeaderboard,
-  getLiveSessions,
-  getStudentAssignments,
-  getStudentAttendance,
-  getStudentClasses,
-  getStudentMaterials,
-  getUser,
-  getViewer,
-  getXpTotal,
-  type StudentAssignment,
-} from "@/lib/data/queries";
-import {
-  formatDay,
-  formatTime,
-  formatWeekday,
-  now,
-  plural,
-  relativeDays,
-} from "@/lib/format";
+import { requireUser } from "@/lib/auth";
+import { getStudentAttendance } from "@/lib/db/attendance";
+import { getStudentClasses } from "@/lib/db/classes";
+import { getStudentHomework, type StudentHomework } from "@/lib/db/homework";
+import { getClassLessons, lessonLabel } from "@/lib/db/lessons";
+import { getLiveSessions } from "@/lib/db/quizzes";
+import { getLeaderboard, getXpTotal } from "@/lib/db/xp";
+import { formatWeekday, now, plural } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Acasă" };
 
@@ -71,7 +58,7 @@ function MissionList({
   items,
   empty,
 }: {
-  items: StudentAssignment[];
+  items: StudentHomework[];
   empty: string;
 }) {
   if (items.length === 0)
@@ -79,14 +66,14 @@ function MissionList({
       <EmptyState
         icon={PartyPopper}
         title={empty}
-        description="Când mentorul publică o temă nouă, apare aici."
+        description="Când mentorul dă o temă nouă, apare aici."
       />
     );
   return (
     <ul className="stagger grid gap-2.5">
-      {items.map((a) => (
-        <li key={a.id}>
-          <MissionRow assignment={a} />
+      {items.map((h) => (
+        <li key={h.id}>
+          <MissionRow homework={h} />
         </li>
       ))}
     </ul>
@@ -94,44 +81,41 @@ function MissionList({
 }
 
 export default async function StudentHomePage() {
-  const me = await getViewer("student");
-  const [assignments, classes, materials, sessions, totalXp, attendance] =
-    await Promise.all([
-      getStudentAssignments(me.id),
-      getStudentClasses(me.id),
-      getStudentMaterials(me.id),
-      getLiveSessions(me),
-      getXpTotal(me.id),
-      getStudentAttendance(me.id),
-    ]);
+  const me = await requireUser("student");
+  const [homework, classes, sessions, totalXp, attendance] = await Promise.all([
+    getStudentHomework(me.id),
+    getStudentClasses(me.id),
+    getLiveSessions(),
+    getXpTotal(me.id),
+    getStudentAttendance(me.id),
+  ]);
 
-  const active = assignments.filter(
-    (a) =>
-      a.submissionState === "not_started" ||
-      a.submissionState === "needs_changes",
+  const needsChanges = (h: StudentHomework) =>
+    h.problems.some((p) => p.state === "needs_changes");
+  const active = homework.filter(
+    (h) => needsChanges(h) || (!h.complete && !h.overdue),
   );
-  const submitted = assignments.filter(
-    (a) => a.submissionState === "submitted",
+  const submitted = homework.filter((h) => h.complete && !needsChanges(h));
+  const done = homework.filter(
+    (h) => h.complete && h.problems.every((p) => p.state === "accepted"),
   );
-  const done = assignments.filter((a) => a.submissionState === "reviewed");
 
   const perClass = await Promise.all(
     classes.active.map(async (c, index) => {
       const board = await getLeaderboard(c.id);
       const mine = board.find((r) => r.student.id === me.id);
-      const classmates = await Promise.all(
-        [me.id, ...c.studentIds.filter((id) => id !== me.id)]
-          .slice(0, 3)
-          .map((id) => getUser(id)),
-      );
+      const classmates = [
+        ...c.students.filter((s) => s.id === me.id),
+        ...c.students.filter((s) => s.id !== me.id),
+      ].slice(0, 3);
       return {
         classRoom: c,
         index,
         board,
         rank: mine?.rank ?? 0,
         xp: mine?.xp ?? 0,
-        classmates: classmates.filter((u) => u !== undefined),
-        attendance: attendance.find((x) => x.classRoom.id === c.id),
+        classmates,
+        attendance: attendance.get(c.id),
       };
     }),
   );
@@ -141,16 +125,15 @@ export default async function StudentHomePage() {
   // Cel mai apropiat elev care are mai mult XP (la egalitate nu e „în fața ta”).
   const rival = best?.board.filter((r) => r.xp > best.xp).at(-1);
 
-  const attended = attendance.reduce((s, x) => s + x.attended, 0);
-  const meetings = attendance.reduce((s, x) => s + x.total, 0);
+  const all = [...attendance.values()];
+  const attended = all.reduce((s, x) => s + x.attended, 0);
+  const meetings = all.reduce((s, x) => s + x.total, 0);
 
-  const next = sessions
-    .filter((s) => s.status !== "ended")
-    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0];
-  const newest = [...materials].sort((a, b) =>
-    b.publishedAt.localeCompare(a.publishedAt),
-  )[0];
-  const newestAuthor = newest ? await getUser(newest.authorId) : undefined;
+  const live = sessions.find((s) => s.status !== "ended");
+  const firstClass = classes.active[0];
+  const newest = firstClass
+    ? (await getClassLessons(firstClass.id)).at(-1)
+    : undefined;
 
   const firstName = me.displayName.split(" ")[0];
 
@@ -175,15 +158,7 @@ export default async function StudentHomePage() {
             ) : (
               "Ești la zi cu toate misiunile"
             )}
-            {next ? (
-              <>
-                {" "}
-                și o arenă live {relativeDays(next.startsAt)} la{" "}
-                {formatTime(next.startsAt)}.
-              </>
-            ) : (
-              "."
-            )}{" "}
+            {live ? <> și o arenă live deschisă chiar acum.</> : "."}{" "}
             {rival ? (
               <>
                 {rival.student.displayName.split(" ")[0]} e doar la{" "}
@@ -210,7 +185,7 @@ export default async function StudentHomePage() {
                   : "–",
               label: "prezență",
             },
-            { value: String(done.length), label: "teme evaluate" },
+            { value: String(done.length), label: "teme acceptate" },
           ]}
         />
       </div>
@@ -228,7 +203,7 @@ export default async function StudentHomePage() {
               <TabsTrigger value="submitted">
                 Trimise · {submitted.length}
               </TabsTrigger>
-              <TabsTrigger value="done">Terminate · {done.length}</TabsTrigger>
+              <TabsTrigger value="done">Acceptate · {done.length}</TabsTrigger>
             </TabsList>
             <TabsContent value="active">
               <MissionList items={active} empty="Nicio misiune activă" />
@@ -237,7 +212,7 @@ export default async function StudentHomePage() {
               <MissionList items={submitted} empty="Nimic trimis încă" />
             </TabsContent>
             <TabsContent value="done">
-              <MissionList items={done} empty="Nicio temă evaluată încă" />
+              <MissionList items={done} empty="Nicio temă acceptată încă" />
             </TabsContent>
           </Tabs>
         </section>
@@ -245,15 +220,14 @@ export default async function StudentHomePage() {
         <div className="grid content-start gap-5">
           <ArenaCard
             session={
-              next
+              live
                 ? {
-                    title: next.title,
-                    className: next.className,
-                    startsAt: next.startsAt,
+                    title: live.title,
+                    className: live.className,
                     players:
-                      classes.active.find((c) => c.id === next.classId)
+                      classes.active.find((c) => c.id === live.classId)
                         ?.studentIds.length ?? 0,
-                    live: next.status === "lobby" || next.status === "running",
+                    running: live.status === "running",
                   }
                 : undefined
             }
@@ -302,14 +276,14 @@ export default async function StudentHomePage() {
               />
             </li>
           ))}
-          {newest ? (
+          {newest && firstClass ? (
             <li>
               <TeamCard
-                href={`/invatare/materiale/${newest.id}`}
+                href={`/clase/${firstClass.id}/lectii/${newest.id}`}
                 index={3}
-                badge="Material nou"
-                title={newest.title}
-                subtitle={`${MATERIAL_KIND[newest.kind].label}${newestAuthor ? ` de la ${newestAuthor.displayName}` : ""} · ${formatDay(newest.publishedAt)}`}
+                badge="Ultima lecție"
+                title={lessonLabel(newest)}
+                subtitle={`${firstClass.name} · ${plural(newest.items.length, "material", "materiale")}`}
               />
             </li>
           ) : null}

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { NotificationIcon } from "@/components/shell/notification-icon";
 import { Button } from "@/components/ui/button";
+import { markNotificationsRead } from "@/lib/actions/notifications";
 import type { Notification } from "@/lib/data/types";
 import { formatDay, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -20,18 +21,20 @@ export function NotificationsList({
   initial: Notification[];
   nowIso: string;
 }) {
-  // Demo: starea „citită” e locală. Cu Supabase vine din baza de date.
+  // Starea „citită” se schimbă imediat și se salvează în baza de date.
   const [items, setItems] = useState(initial);
   const [filter, setFilter] = useState<"all" | "unread">("all");
   const unread = items.filter((n) => !n.read).length;
   const visible = filter === "unread" ? items.filter((n) => !n.read) : items;
 
-  const markRead = (id?: string) =>
+  const markRead = (id?: string) => {
     setItems((list) =>
       list.map((n) =>
         id === undefined || n.id === id ? { ...n, read: true } : n,
       ),
     );
+    void markNotificationsRead(id ? [id] : undefined);
+  };
 
   const groups = GROUPS.map((label, i) => ({
     label,

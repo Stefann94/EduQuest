@@ -1,9 +1,10 @@
 "use client";
 
 import { CheckCircle2, Plus } from "lucide-react";
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { type CreateClassState, createClass } from "@/app/mentor/clase/actions";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import {
   Dialog,
   DialogClose,
@@ -80,10 +81,13 @@ function CreateClassForm() {
           Poți genera oricând un cod nou sau îl poți dezactiva din setările
           clasei.
         </p>
-        <p className="rounded-lg bg-muted px-3 py-2 text-muted-foreground text-xs">
-          Demo: clasa se salvează după conectarea la baza de date.
-        </p>
         <DialogFooter>
+          <Link
+            href={`/mentor/clase/${state.id}`}
+            className={buttonVariants({ variant: "outline" })}
+          >
+            Deschide clasa
+          </Link>
           <DialogClose render={<Button />}>Gata</DialogClose>
         </DialogFooter>
       </>

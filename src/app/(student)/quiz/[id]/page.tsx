@@ -3,20 +3,20 @@ import { Suspense } from "react";
 import { PageHeader } from "@/components/common/page-header";
 import { QuizPlayer, type QuizPlayerData } from "@/components/quiz/quiz-player";
 import { Skeleton } from "@/components/ui/skeleton";
-import { demoIds, getViewer } from "@/lib/data/queries";
-import { getQuizForPlayer } from "@/lib/data/student-activity-queries";
-import { formatDateTime, formatDay, relativeDays } from "@/lib/format";
+import { requireUser } from "@/lib/auth";
+import { placeholderParams } from "@/lib/db/core";
+import { getQuizForPlayer } from "@/lib/db/quizzes";
 
 type Props = PageProps<"/quiz/[id]">;
 
 export function generateStaticParams() {
-  return demoIds.quizzes();
+  return placeholderParams("id");
 }
 
 export async function generateMetadata({ params }: Props) {
   const { id } = await params;
-  const me = await getViewer("student");
-  const quiz = await getQuizForPlayer(me, id);
+  const me = await requireUser("student");
+  const quiz = await getQuizForPlayer(me.id, id);
   return { title: quiz?.title ?? "Quiz" };
 }
 
@@ -28,59 +28,48 @@ export default function QuizPage({ params }: Props) {
   );
 }
 
-const CLOSED: Record<string, string> = {
-  not_open: "Quiz-ul nu este încă deschis.",
-  closed: "Termenul quiz-ului a trecut.",
-  no_attempts: "Ai folosit toate încercările pentru acest quiz.",
-};
-
 async function Content({ params }: { params: Props["params"] }) {
   const { id } = await params;
-  const me = await getViewer("student");
-  const quiz = await getQuizForPlayer(me, id);
+  const me = await requireUser("student");
+  const quiz = await getQuizForPlayer(me.id, id);
   if (!quiz) notFound();
 
-  const { availability: av, assignment } = quiz;
-  // Doar datele sigure ajung în browser: întrebările sunt deja fără răspunsuri.
+  const back = quiz.course
+    ? { href: "/invatare?tab=quiz", label: "Învățare" }
+    : { href: "/quiz", label: "Quiz-uri" };
+  const scope = quiz.kind === "recap" ? "Recapitulare" : "Quiz de lecție";
+  // Doar datele sigure ajung în browser: întrebările vin deja fără răspunsuri.
   const data: QuizPlayerData = {
     id: quiz.id,
     title: quiz.title,
     description: quiz.description,
-    topic: quiz.topic,
-    difficulty: quiz.difficulty,
+    label:
+      quiz.lessons.length > 0 ? `${scope} · ${quiz.lessons.join(", ")}` : scope,
     className: quiz.className,
     timeLimitSec: quiz.timeLimitSec,
-    questions: quiz.questions,
-    mode: av.mode,
-    isLiveQuiz: quiz.isLiveQuiz,
-    assigned: assignment
-      ? {
-          deadlineLabel: `${formatDateTime(assignment.deadline)} (${relativeDays(assignment.deadline)})`,
-          maxAttempts: assignment.maxAttempts,
-          used: av.used,
-          xp: assignment.xp,
-          open: av.open,
-          closedReason:
-            av.reason === "not_open"
-              ? `Quiz-ul se deschide pe ${formatDay(assignment.opensAt)}.`
-              : av.reason
-                ? CLOSED[av.reason]
-                : undefined,
-        }
-      : undefined,
+    questions: quiz.questions.map((q) => ({
+      id: q.id,
+      prompt: q.prompt,
+      code: q.code,
+      options: q.options,
+    })),
+    xp: quiz.xp,
+    used: quiz.attempts.count,
+    backHref: back.href,
+    backLabel: `Înapoi la ${back.label}`,
   };
 
   return (
     <div className="grid gap-6">
       <PageHeader
-        back={{ href: "/quiz", label: "Quiz-uri" }}
+        back={back}
         title={quiz.title}
         description={
-          assignment
-            ? `Dat de mentor · ${quiz.className}`
-            : quiz.classId
-              ? `Quiz de clasă · ${quiz.className}`
-              : "Quiz de exersare"
+          quiz.course
+            ? `Exersare · ${quiz.course.title}`
+            : quiz.className
+              ? `Quiz dat clasei · ${quiz.className}`
+              : undefined
         }
       />
       <QuizPlayer quiz={data} />
@@ -96,7 +85,7 @@ function QuizSkeleton() {
         <Skeleton className="h-8 w-1/2" />
         <Skeleton className="h-5 w-1/3" />
       </div>
-      <Skeleton className="mx-auto h-96 w-full max-w-2xl rounded-xl" />
+      <Skeleton className="mx-auto h-96 w-full max-w-2xl" />
     </div>
   );
 }

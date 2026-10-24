@@ -1,49 +1,43 @@
 import { ChevronRight, RotateCcw } from "lucide-react";
 import Link from "next/link";
-import { StatusBadge, SubmissionStatusBadge } from "@/components/common/status";
+import { StatusBadge } from "@/components/common/status";
 import { UserAvatar } from "@/components/common/user-avatar";
-import type { SubmissionStatus, User } from "@/lib/data/types";
+import type { Person } from "@/lib/db/core";
 import { formatDay, formatTime } from "@/lib/format";
 
-/** Un rând de trimitere pentru mentor: elev, temă, clasă, data și starea. */
+/** Un rând de trimitere pentru mentor: elev, temă și problemă, clasă, data. */
 export function SubmissionRow({
+  href,
   student,
-  assignmentId,
-  assignmentTitle,
-  submissionId,
+  title,
+  problemTitle,
   className,
   at,
-  status,
   isResubmission,
-  showStatus = true,
 }: {
-  student: User;
-  assignmentId: string;
-  assignmentTitle: string;
-  submissionId: string;
+  href: string;
+  student: Person;
+  title: string;
+  problemTitle?: string;
   className?: string;
   at: string;
-  status: Exclude<SubmissionStatus, "not_started">;
   isResubmission: boolean;
-  showStatus?: boolean;
 }) {
   return (
     <Link
-      href={`/mentor/teme/${assignmentId}/${submissionId}`}
-      className="group flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg px-3 py-3 outline-none transition-colors hover:bg-muted/60 focus-visible:ring-3 focus-visible:ring-ring/40"
+      href={href}
+      className="group flex flex-wrap items-center gap-x-4 gap-y-2 px-3 py-3 outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/70"
     >
       <UserAvatar name={student.displayName} avatar={student.avatar} />
       <div className="min-w-0 flex-1 basis-48">
         <p className="truncate font-medium group-hover:text-primary">
           {student.displayName}
-          <span className="font-normal text-muted-foreground">
-            {" "}
-            · {assignmentTitle}
-          </span>
+          <span className="font-normal text-muted-foreground"> · {title}</span>
         </p>
         <p className="truncate text-muted-foreground text-sm">
+          {problemTitle ? `${problemTitle} · ` : null}
           {className ? `${className} · ` : null}
-          Trimisă {formatDay(at)}, la {formatTime(at)}
+          {formatDay(at)}, la {formatTime(at)}
         </p>
       </div>
       <div className="flex items-center gap-2">
@@ -52,7 +46,6 @@ export function SubmissionRow({
             Retrimitere
           </StatusBadge>
         ) : null}
-        {showStatus ? <SubmissionStatusBadge status={status} /> : null}
         <ChevronRight
           className="size-4 text-muted-foreground transition-transform group-hover:translate-x-0.5"
           aria-hidden="true"

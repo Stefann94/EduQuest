@@ -1,185 +1,428 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
-import { fromLocalInput } from "@/components/mentor-content/drafts";
-import {
-  type FormState,
-  invalid,
-  isLink,
-  json,
-  lines,
-  text,
-  toFieldErrors,
-} from "@/components/mentor-content/form-state";
-import {
-  getMentorClasses,
-  getSubmissionForMentor,
-  getViewer,
-} from "@/lib/data/queries";
-import { now, plural } from "@/lib/format";
+import { localToIso } from "@/components/mentor-classes/dates";
+import { requireUser } from "@/lib/auth";
+import { mentorClassIds } from "@/lib/db/classes";
+import { db, isUuid } from "@/lib/db/core";
+import { getHomeworkForMentor } from "@/lib/db/homework";
+import { notifyClassStudents } from "@/lib/db/notify";
 
-// Acțiunile pentru teme: creare și revizuirea trimiterilor.
-// În demo validează datele și verifică accesul, fără să salveze nimic.
+// Temele mentorului: o temă are una sau mai multe probleme (obligatorii sau opționale),
+// e refolosibilă și se dă mai multor clase, fiecare cu termenul ei.
 
-/** Bonusul maxim pentru calitate e fix, conform regulilor platformei (PROJECT.md §7.5). */
-const MAX_BONUS_XP = 5;
+export type ActionResult =
+  | { ok: true; message: string; id?: string }
+  | { ok: false; message: string; errors?: Record<string, string> };
 
-export async function createAssignment(
-  _prev: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  const me = await getViewer("mentor");
-  const { active } = await getMentorClasses(me.id);
+const NOT_FOUND: ActionResult = {
+  ok: false,
+  message: "Tema nu mai există sau nu ai acces la ea.",
+};
 
-  const schema = z.object({
-    classId: z
-      .string()
-      .refine(
-        (v) => active.some((c) => c.id === v),
-        "Alege una dintre clasele tale active.",
-      ),
-    title: z
-      .string()
-      .trim()
-      .min(3, "Titlul are cel puțin 3 caractere.")
-      .max(120, "Titlul are cel mult 120 de caractere."),
-    summary: z
-      .string()
-      .trim()
-      .min(10, "Descrie tema într-o frază (cel puțin 10 caractere).")
-      .max(300, "Descrierea are cel mult 300 de caractere."),
-    instructions: z
-      .array(
-        z.string().max(300, "O instrucțiune are cel mult 300 de caractere."),
-      )
-      .min(1, "Scrie cel puțin o instrucțiune.")
-      .max(15, "Folosește cel mult 15 instrucțiuni."),
-    links: z
-      .array(
-        z.object({
-          label: z.string().trim().min(2, "Scrie un nume pentru link."),
-          url: z
-            .string()
-            .trim()
-            .refine(
-              isLink,
-              "Introdu un link complet (https://…) sau o pagină din platformă (/invatare/…).",
-            ),
-        }),
-        { error: "Linkurile nu au putut fi citite." },
-      )
-      .max(5, "Folosește cel mult 5 linkuri."),
-    deadline: z
-      .string()
-      .refine(
-        (v) => v === "" || fromLocalInput(v) !== null,
-        "Alege o dată și o oră valide.",
-      )
-      .refine((v) => {
-        const iso = v ? fromLocalInput(v) : null;
-        return !iso || new Date(iso).getTime() > now().getTime();
-      }, "Termenul trebuie să fie în viitor."),
-    type: z.enum(["required", "optional"], {
-      error: "Alege dacă tema este obligatorie sau opțională.",
-    }),
-    intent: z.enum(["publish", "draft"]),
-  });
+function issues(error: z.ZodError) {
+  const out: Record<string, string> = {};
+  for (const i of error.issues) {
+    const key = i.path.map(String).join(".") || "form";
+    out[key] ??= i.message;
+  }
+  return out;
+}
 
-  const parsed = schema.safeParse({
-    classId: text(formData, "classId"),
-    title: text(formData, "title"),
-    summary: text(formData, "summary"),
-    instructions: lines(text(formData, "instructions")),
-    links: json(formData, "links"),
-    deadline: text(formData, "deadline"),
-    type: text(formData, "type"),
-    intent: text(formData, "intent") || "draft",
-  });
-  if (!parsed.success) return invalid(toFieldErrors(parsed.error));
+const refresh = () => {
+  revalidatePath("/mentor", "layout");
+  revalidatePath("/", "layout");
+};
 
-  const v = parsed.data;
-  const cls = active.find((c) => c.id === v.classId);
-  const students = cls?.studentIds.length ?? 0;
-  if (v.intent === "publish")
+async function ownHomework(id: string) {
+  const me = await requireUser("mentor");
+  const homework = isUuid(id)
+    ? await getHomeworkForMentor(me.id, id)
+    : undefined;
+  return homework ? { me, homework } : undefined;
+}
+
+const LANGUAGES = [
+  "python",
+  "html",
+  "css",
+  "javascript",
+  "java",
+  "text",
+] as const;
+
+const homeworkSchema = z.object({
+  title: z
+    .string()
+    .trim()
+    .min(3, "Titlul are cel puțin 3 caractere.")
+    .max(120, "Titlul are cel mult 120 de caractere."),
+  description: z
+    .string()
+    .trim()
+    .max(1000, "Descrierea are cel mult 1000 de caractere."),
+  required: z.boolean(),
+  problems: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        title: z
+          .string()
+          .trim()
+          .min(2, "Dă un titlu problemei.")
+          .max(120, "Titlul are cel mult 120 de caractere."),
+        statement: z
+          .string()
+          .trim()
+          .min(10, "Scrie enunțul (cel puțin 10 caractere).")
+          .max(10_000, "Enunțul e prea lung."),
+        language: z.enum(LANGUAGES),
+        starter: z.string().max(5000, "Codul de pornire e prea lung."),
+        required: z.boolean(),
+      }),
+    )
+    .min(1, "O temă are cel puțin o problemă.")
+    .max(20, "O temă are cel mult 20 de probleme."),
+});
+
+export type HomeworkInput = z.input<typeof homeworkSchema>;
+
+/** Creează sau modifică o temă cu problemele ei (în ordinea din formular). */
+export async function saveHomework(
+  id: string | null,
+  input: HomeworkInput,
+): Promise<ActionResult> {
+  const me = await requireUser("mentor");
+  const parsed = homeworkSchema.safeParse(input);
+  if (!parsed.success)
     return {
-      status: "success",
-      message: `Tema „${v.title}” a fost publicată.`,
-      detail: `${plural(students, "elev", "elevi")} din ${cls?.name} ${students === 1 ? "primește" : "primesc"} o notificare. Demo: salvarea reală vine cu baza de date.`,
+      ok: false,
+      message: "Verifică câmpurile marcate.",
+      errors: issues(parsed.error),
     };
+  const existing = id ? (await ownHomework(id))?.homework : undefined;
+  if (id && !existing) return NOT_FOUND;
+
+  const supabase = await db();
+  let homeworkId = existing?.id;
+  if (existing) {
+    const { error } = await supabase
+      .from("homeworks")
+      .update({
+        title: parsed.data.title,
+        description: parsed.data.description,
+        required: parsed.data.required,
+      })
+      .eq("id", existing.id);
+    if (error) return { ok: false, message: "Tema nu s-a putut salva." };
+  } else {
+    const { data, error } = await supabase
+      .from("homeworks")
+      .insert({
+        author_id: me.id,
+        title: parsed.data.title,
+        description: parsed.data.description,
+        required: parsed.data.required,
+      })
+      .select("id")
+      .single();
+    if (error || !data)
+      return { ok: false, message: "Tema nu s-a putut crea." };
+    homeworkId = data.id;
+  }
+  if (!homeworkId) return NOT_FOUND;
+
+  // Problemele scoase din formular: le ștergem doar dacă nu au trimiteri (ar dispărea munca elevilor).
+  const keep = new Set(
+    parsed.data.problems.flatMap((p) => (p.id ? [p.id] : [])),
+  );
+  const removed = (existing?.problems ?? []).filter((p) => !keep.has(p.id));
+  if (removed.length) {
+    const { count } = await supabase
+      .from("problem_submissions")
+      .select("id", { count: "exact", head: true })
+      .in(
+        "problem_id",
+        removed.map((p) => p.id),
+      );
+    if ((count ?? 0) > 0)
+      return {
+        ok: false,
+        message:
+          "Unele probleme scoase au deja rezolvări trimise de elevi. Păstrează-le sau arhivează tema.",
+      };
+    await supabase
+      .from("homework_problems")
+      .delete()
+      .in(
+        "id",
+        removed.map((p) => p.id),
+      );
+  }
+  for (const [position, p] of parsed.data.problems.entries()) {
+    const row = {
+      homework_id: homeworkId,
+      position,
+      title: p.title,
+      statement: p.statement,
+      language: p.language,
+      starter: p.starter || null,
+      required: p.required,
+    };
+    const known = p.id && existing?.problems.some((x) => x.id === p.id);
+    const { error } = known
+      ? await supabase
+          .from("homework_problems")
+          .update(row)
+          .eq("id", p.id as string)
+      : await supabase.from("homework_problems").insert(row);
+    if (error)
+      return { ok: false, message: "Problemele nu s-au putut salva toate." };
+  }
+  refresh();
+  if (!existing) redirect(`/mentor/teme/${homeworkId}?nou=1`);
+  return { ok: true, message: "Tema a fost salvată.", id: homeworkId };
+}
+
+const deadlineSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, "Alege data și ora termenului.")
+  .or(z.literal(""));
+
+/** Dă tema mai multor clase deodată, cu același termen (se poate schimba apoi pe fiecare). */
+export async function assignHomework(
+  homeworkId: string,
+  classIds: string[],
+  deadline: string,
+): Promise<ActionResult> {
+  const owned = await ownHomework(homeworkId);
+  if (!owned) return NOT_FOUND;
+  const d = deadlineSchema.safeParse(deadline);
+  if (!d.success)
+    return {
+      ok: false,
+      message: d.error.issues[0].message,
+      errors: { deadline: d.error.issues[0].message },
+    };
+  const mine = await mentorClassIds(owned.me.id);
+  const already = new Set(owned.homework.assignments.map((a) => a.classId));
+  const targets = classIds.filter((c) => mine.includes(c) && !already.has(c));
+  if (targets.length === 0)
+    return { ok: false, message: "Alege cel puțin o clasă nouă." };
+  const iso = d.data ? localToIso(d.data.slice(0, 10), d.data.slice(11)) : null;
+  if (iso && Date.parse(iso) < Date.now())
+    return {
+      ok: false,
+      message: "Termenul e în trecut.",
+      errors: { deadline: "Termenul e în trecut." },
+    };
+
+  const supabase = await db();
+  const { data, error } = await supabase
+    .from("homework_assignments")
+    .insert(
+      targets.map((class_id) => ({
+        homework_id: homeworkId,
+        class_id,
+        deadline: iso,
+      })),
+    )
+    .select("id, class_id");
+  if (error || !data)
+    return { ok: false, message: "Tema nu s-a putut da claselor alese." };
+  for (const a of data)
+    await notifyClassStudents([a.class_id], {
+      kind: "assignment_new",
+      title: `Temă nouă: ${owned.homework.title}`,
+      body: `${owned.homework.problems.length === 1 ? "O problemă" : `${owned.homework.problems.length} probleme`}${iso ? " · are termen" : ""}`,
+      href: `/teme/${a.id}`,
+    });
+  refresh();
   return {
-    status: "success",
-    message: `Tema „${v.title}” a fost salvată ca ciornă.`,
-    detail:
-      "Elevii nu o văd până nu o publici. Demo: salvarea reală vine cu baza de date.",
+    ok: true,
+    message:
+      targets.length === 1
+        ? "Tema a fost dată clasei."
+        : `Tema a fost dată la ${targets.length} clase.`,
   };
 }
 
-export async function reviewSubmission(
-  _prev: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  const me = await getViewer("mentor");
-  const found = await getSubmissionForMentor(
-    me.id,
-    text(formData, "submissionId"),
-  );
-  if (!found || found.assignment.id !== text(formData, "assignmentId"))
-    return {
-      status: "error",
-      message: "Nu ai acces la această trimitere.",
-      errors: {},
-    };
-
-  const { assignment, student } = found;
-  const max = Math.min(assignment.maxBonusXp, MAX_BONUS_XP);
-  const schema = z
-    .object({
-      decision: z.enum(["reviewed", "needs_changes"]),
-      feedback: z
-        .string()
-        .trim()
-        .max(2000, "Feedback-ul are cel mult 2000 de caractere."),
-      bonusXp: z
-        .number({ error: "Alege bonusul de calitate." })
-        .int()
-        .min(0, "Bonusul este între 0 și 5 XP.")
-        .max(max, `Bonusul este între 0 și ${max} XP.`),
-    })
-    .superRefine((v, ctx) => {
-      if (v.decision === "needs_changes" && v.feedback.length < 10)
-        ctx.addIssue({
-          code: "custom",
-          path: ["feedback"],
-          message:
-            "Scrie ce trebuie corectat, ca elevul să știe ce să schimbe (cel puțin 10 caractere).",
-        });
-      if (v.decision === "needs_changes" && !assignment.allowResubmit)
-        ctx.addIssue({
-          code: "custom",
-          path: ["decision"],
-          message: "Tema nu permite retrimiteri, deci nu poți cere corecturi.",
-        });
-    });
-
-  const rawBonus = text(formData, "bonusXp");
-  const parsed = schema.safeParse({
-    decision: text(formData, "decision"),
-    feedback: text(formData, "feedback"),
-    bonusXp: rawBonus === "" ? Number.NaN : Number(rawBonus),
-  });
-  if (!parsed.success) return invalid(toFieldErrors(parsed.error));
-
-  const first = student.displayName.split(" ")[0];
-  const v = parsed.data;
-  if (v.decision === "needs_changes")
-    return {
-      status: "success",
-      message: `Ai cerut corecturi de la ${first}.`,
-      detail: `${first} primește feedback-ul și o notificare, apoi poate retrimite tema. Demo: salvarea reală vine cu baza de date.`,
-    };
+export async function updateDeadline(
+  assignmentId: string,
+  deadline: string,
+): Promise<ActionResult> {
+  const me = await requireUser("mentor");
+  const d = deadlineSchema.safeParse(deadline);
+  if (!d.success || !isUuid(assignmentId))
+    return { ok: false, message: "Alege data și ora termenului." };
+  const iso = d.data ? localToIso(d.data.slice(0, 10), d.data.slice(11)) : null;
+  const supabase = await db();
+  const { data, error } = await supabase
+    .from("homework_assignments")
+    .update({ deadline: iso })
+    .eq("id", assignmentId)
+    .select("id, class_id");
+  if (
+    error ||
+    !data?.length ||
+    !(await mentorClassIds(me.id)).includes(data[0].class_id)
+  )
+    return { ok: false, message: "Termenul nu s-a putut schimba." };
+  refresh();
   return {
-    status: "success",
-    message: `Trimiterea lui ${first} a fost marcată ca revizuită.`,
-    detail: `${first} primește feedback-ul${v.bonusXp > 0 ? ` și +${v.bonusXp} XP bonus` : ""}. Demo: salvarea reală vine cu baza de date.`,
+    ok: true,
+    message: iso ? "Termenul a fost schimbat." : "Tema nu mai are termen.",
+  };
+}
+
+/** Retrage tema dintr-o clasă, doar dacă niciun elev nu a trimis încă nimic. */
+export async function unassignHomework(
+  assignmentId: string,
+): Promise<ActionResult> {
+  await requireUser("mentor");
+  if (!isUuid(assignmentId)) return NOT_FOUND;
+  const supabase = await db();
+  const { count } = await supabase
+    .from("problem_submissions")
+    .select("id", { count: "exact", head: true })
+    .eq("assignment_id", assignmentId);
+  if ((count ?? 0) > 0)
+    return {
+      ok: false,
+      message:
+        "Elevii au trimis deja rezolvări. Arhivează tema în loc s-o retragi.",
+    };
+  const { error } = await supabase
+    .from("homework_assignments")
+    .delete()
+    .eq("id", assignmentId);
+  if (error) return { ok: false, message: "Tema nu s-a putut retrage." };
+  refresh();
+  return { ok: true, message: "Tema a fost retrasă din clasă." };
+}
+
+/** Arhivarea o scoate din panoul mentorului; elevii o văd în continuare în arhiva lor. */
+export async function setHomeworkArchived(
+  homeworkId: string,
+  archived: boolean,
+): Promise<ActionResult> {
+  const owned = await ownHomework(homeworkId);
+  if (!owned) return NOT_FOUND;
+  const supabase = await db();
+  const { error } = await supabase
+    .from("homeworks")
+    .update({ archived })
+    .eq("id", homeworkId);
+  if (error) return { ok: false, message: "Modificarea nu s-a putut salva." };
+  refresh();
+  return {
+    ok: true,
+    message: archived ? "Tema a fost arhivată." : "Tema e din nou activă.",
+  };
+}
+
+export async function deleteHomework(
+  homeworkId: string,
+): Promise<ActionResult> {
+  const owned = await ownHomework(homeworkId);
+  if (!owned) return NOT_FOUND;
+  if (owned.homework.assignments.some((a) => a.complete > 0 || a.waiting > 0))
+    return {
+      ok: false,
+      message: "Tema are rezolvări trimise. Arhiveaz-o în loc s-o ștergi.",
+    };
+  const supabase = await db();
+  const { count } = await supabase
+    .from("problem_submissions")
+    .select("id", { count: "exact", head: true })
+    .in(
+      "problem_id",
+      owned.homework.problems.map((p) => p.id),
+    );
+  if ((count ?? 0) > 0)
+    return {
+      ok: false,
+      message: "Tema are rezolvări trimise. Arhiveaz-o în loc s-o ștergi.",
+    };
+  const { error } = await supabase
+    .from("homeworks")
+    .delete()
+    .eq("id", homeworkId);
+  if (error) return { ok: false, message: "Tema nu s-a putut șterge." };
+  refresh();
+  redirect("/mentor/teme");
+}
+
+/* ---------- Evaluare ---------- */
+
+const reviewSchema = z.object({
+  status: z.enum(["accepted", "needs_changes"]),
+  feedback: z
+    .string()
+    .trim()
+    .max(3000, "Feedbackul are cel mult 3000 de caractere."),
+});
+
+/** Evaluarea unei probleme trimise: acceptată sau de refăcut, cu feedback (review_problem). */
+export async function reviewProblem(
+  submissionId: string,
+  input: { status: string; feedback: string },
+): Promise<ActionResult> {
+  await requireUser("mentor");
+  const parsed = reviewSchema.safeParse(input);
+  if (!parsed.success || !isUuid(submissionId))
+    return { ok: false, message: "Alege „Acceptată” sau „De refăcut”." };
+  if (parsed.data.status === "needs_changes" && parsed.data.feedback.length < 5)
+    return {
+      ok: false,
+      message: "Spune-i elevului ce are de refăcut.",
+      errors: {
+        feedback: "Spune-i elevului ce are de refăcut (cel puțin 5 caractere).",
+      },
+    };
+  const supabase = await db();
+  const { error } = await supabase.rpc("review_problem", {
+    p_submission: submissionId,
+    p_status: parsed.data.status,
+    p_feedback: parsed.data.feedback,
+  });
+  if (error) return { ok: false, message: "Evaluarea nu s-a putut salva." };
+  refresh();
+  return {
+    ok: true,
+    message:
+      parsed.data.status === "accepted"
+        ? "Problema a fost acceptată."
+        : "Elevul a primit cererea de refacere.",
+  };
+}
+
+/** Bonusul de calitate pe toată tema (0 – maximul temei); se corectează, nu se adună. */
+export async function setHomeworkBonus(
+  assignmentId: string,
+  studentId: string,
+  input: { bonus: number; note: string },
+): Promise<ActionResult> {
+  await requireUser("mentor");
+  const bonus = z.number().int().min(0).max(5).safeParse(input.bonus);
+  if (!bonus.success || !isUuid(assignmentId) || !isUuid(studentId))
+    return { ok: false, message: "Bonusul e între 0 și 5 XP." };
+  const supabase = await db();
+  const { error } = await supabase.rpc("set_homework_bonus", {
+    p_assignment: assignmentId,
+    p_student: studentId,
+    p_bonus: bonus.data,
+    p_note: input.note.trim().slice(0, 1000),
+  });
+  if (error) return { ok: false, message: "Bonusul nu s-a putut salva." };
+  refresh();
+  return {
+    ok: true,
+    message:
+      bonus.data > 0
+        ? `Bonus de calitate: +${bonus.data} XP.`
+        : "Bonusul a fost scos.",
   };
 }

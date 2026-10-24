@@ -2,13 +2,14 @@ import { Lock } from "lucide-react";
 import type { Metadata } from "next";
 import { ApplicationsList } from "@/components/admin/applications-list";
 import { PageHeader } from "@/components/common/page-header";
-import { getMentorApplications, getViewer } from "@/lib/data/queries";
+import { requireUser } from "@/lib/auth";
+import { getMentorApplications } from "@/lib/db/admin";
 
 export const metadata: Metadata = { title: "Aplicații mentori" };
 
 export default async function ApplicationsPage() {
   // Pagina este doar pentru administratori; cu Supabase, verificarea se face pe sesiune.
-  await getViewer("admin");
+  await requireUser("admin");
   const applications = await getMentorApplications();
 
   return (

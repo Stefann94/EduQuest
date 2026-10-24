@@ -17,14 +17,11 @@ import { CreateClassDialog } from "@/components/mentor-classes/create-class-dial
 import { SubmissionRow } from "@/components/mentor-classes/submission-row";
 import { NotificationIcon } from "@/components/shell/notification-icon";
 import { buttonVariants } from "@/components/ui/button";
-import { getUpcomingMeetings } from "@/lib/data/mentor-class-queries";
-import {
-  getLiveSessions,
-  getMentorClasses,
-  getNotifications,
-  getReviewQueue,
-  getViewer,
-} from "@/lib/data/queries";
+import { requireUser } from "@/lib/auth";
+import { getMentorClasses } from "@/lib/db/classes";
+import { getReviewQueue } from "@/lib/db/homework";
+import { getNotifications } from "@/lib/db/notifications";
+import { getLiveSessions } from "@/lib/db/quizzes";
 import {
   formatDateTime,
   formatDay,
@@ -34,6 +31,7 @@ import {
   plural,
   relativeDays,
 } from "@/lib/format";
+import { upcomingMeetings } from "@/lib/meetings";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Panou" };
@@ -49,17 +47,15 @@ type AgendaItem = {
 };
 
 export default async function MentorDashboardPage() {
-  const me = await getViewer("mentor");
+  const me = await requireUser("mentor");
   const today = now();
-  const [queue, classes, sessions, notifications, meetings] = await Promise.all(
-    [
-      getReviewQueue(me.id),
-      getMentorClasses(me.id),
-      getLiveSessions(me),
-      getNotifications(me.id),
-      getUpcomingMeetings(me.id, today),
-    ],
-  );
+  const [queue, classes, sessions, notifications] = await Promise.all([
+    getReviewQueue(me.id),
+    getMentorClasses(me.id),
+    getLiveSessions(),
+    getNotifications(me.id),
+  ]);
+  const meetings = upcomingMeetings(classes.active, today);
 
   const agenda: AgendaItem[] = [
     ...meetings.map((m) => ({
@@ -75,10 +71,10 @@ export default async function MentorDashboardPage() {
       .map((s) => ({
         key: `l-${s.id}`,
         kind: "live" as const,
-        at: s.startsAt,
-        title: `Quiz live: ${s.title}`,
+        at: s.createdAt,
+        title: `Quiz live deschis: ${s.title}`,
         className: s.className,
-        href: "/mentor/live",
+        href: `/mentor/live/${s.id}`,
         extra: `Cod ${s.code}`,
       })),
   ].sort((a, b) => a.at.localeCompare(b.at));
@@ -94,8 +90,8 @@ export default async function MentorDashboardPage() {
           <>
             {formatWeekday(today.toISOString())} ·{" "}
             {queue.length > 0
-              ? `Ai ${plural(queue.length, "trimitere", "trimiteri")} de revizuit.`
-              : "Ești la zi cu review-urile."}
+              ? `Ai ${plural(queue.length, "problemă trimisă", "probleme trimise")} de evaluat.`
+              : "Ești la zi cu evaluările."}
           </>
         }
       />
@@ -106,7 +102,7 @@ export default async function MentorDashboardPage() {
           href="/mentor/materiale/nou"
           className={buttonVariants({ variant: "outline" })}
         >
-          <BookPlus aria-hidden="true" /> Publică material
+          <BookPlus aria-hidden="true" /> Lecție nouă
         </Link>
         <Link
           href="/mentor/teme/nou"
@@ -126,8 +122,8 @@ export default async function MentorDashboardPage() {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Section
-          title="De revizuit"
-          description="Trimiterile care așteaptă feedback, cele mai vechi primele"
+          title="De evaluat"
+          description="Problemele trimise care așteaptă feedback, cele mai vechi primele"
           className="content-start lg:col-span-2"
           bodyClassName="p-2"
           actions={
@@ -142,17 +138,15 @@ export default async function MentorDashboardPage() {
           {queue.length > 0 ? (
             <ul className="stagger">
               {queue.map((r) => (
-                <li key={r.submission.id}>
+                <li key={r.submissionId}>
                   <SubmissionRow
+                    href={`/mentor/teme/${r.homeworkId}/${r.assignmentId}/${r.student.id}`}
                     student={r.student}
-                    assignmentId={r.assignment.id}
-                    assignmentTitle={r.assignment.title}
-                    submissionId={r.submission.id}
+                    title={r.title}
+                    problemTitle={r.problemTitle}
                     className={r.className}
-                    at={r.submission.attempts.at(-1)?.at ?? ""}
-                    status={r.submission.status}
+                    at={r.at}
                     isResubmission={r.isResubmission}
-                    showStatus={false}
                   />
                 </li>
               ))}
@@ -213,7 +207,7 @@ export default async function MentorDashboardPage() {
               </ul>
             ) : (
               <p className="px-2 py-4 text-center text-muted-foreground text-sm">
-                Nicio întâlnire sau sesiune programată.
+                Nicio întâlnire în următoarele zile.
               </p>
             )}
           </Section>

@@ -1,23 +1,19 @@
 import { Trophy } from "lucide-react";
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/common/empty-state";
 import { LeaderboardManager } from "@/components/mentor-classes/leaderboard-manager";
 import { SectionSkeleton } from "@/components/mentor-classes/skeletons";
-import {
-  demoIds,
-  getClass,
-  getLeaderboard,
-  getViewer,
-} from "@/lib/data/queries";
+import { placeholderParams } from "@/lib/db/core";
+import { getLeaderboard } from "@/lib/db/xp";
+import { loadMentorClass } from "../load-class";
 
 export const metadata: Metadata = { title: "Clasament" };
 
 type Props = PageProps<"/mentor/clase/[id]/clasament">;
 
 export function generateStaticParams() {
-  return demoIds.classes();
+  return placeholderParams("id");
 }
 
 export default function ClassLeaderboardPage({ params }: Props) {
@@ -29,19 +25,17 @@ export default function ClassLeaderboardPage({ params }: Props) {
 }
 
 const SOURCES = [
-  ["Prezență la întâlnire", "+2"],
-  ["Temă trimisă", "+2"],
-  ["Bonus de calitate la temă", "0–5"],
+  ["Prezență la întâlnire (sau recuperată)", "+2"],
+  ["Temă trimisă la timp (toate problemele obligatorii)", "+2"],
+  ["Bonus de calitate, pe toată tema", "0–5"],
+  ["Quiz dat clasei: prima rezolvare / prima refacere", "până la +5 / +1"],
   ["Quiz live, locurile 1–4", "+5, +4, +3, +2"],
   ["Quiz live, ceilalți participanți", "+1"],
   ["Ajustare făcută de mentor", "-10…+10"],
 ] as const;
 
 async function Leaderboard({ params }: { params: Props["params"] }) {
-  const { id } = await params;
-  const me = await getViewer("mentor");
-  const c = await getClass(me, id);
-  if (!c) notFound();
+  const { classRoom: c } = await loadMentorClass(params);
   const board = await getLeaderboard(c.id);
 
   return (
@@ -63,7 +57,8 @@ async function Leaderboard({ params }: { params: Props["params"] }) {
               initialRows={board.map((r) => ({
                 id: r.student.id,
                 displayName: r.student.displayName,
-                username: r.student.username,
+                username: c.students.find((s) => s.id === r.student.id)
+                  ?.username,
                 avatar: r.student.avatar,
                 xp: r.xp,
               }))}

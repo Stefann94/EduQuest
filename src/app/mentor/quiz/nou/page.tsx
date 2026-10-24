@@ -1,26 +1,48 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { PageHeader } from "@/components/common/page-header";
-import { quizDraft } from "@/components/mentor-content/drafts";
 import { QuizForm } from "@/components/mentor-content/quiz-form";
-import { getMentorClasses, getViewer } from "@/lib/data/queries";
+import { FormSkeleton } from "@/components/mentor-content/skeletons";
+import { requireUser } from "@/lib/auth";
+import { getMentorClasses } from "@/lib/db/classes";
+import { getMentorLessons } from "@/lib/db/lessons";
 
 export const metadata: Metadata = { title: "Quiz nou" };
 
-export default async function NewQuizPage() {
-  const me = await getViewer("mentor");
-  const { active } = await getMentorClasses(me.id);
-
+export default function NewQuizPage() {
   return (
     <div className="grid gap-6">
       <PageHeader
-        title="Quiz nou"
-        description="Un quiz de exersare pentru toți elevii sau un quiz dat unei clase, cu termen și XP. Îl poți folosi și într-o sesiune live."
         back={{ href: "/mentor/quiz", label: "Quiz-uri" }}
+        title="Quiz nou"
+        description="Întrebări cu variante, fiecare etichetată pe lecția pe care o verifică."
       />
-      <QuizForm
-        draft={quizDraft()}
-        classes={active.map((c) => ({ id: c.id, name: c.name }))}
-      />
+      <Suspense fallback={<FormSkeleton />}>
+        <Form />
+      </Suspense>
     </div>
+  );
+}
+
+async function Form() {
+  const me = await requireUser("mentor");
+  const [lessons, classes] = await Promise.all([
+    getMentorLessons(me.id),
+    getMentorClasses(me.id),
+  ]);
+  return (
+    <QuizForm
+      draft={{
+        title: "",
+        description: "",
+        lessonIds: [],
+        xp: 3,
+        timeLimitSec: null,
+        classIds: [],
+        questions: [],
+      }}
+      lessons={lessons.map((l) => ({ id: l.id, title: l.title }))}
+      classes={classes.active.map((c) => ({ id: c.id, name: c.name }))}
+    />
   );
 }

@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { getViewer } from "@/lib/data/queries";
+import { requireUser } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Setări platformă" };
 
@@ -102,7 +102,7 @@ const OPEN_DECISIONS = [
 ];
 
 export default async function PlatformSettingsPage() {
-  await getViewer("admin");
+  await requireUser("admin");
 
   return (
     <div className="grid gap-8">

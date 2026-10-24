@@ -20,8 +20,6 @@ import type { AvatarId } from "@/lib/data/types";
 import { cn } from "@/lib/utils";
 import { FieldError } from "./field-error";
 
-const DEMO = "Demo: modificarea se salvează după conectarea la baza de date.";
-
 /** Rulează o acțiune fără să golească formularul (păstrăm valorile la eroare). */
 function useFormAction<F extends string>(
   action: (prev: FormState<F>, data: FormData) => Promise<FormState<F>>,
@@ -31,7 +29,7 @@ function useFormAction<F extends string>(
     async (prev: FormState<F>, data: FormData) => {
       const result = await action(prev, data);
       if (result.status === "success") {
-        toast.success(result.message, { description: DEMO });
+        toast.success(result.message);
         onSuccess?.();
       }
       return result;
@@ -312,7 +310,7 @@ const PREFS: { key: keyof NotificationPrefs; label: string; hint: string }[] = [
   {
     key: "assignments",
     label: "Teme noi",
-    hint: "Când mentorul publică o temă sau un exercițiu opțional.",
+    hint: "Când mentorul dă clasei o temă nouă.",
   },
   {
     key: "deadlines",
@@ -322,27 +320,31 @@ const PREFS: { key: keyof NotificationPrefs; label: string; hint: string }[] = [
   {
     key: "feedback",
     label: "Feedback de la mentor",
-    hint: "Când o temă e revizuită sau are nevoie de corecturi.",
+    hint: "Când o problemă e acceptată sau trebuie refăcută.",
   },
   {
     key: "materials",
-    label: "Materiale noi",
-    hint: "Când apar lecții sau fișe noi în clasele tale.",
+    label: "Lecții și materiale noi",
+    hint: "Când apar lecții sau materiale noi în clasele tale.",
   },
   {
     key: "liveQuiz",
     label: "Quiz-uri live",
-    hint: "Când e programată sau începe o sesiune live.",
+    hint: "Când mentorul deschide o sesiune live.",
   },
 ];
 
-export function NotificationPrefsForm() {
+export function NotificationPrefsForm({
+  initial,
+}: {
+  initial: Partial<NotificationPrefs>;
+}) {
   const [prefs, setPrefs] = useState<NotificationPrefs>({
-    assignments: true,
-    deadlines: true,
-    feedback: true,
-    materials: true,
-    liveQuiz: true,
+    assignments: initial.assignments ?? true,
+    deadlines: initial.deadlines ?? true,
+    feedback: initial.feedback ?? true,
+    materials: initial.materials ?? true,
+    liveQuiz: initial.liveQuiz ?? true,
   });
   const [pending, setPending] = useState(false);
 
@@ -350,8 +352,7 @@ export function NotificationPrefsForm() {
     setPending(true);
     const result = await saveNotificationPrefs(prefs);
     setPending(false);
-    if (result.ok)
-      toast.success("Preferințele au fost salvate", { description: DEMO });
+    if (result.ok) toast.success("Preferințele au fost salvate");
     else toast.error("Preferințele nu au putut fi salvate. Încearcă din nou.");
   }
 
@@ -359,7 +360,7 @@ export function NotificationPrefsForm() {
     <Card
       id="notificari"
       title="Notificări"
-      description="Alege despre ce vrei să fii anunțat în platformă."
+      description="Alege ce notificări vezi în platformă."
     >
       <div className="grid max-w-xl gap-4">
         <ul className="divide-y rounded-lg border">

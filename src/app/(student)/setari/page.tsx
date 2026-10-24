@@ -2,19 +2,20 @@ import { ShieldCheck } from "lucide-react";
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/common/page-header";
 import { UserAvatar } from "@/components/common/user-avatar";
-import { DemoNote } from "@/components/student-activity/field-error";
 import {
   EmailForm,
   NotificationPrefsForm,
   PasswordForm,
   ProfileForm,
 } from "@/components/student-activity/settings-forms";
-import { getViewer } from "@/lib/data/queries";
+import { requireUser } from "@/lib/auth";
+import { getNotificationPrefs } from "@/lib/db/notifications";
 
 export const metadata: Metadata = { title: "Setări cont" };
 
 export default async function SettingsPage() {
-  const me = await getViewer("student");
+  const me = await requireUser("student");
+  const prefs = await getNotificationPrefs(me.id);
 
   return (
     <div className="grid gap-6">
@@ -36,7 +37,7 @@ export default async function SettingsPage() {
       />
       <EmailForm email={me.email} />
       <PasswordForm />
-      <NotificationPrefsForm />
+      <NotificationPrefsForm initial={prefs} />
 
       <section
         aria-labelledby="confidentialitate"
@@ -57,10 +58,6 @@ export default async function SettingsPage() {
           </p>
         </div>
       </section>
-
-      <DemoNote>
-        Demo: modificările se salvează după conectarea la baza de date.
-      </DemoNote>
     </div>
   );
 }

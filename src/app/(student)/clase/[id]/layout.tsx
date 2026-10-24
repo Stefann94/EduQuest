@@ -1,13 +1,13 @@
 import { Suspense } from "react";
 import { ClassHeader } from "@/components/student-class/class-header";
 import { ClassHeaderSkeleton } from "@/components/student-class/skeletons";
-import { demoIds } from "@/lib/data/queries";
+import { placeholderParams } from "@/lib/db/core";
 import { loadStudentClass } from "./load-class";
 
 type Props = LayoutProps<"/clase/[id]">;
 
 export function generateStaticParams() {
-  return demoIds.classes();
+  return placeholderParams("id");
 }
 
 export default function StudentClassLayout({ children, params }: Props) {

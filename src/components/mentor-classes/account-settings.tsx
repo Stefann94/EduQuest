@@ -109,17 +109,19 @@ export function AccountSettings({
   displayName,
   email,
   avatar,
+  prefs,
 }: {
   displayName: string;
   email: string;
   avatar: AvatarId;
+  prefs: Record<"submissions" | "resubmissions" | "classActivity", boolean>;
 }) {
   return (
     <div className="grid max-w-3xl gap-6">
       <ProfileForm displayName={displayName} avatar={avatar} />
       <EmailForm email={email} />
       <PasswordForm />
-      <NotificationPreferences />
+      <NotificationPreferences initial={prefs} />
     </div>
   );
 }
@@ -334,27 +336,26 @@ const PREFERENCES = [
   {
     name: "submissions",
     label: "Trimiteri noi",
-    description: "Când un elev trimite o temă pentru prima dată.",
+    description: "Când un elev trimite rezolvarea unei probleme din temă.",
   },
   {
     name: "resubmissions",
     label: "Retrimiteri",
-    description: "Când un elev trimite din nou o temă după corecturi.",
+    description: "Când un elev retrimite o problemă după corecturi.",
   },
   {
     name: "classActivity",
-    label: "Activitate în clase",
-    description:
-      "Elevi noi înscriși, quiz-uri live încheiate și termene apropiate.",
+    label: "Aplicații și activitate",
+    description: "Aplicații noi de mentor și alte anunțuri ale platformei.",
   },
 ] as const;
 
-function NotificationPreferences() {
-  const [prefs, setPrefs] = useState<Record<string, boolean>>({
-    submissions: true,
-    resubmissions: true,
-    classActivity: true,
-  });
+function NotificationPreferences({
+  initial,
+}: {
+  initial: Record<string, boolean>;
+}) {
+  const [prefs, setPrefs] = useState<Record<string, boolean>>(initial);
   const [, action, pending] = useToastAction(updateNotificationPreferences);
 
   return (
@@ -364,7 +365,7 @@ function NotificationPreferences() {
       )}
       <Card
         title="Notificări"
-        description="Alege ce notificări primești în aplicație."
+        description="Alege ce notificări vezi în aplicație."
         footer={
           <Button type="submit" disabled={pending}>
             {pending ? "Se salvează…" : "Salvează preferințele"}

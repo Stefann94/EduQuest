@@ -1,8 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { getMentorApplication, getViewer } from "@/lib/data/queries";
+import { requireUser } from "@/lib/auth";
 import type { ApplicationStatus } from "@/lib/data/types";
+import { getMentorApplication } from "@/lib/db/admin";
 import { siteOrigin } from "@/lib/site-url";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -39,7 +40,7 @@ export async function reviewApplication(
   _prev: ReviewState,
   formData: FormData,
 ): Promise<ReviewState> {
-  const viewer = await getViewer("admin");
+  const viewer = await requireUser("admin");
   if (viewer.role !== "admin")
     return {
       status: "error",

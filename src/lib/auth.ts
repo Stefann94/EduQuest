@@ -1,7 +1,7 @@
 import "server-only";
 import { redirect } from "next/navigation";
+import { connection } from "next/server";
 import { cache } from "react";
-import * as demo from "./data/demo";
 import type { AccountStatus, AvatarId, Role, User } from "./data/types";
 import { createSupabaseServerClient } from "./supabase/server";
 
@@ -46,7 +46,7 @@ export const getSessionProfile = cache(
       displayName: p.display_name,
       username: p.username ?? undefined,
       role: p.role,
-      avatar: p.avatar ?? undefined,
+      avatar: (p.avatar ?? undefined) as AvatarId | undefined,
       status: p.status,
       createdAt: p.created_at,
     };
@@ -56,22 +56,13 @@ export const getSessionProfile = cache(
 /**
  * Utilizatorul logat, dacă are rolul cerut. Altfel: la autentificare (fără sesiune
  * sau cont inactiv) ori la pagina de start a rolului lui.
- *
- * Punte temporară: paginile care încă citesc datele demo folosesc id-urile demo,
- * așa că întoarcem utilizatorul demo cu același email (cu numele și avatarul reale).
  */
 export async function requireUser(role: Role): Promise<User> {
+  // Paginile cu cont se randează la fiecare cerere (folosesc și ora curentă).
+  await connection();
   const p = await getSessionProfile();
   if (!p || p.status !== "active") redirect("/auth/iesire");
   if (p.role !== role) redirect(HOME[p.role]);
-
-  const legacy = demo.users.find((u) => u.email === p.email);
-  if (legacy)
-    return {
-      ...legacy,
-      displayName: p.displayName,
-      avatar: p.avatar ?? legacy.avatar,
-    };
   return {
     id: p.id,
     displayName: p.displayName,

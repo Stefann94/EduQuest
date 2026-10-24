@@ -55,3 +55,14 @@ export function daysBefore(iso: string, ref: string) {
   const b = Date.parse(`${dateKey(ref)}T00:00:00Z`);
   return Math.round((b - a) / 86_400_000);
 }
+
+const hourMinute = new Intl.DateTimeFormat("en-GB", {
+  timeZone: "Europe/Bucharest",
+  hour: "2-digit",
+  minute: "2-digit",
+  hourCycle: "h23",
+});
+
+/** Un moment ca valoare pentru <input type="datetime-local">, pe ora României. */
+export const localInputValue = (iso: string) =>
+  `${dateKey(iso)}T${hourMinute.format(new Date(iso))}`;

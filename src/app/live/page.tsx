@@ -1,7 +1,7 @@
 import { LiveGame } from "@/components/quiz/live-game";
-import { getViewer } from "@/lib/data/queries";
+import { requireUser } from "@/lib/auth";
 
 export default async function LivePage() {
-  const me = await getViewer("student");
-  return <LiveGame me={{ name: me.displayName, avatar: me.avatar }} />;
+  const me = await requireUser("student");
+  return <LiveGame me={{ id: me.id, name: me.displayName }} />;
 }

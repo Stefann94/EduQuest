@@ -1,513 +1,277 @@
 "use client";
 
-import {
-  ArrowRight,
-  Check,
-  Clock,
-  Eye,
-  Flag,
-  MessageCircle,
-  Play,
-  Users,
-} from "lucide-react";
-import Link from "next/link";
-import { useEffect, useState, useTransition } from "react";
+import { ArrowRight, Eye, Flag, Play, Trophy, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { finishLiveSession } from "@/app/mentor/live/actions";
-import { Section } from "@/components/common/section";
-import { UserAvatar } from "@/components/common/user-avatar";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { getLiveState } from "@/app/live/actions";
+import { controlLive } from "@/app/mentor/live/actions";
+import { XpBadge } from "@/components/common/status";
+import { AVATARS } from "@/components/common/user-avatar";
+import { RichText } from "@/components/learning/rich-text";
+import { ANSWER_STYLES, AnswerShape } from "@/components/quiz/answer-shape";
+import { QuestionCode } from "@/components/quiz/question-code";
+import { Button } from "@/components/ui/button";
 import type { AvatarId } from "@/lib/data/types";
+import { type LiveState, liveXpForRank, secondsLeft } from "@/lib/live";
 import { cn } from "@/lib/utils";
-import { Callout } from "./callout";
 import { ConfirmDialog } from "./confirm-dialog";
-import { formatSessionCode, rankLiveResults } from "./live-ranking";
-import { formatPoints, type LiveResultRow, LiveResults } from "./live-results";
-import { ANSWER_STYLES, AnswerShape } from "./quiz-shapes";
-
-export type LiveStudent = { id: string; name: string; avatar: AvatarId };
-
-export type LiveQuestion = {
-  id: string;
-  prompt: string;
-  options: string[];
-  correct: number;
-  explanation?: string;
-  /** Codul întrebării, deja evidențiat pe server (CodeBlock). */
-  code?: React.ReactNode;
-};
-
-type Phase = "lobby" | "question" | "final";
-
-/** Când răspunde fiecare participant (simulare pentru demo). */
-type PlannedAnswer = { studentId: string; atMs: number; option: number };
-
-type Score = { score: number; correct: number };
-
-const JOIN_EVERY_MS = 900;
 
 /**
- * Panoul de control al mentorului pentru o sesiune live: lobby, întrebări, rezultate.
- * În demo, intrarea elevilor și răspunsurile lor sunt simulate în browser.
+ * Panoul de control al mentorului, de proiectat în clasă: codul mare, jucătorii,
+ * întrebarea curentă cu cronometrul, câți au răspuns și clasamentul.
  */
 export function LiveControl({
   sessionId,
-  code,
-  quizTitle,
-  questions,
-  secondsPerQuestion,
-  students,
+  className,
 }: {
   sessionId: string;
-  code: string;
-  quizTitle: string;
-  questions: LiveQuestion[];
-  secondsPerQuestion: number;
-  students: LiveStudent[];
+  className: string;
 }) {
-  const [phase, setPhase] = useState<Phase>("lobby");
-  const [joined, setJoined] = useState<string[]>([]);
-  const [qIndex, setQIndex] = useState(0);
-  const [startedAt, setStartedAt] = useState(0);
-  const [nowMs, setNowMs] = useState(0);
-  const [revealedAt, setRevealedAt] = useState<number | null>(null);
-  const [plan, setPlan] = useState<PlannedAnswer[]>([]);
-  const [scores, setScores] = useState<Record<string, Score>>({});
-  const [played, setPlayed] = useState(0);
-  const [results, setResults] = useState<LiveResultRow[] | null>(null);
-  const [announcement, setAnnouncement] = useState("");
-  const [saving, startSaving] = useTransition();
+  const router = useRouter();
+  const [state, setState] = useState<LiveState | null>(null);
+  const [pending, startTransition] = useTransition();
+  const skew = useRef(0);
+  const [, setTick] = useState(0);
+  const autoRevealed = useRef(0);
 
-  const limitMs = secondsPerQuestion * 1000;
-  const question = questions[qIndex];
-  const revealed = revealedAt !== null;
-  const elapsed = Math.max(0, (revealedAt ?? nowMs) - startedAt);
-  const remaining = Math.max(0, Math.ceil((limitMs - elapsed) / 1000));
-  const timeUp = elapsed >= limitMs;
-  // Răspunsurile primite până acum; după termen nu se mai acceptă (nici schimbări).
-  const received = plan.filter((p) => p.atMs <= Math.min(elapsed, limitMs));
-  const allAnswered = joined.length > 0 && received.length === joined.length;
-  const byId = new Map(students.map((s) => [s.id, s]));
-
-  // Lobby: elevii intră pe rând (simulare). Unul dintre ei lipsește azi.
-  useEffect(() => {
-    if (phase !== "lobby") return;
-    const expected = students
-      .slice(0, Math.max(1, students.length - 1))
-      .map((s) => s.id);
-    const timer = setInterval(() => {
-      setJoined((list) =>
-        list.length >= expected.length
-          ? list
-          : [...list, expected[list.length]],
-      );
-    }, JOIN_EVERY_MS);
-    return () => clearInterval(timer);
-  }, [phase, students]);
-
-  // Cronometrul întrebării curente.
-  useEffect(() => {
-    if (phase !== "question" || revealed || timeUp || allAnswered) return;
-    const timer = setInterval(() => setNowMs(Date.now()), 250);
-    return () => clearInterval(timer);
-  }, [phase, revealed, timeUp, allAnswered]);
-
-  function startQuestion(index: number) {
-    const q = questions[index];
-    const t = Date.now();
-    setQIndex(index);
-    setStartedAt(t);
-    setNowMs(t);
-    setRevealedAt(null);
-    setPlan(
-      joined.map((studentId) => {
-        // Aproximativ 1 din 10 elevi nu răspunde la timp.
-        const answers = Math.random() > 0.1;
-        const right = Math.random() < 0.65;
-        const others = q.options
-          .map((_, i) => i)
-          .filter((i) => i !== q.correct);
-        return {
-          studentId,
-          atMs: answers
-            ? (0.12 + Math.random() * 0.8) * limitMs
-            : Number.POSITIVE_INFINITY,
-          option: right
-            ? q.correct
-            : others[Math.floor(Math.random() * others.length)],
-        };
-      }),
-    );
-    setPhase("question");
-    setAnnouncement(
-      `Întrebarea ${index + 1} din ${questions.length} a început.`,
-    );
+  async function refresh() {
+    const sentAt = Date.now();
+    const s = await getLiveState(sessionId);
+    if (!s) return;
+    skew.current = Date.parse(s.now) - (sentAt + (Date.now() - sentAt) / 2);
+    setState(s);
   }
 
-  function reveal() {
-    const at = Date.now();
-    const cutoff = Math.min(at - startedAt, limitMs);
-    const answered = plan.filter((p) => p.atMs <= cutoff);
-    setRevealedAt(startedAt + cutoff);
-    setScores((prev) => {
-      const next = { ...prev };
-      for (const p of answered) {
-        if (p.option !== question.correct) continue;
-        // Răspuns corect: 500 de puncte + până la 500 pentru viteză.
-        const points = 500 + Math.round(500 * (1 - p.atMs / limitMs));
-        const cur = next[p.studentId] ?? { score: 0, correct: 0 };
-        next[p.studentId] = {
-          score: cur.score + points,
-          correct: cur.correct + 1,
-        };
-      }
-      return next;
-    });
-    setPlayed((n) => n + 1);
-    setAnnouncement(`Răspunsul corect: ${question.options[question.correct]}.`);
-  }
+  // biome-ignore lint/correctness/useExhaustiveDependencies: interogarea depinde doar de sesiune
+  useEffect(() => {
+    void refresh();
+    const timer = setInterval(refresh, 1000);
+    const tick = setInterval(() => setTick((t) => t + 1), 250);
+    return () => {
+      clearInterval(timer);
+      clearInterval(tick);
+    };
+  }, [sessionId]);
 
-  function finish() {
-    const rows = joined.map((id) => ({
-      studentId: id,
-      score: scores[id]?.score ?? 0,
-    }));
-    startSaving(async () => {
-      const res = await finishLiveSession(sessionId, rows);
-      if (!res.ok) {
-        toast.error(res.message);
-        return;
-      }
-      setResults(
-        res.results.map((r) => {
-          const s = byId.get(r.studentId);
-          return {
-            ...r,
-            name: s?.name ?? "Elev",
-            avatar: s?.avatar ?? "owl",
-            correct: scores[r.studentId]?.correct ?? 0,
-          };
-        }),
-      );
-      setPhase("final");
-      setAnnouncement("Quiz-ul s-a încheiat. Clasamentul final este afișat.");
-      toast.success(res.message, { description: res.detail });
+  function command(action: "start" | "reveal" | "next" | "finish") {
+    startTransition(async () => {
+      const r = await controlLive(sessionId, action);
+      if (!r.ok) toast.error(r.message);
+      await refresh();
+      if (action === "finish") router.refresh();
     });
   }
 
-  const live = (
-    <output className="sr-only" aria-live="polite">
-      {announcement}
-    </output>
-  );
+  const left = state ? secondsLeft(state, skew.current) : 0;
+  // Când expiră timpul sau au răspuns toți, răspunsul corect se arată singur.
+  useEffect(() => {
+    if (!state || state.status !== "running" || state.reveal || pending) return;
+    const everyone = state.players > 0 && state.answered >= state.players;
+    if ((left === 0 || everyone) && autoRevealed.current !== state.current) {
+      autoRevealed.current = state.current;
+      command("reveal");
+    }
+  });
 
-  /* ---------- Lobby ---------- */
-  if (phase === "lobby") {
-    const waiting = students.length - joined.length;
-    return (
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
-        {live}
-        <section className="grid gap-6 rounded-xl border bg-card p-6 text-center shadow-xs sm:p-10">
-          <div className="grid gap-2">
-            <p className="font-medium text-muted-foreground text-sm">
-              Codul sesiunii
-            </p>
-            <p className="font-mono font-semibold text-5xl tabular-nums tracking-[0.12em] sm:text-7xl">
-              <span aria-hidden="true">{formatSessionCode(code)}</span>
-              <span className="sr-only">{code.split("").join(" ")}</span>
-            </p>
-          </div>
-          <p className="mx-auto max-w-md text-lg">
-            Elevii intră pe{" "}
-            <span className="rounded-md bg-muted px-1.5 py-0.5 font-mono font-semibold">
-              /live
-            </span>{" "}
-            și scriu codul.
-          </p>
-          <p className="mx-auto max-w-md text-muted-foreground text-sm">
-            Fiecare elev își alege un personaj, care rămâne legat de contul lui
-            din platformă. Nu e nevoie de un cont separat.
-          </p>
-          <div className="flex flex-wrap justify-center gap-2">
-            <Button
-              size="lg"
-              onClick={() => startQuestion(0)}
-              disabled={joined.length === 0}
-            >
-              <Play aria-hidden="true" /> Începe quiz-ul
-            </Button>
-          </div>
-          <p className="text-muted-foreground text-xs">
-            {quizTitle} · {questions.length} întrebări · {secondsPerQuestion}{" "}
-            secunde pe întrebare
-          </p>
-        </section>
-
-        <Section
-          title="Participanți"
-          description={`${joined.length} din ${students.length} elevi au intrat${waiting > 0 ? ` · se așteaptă ${waiting}` : ""}`}
-        >
-          {joined.length === 0 ? (
-            <p className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Users className="size-4" aria-hidden="true" />
-              Se așteaptă elevii…
-            </p>
-          ) : (
-            <ul className="stagger grid grid-cols-2 gap-2">
-              {joined.map((id) => {
-                const s = byId.get(id);
-                if (!s) return null;
-                return (
-                  <li
-                    key={id}
-                    className="flex items-center gap-2 rounded-lg border bg-muted/30 px-2.5 py-2"
-                  >
-                    <UserAvatar name={s.name} avatar={s.avatar} />
-                    <span className="truncate font-medium text-sm">
-                      {s.name.split(" ")[0]}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </Section>
-      </div>
-    );
-  }
-
-  /* ---------- Rezultate ---------- */
-  if (phase === "final" && results) {
-    const absent = students.filter((s) => !joined.includes(s.id));
-    return (
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
-        {live}
-        <Section
-          title="Clasament final"
-          description={`${results.length} participanți · ${played} din ${questions.length} întrebări jucate`}
-        >
-          <LiveResults rows={results} totalQuestions={played} />
-        </Section>
-        <div className="grid gap-4">
-          <Callout icon={Check} tone="info">
-            Elevii văd rezultatul și XP-ul primit pe ecranul lor și în istoricul
-            de XP.
-          </Callout>
-          {absent.length > 0 ? (
-            <p className="text-muted-foreground text-sm">
-              Nu au participat: {absent.map((s) => s.name).join(", ")}. Elevii
-              care nu intră în sesiune nu primesc XP pentru ea.
-            </p>
-          ) : null}
-          <Link
-            href="/mentor/live"
-            className={buttonVariants({ variant: "outline" })}
-          >
-            Înapoi la sesiuni
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  /* ---------- Întrebare ---------- */
-  const counts = question.options.map(
-    (_, i) => received.filter((p) => p.option === i).length,
-  );
-  const isLast = qIndex === questions.length - 1;
-  const standings = rankLiveResults(
-    joined.map((id) => ({ studentId: id, score: scores[id]?.score ?? 0 })),
-  ).slice(0, 5);
-  const progress = ((qIndex + (revealed ? 1 : 0)) / questions.length) * 100;
+  if (!state)
+    return <p className="text-muted-foreground">Se încarcă sesiunea…</p>;
+  const last = state.current >= state.total;
 
   return (
     <div className="grid gap-6">
-      {live}
-      <div className="grid gap-3 rounded-xl border bg-card p-4 shadow-xs">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="font-semibold">
-            Întrebarea {qIndex + 1} din {questions.length}
+      <section className="grid cut gap-4 bg-foreground p-6 text-background lg:grid-cols-[1fr_auto] lg:items-center">
+        <div>
+          <p className="font-bold font-heading text-background/70 text-sm uppercase tracking-[0.2em]">
+            {className} ·{" "}
+            {state.status === "ended"
+              ? "încheiat"
+              : state.status === "running"
+                ? `întrebarea ${state.current} din ${state.total}`
+                : "sala de așteptare"}
           </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="text-muted-foreground text-sm">
-              Cod:{" "}
-              <span className="font-mono font-semibold text-foreground">
-                {formatSessionCode(code)}
-              </span>
+          <h2 className="mt-1 text-4xl">{state.title}</h2>
+          <p className="mt-2 flex items-center gap-2 text-background/80">
+            <Users className="size-4" aria-hidden="true" />
+            {state.players === 1
+              ? "1 jucător a intrat"
+              : `${state.players} jucători au intrat`}
+          </p>
+        </div>
+        {state.status !== "ended" && state.code ? (
+          <div className="text-center">
+            <p className="font-bold font-heading text-background/70 text-xs uppercase tracking-[0.2em]">
+              Codul jocului · eduquest › Quiz live
             </p>
-            <ConfirmDialog
-              trigger={
-                <Button variant="outline" size="sm" disabled={saving}>
-                  <Flag aria-hidden="true" /> Încheie quiz-ul
-                </Button>
-              }
-              title="Închei quiz-ul acum?"
-              description={
-                revealed
-                  ? `Clasamentul se calculează din cele ${played} întrebări jucate, iar XP-ul se acordă după regulile sesiunii.`
-                  : `Întrebarea curentă nu se mai punctează. Clasamentul se calculează din cele ${played} întrebări încheiate.`
-              }
-              confirmLabel="Încheie quiz-ul"
-              pendingLabel="Se încheie…"
-              destructive={false}
-              onConfirm={finish}
-            />
+            <p className="font-extrabold font-heading text-7xl tabular-nums tracking-[0.15em]">
+              {state.code}
+            </p>
           </div>
-        </div>
-        <div
-          className="h-1.5 overflow-hidden rounded-full bg-muted"
-          role="progressbar"
-          aria-label="Progresul sesiunii"
-          aria-valuemin={0}
-          aria-valuemax={questions.length}
-          aria-valuenow={qIndex + (revealed ? 1 : 0)}
-        >
-          <div
-            className="h-full rounded-full bg-primary"
-            style={{ width: `${progress}%` }}
+        ) : null}
+      </section>
+
+      <div className="flex flex-wrap gap-2">
+        {state.status === "lobby" || state.status === "scheduled" ? (
+          <Button
+            variant="cta"
+            size="lg"
+            disabled={pending || state.players === 0}
+            onClick={() => command("start")}
+          >
+            <Play /> Începe jocul
+          </Button>
+        ) : null}
+        {state.status === "running" && !state.reveal ? (
+          <Button
+            size="lg"
+            disabled={pending}
+            onClick={() => command("reveal")}
+          >
+            <Eye /> Arată răspunsul
+          </Button>
+        ) : null}
+        {state.status === "running" && state.reveal ? (
+          <Button
+            variant="cta"
+            size="lg"
+            disabled={pending}
+            onClick={() => command("next")}
+          >
+            {last ? <Flag /> : <ArrowRight />}
+            {last ? "Vezi clasamentul final" : "Următoarea întrebare"}
+          </Button>
+        ) : null}
+        {state.status !== "ended" ? (
+          <ConfirmDialog
+            title="Închei jocul acum?"
+            description="Clasamentul se calculează din răspunsurile de până acum, iar fiecare jucător primește XP-ul locului său."
+            confirmLabel="Încheie"
+            onConfirm={() => command("finish")}
+            trigger={
+              <Button variant="ghost" size="lg">
+                Încheie jocul
+              </Button>
+            }
           />
-        </div>
+        ) : null}
+        {state.status === "lobby" && state.players === 0 ? (
+          <p className="self-center text-muted-foreground text-sm">
+            Aștept primul jucător…
+          </p>
+        ) : null}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px] lg:items-start">
-        <section className="grid gap-5 rounded-xl border bg-card p-5 shadow-xs sm:p-6">
-          <h2 className="text-balance font-semibold text-xl sm:text-2xl">
-            {question.prompt}
-          </h2>
-          {question.code ?? null}
+      {state.status === "running" && state.question ? (
+        <section className="grid cut gap-4 bg-card p-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <p className="font-bold font-heading text-muted-foreground text-sm uppercase tracking-wide">
+              Au răspuns {state.answered} din {state.players}
+            </p>
+            {!state.reveal ? (
+              <span
+                role="timer"
+                className={cn(
+                  "slant px-4 py-1 font-extrabold font-heading text-3xl tabular-nums",
+                  left <= 5
+                    ? "bg-destructive text-white"
+                    : "bg-foreground text-background",
+                )}
+              >
+                {left}
+              </span>
+            ) : null}
+          </div>
+          <h3 className="text-3xl leading-tight">
+            <RichText text={state.question.prompt} />
+          </h3>
+          {state.question.code ? (
+            <QuestionCode code={state.question.code} />
+          ) : null}
           <ul className="grid gap-3 sm:grid-cols-2">
-            {question.options.map((o, i) => {
-              const style = ANSWER_STYLES[i];
-              const correct = i === question.correct;
+            {state.question.options.map((opt, i) => {
+              const style = ANSWER_STYLES[i % ANSWER_STYLES.length];
+              const correct = state.reveal && state.question?.correct === i;
               return (
-                <li
-                  // biome-ignore lint/suspicious/noArrayIndexKey: poziția variantei îi dă culoarea și forma
-                  key={i}
-                  className={cn(
-                    "flex min-h-16 items-center gap-3 rounded-lg px-4 py-3 font-semibold",
-                    style.bg,
-                    style.text,
-                    revealed && !correct && "opacity-40",
-                    revealed && correct && "ring-4 ring-success ring-offset-2",
-                  )}
-                >
-                  <AnswerShape index={i} className="size-6" />
-                  <span className="sr-only">{style.label}: </span>
-                  <span className="min-w-0 flex-1">{o}</span>
-                  {revealed ? (
-                    <span className="flex items-center gap-1.5 text-sm tabular-nums">
-                      {correct ? (
-                        <>
-                          <Check className="size-5" aria-hidden="true" />
-                          <span className="sr-only">Răspuns corect, </span>
-                        </>
-                      ) : null}
-                      {counts[i]}
-                      <span className="sr-only"> răspunsuri</span>
+                // biome-ignore lint/suspicious/noArrayIndexKey: variantele au ordine fixă
+                <li key={i}>
+                  <div
+                    className={cn(
+                      "flex min-h-16 cut-sm items-center gap-3 px-4 py-3 font-mono text-lg",
+                      style.className,
+                      state.reveal && !correct && "opacity-40",
+                      correct && "ring-4 ring-success ring-offset-2",
+                    )}
+                  >
+                    <AnswerShape index={i} className="size-7" />
+                    <span className="min-w-0 flex-1">
+                      <RichText text={opt} />
                     </span>
-                  ) : null}
+                    {correct ? (
+                      <span className="font-bold font-sans text-sm">
+                        Corect
+                      </span>
+                    ) : null}
+                  </div>
                 </li>
               );
             })}
           </ul>
-          {revealed && question.explanation ? (
-            <Callout icon={MessageCircle} tone="info">
-              {question.explanation}
-            </Callout>
+          {state.reveal && state.question.explanation ? (
+            <p className="text-muted-foreground">
+              <RichText text={state.question.explanation} />
+            </p>
           ) : null}
         </section>
+      ) : null}
 
-        <div className="grid gap-4">
-          <div className="grid gap-4 rounded-xl border bg-card p-5 shadow-xs">
-            <div role="timer" aria-label="Timp rămas">
-              <p className="flex items-center gap-1.5 text-muted-foreground text-sm">
-                <Clock className="size-4" aria-hidden="true" />
-                {revealed
-                  ? "Răspunsurile s-au închis"
-                  : allAnswered
-                    ? "Toți elevii au răspuns"
-                    : timeUp
-                      ? "Timpul a expirat"
-                      : "Timp rămas"}
-              </p>
-              <p className="mt-1 font-semibold text-4xl tabular-nums">
-                {remaining}
-                <span className="ml-1 font-normal text-base text-muted-foreground">
-                  s
-                </span>
-              </p>
-            </div>
-            <div>
-              <p className="text-muted-foreground text-sm">
-                Răspunsuri primite
-              </p>
-              <p className="mt-1 font-semibold text-2xl tabular-nums">
-                {received.length}
-                <span className="font-normal text-base text-muted-foreground">
-                  {" "}
-                  din {joined.length}
-                </span>
-              </p>
-            </div>
-            {timeUp && !revealed ? (
-              <p className="text-muted-foreground text-xs">
-                După termen, elevii nu mai pot trimite sau schimba răspunsul.
-              </p>
-            ) : null}
-            {revealed ? (
-              <Button
-                size="lg"
-                onClick={() => (isLast ? finish() : startQuestion(qIndex + 1))}
-                disabled={saving}
-              >
-                {isLast ? (
-                  saving ? (
-                    "Se calculează…"
-                  ) : (
-                    <>
-                      Vezi rezultatele <ArrowRight aria-hidden="true" />
-                    </>
-                  )
-                ) : (
-                  <>
-                    Următoarea întrebare <ArrowRight aria-hidden="true" />
-                  </>
-                )}
-              </Button>
-            ) : (
-              <Button size="lg" onClick={reveal}>
-                <Eye aria-hidden="true" /> Arată răspunsul corect
-              </Button>
+      <section aria-labelledby="clasament-live" className="grid gap-3">
+        <h3 id="clasament-live" className="flex items-center gap-2 text-2xl">
+          <Trophy className="size-5 text-xp-foreground" aria-hidden="true" />
+          {state.status === "ended"
+            ? "Clasamentul final"
+            : state.status === "running"
+              ? "Clasament"
+              : "Jucători"}
+        </h3>
+        {state.board.length === 0 ? (
+          <p className="text-muted-foreground">
+            Niciun jucător încă. Elevii intră din „Quiz live”, cu codul de mai
+            sus.
+          </p>
+        ) : (
+          <ol
+            className={cn(
+              "grid gap-1.5",
+              state.status === "lobby" && "sm:grid-cols-2 lg:grid-cols-3",
             )}
-          </div>
-
-          {played > 0 ? (
-            <Section title="Clasament provizoriu" bodyClassName="p-3">
-              <ol className="grid gap-1">
-                {standings.map((r) => {
-                  const s = byId.get(r.studentId);
-                  if (!s) return null;
-                  return (
-                    <li
-                      key={r.studentId}
-                      className="flex items-center gap-2.5 rounded-md px-2 py-1.5 text-sm"
-                    >
-                      <span className="w-5 text-right font-semibold text-muted-foreground tabular-nums">
-                        {r.rank}
-                      </span>
-                      <UserAvatar name={s.name} avatar={s.avatar} size="xs" />
-                      <span className="min-w-0 flex-1 truncate">{s.name}</span>
-                      <span className="text-muted-foreground text-xs tabular-nums">
-                        {formatPoints(r.score)}
-                      </span>
-                    </li>
-                  );
-                })}
-              </ol>
-            </Section>
-          ) : null}
-        </div>
-      </div>
+          >
+            {state.board.map((p) => (
+              <li
+                key={p.id}
+                className="flex items-center gap-3 bg-card px-4 py-2.5"
+              >
+                {state.status !== "lobby" ? (
+                  <span className="w-8 font-extrabold font-heading text-xl tabular-nums">
+                    {p.rank}
+                  </span>
+                ) : null}
+                <span aria-hidden="true" className="text-xl">
+                  {AVATARS[(p.avatar ?? "fox") as AvatarId]?.emoji ?? "🙂"}
+                </span>
+                <span className="min-w-0 flex-1 truncate font-medium">
+                  {p.name}
+                </span>
+                {state.status !== "lobby" ? (
+                  <span className="tabular-nums">{p.score} p</span>
+                ) : null}
+                {state.status === "ended" ? (
+                  <XpBadge amount={liveXpForRank(p.rank)} />
+                ) : null}
+              </li>
+            ))}
+          </ol>
+        )}
+      </section>
     </div>
   );
 }

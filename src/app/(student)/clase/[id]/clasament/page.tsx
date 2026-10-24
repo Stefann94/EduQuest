@@ -16,7 +16,7 @@ import { Section } from "@/components/common/section";
 import { UserAvatar } from "@/components/common/user-avatar";
 import { SectionSkeleton } from "@/components/student-class/skeletons";
 import { buttonVariants } from "@/components/ui/button";
-import { getLeaderboard } from "@/lib/data/queries";
+import { getLeaderboard } from "@/lib/db/xp";
 import { cn } from "@/lib/utils";
 import { loadStudentClass } from "../load-class";
 

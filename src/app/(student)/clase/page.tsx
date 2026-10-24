@@ -5,19 +5,20 @@ import { JoinClassDialog } from "@/components/classes/join-class-dialog";
 import { EmptyState } from "@/components/common/empty-state";
 import { PageHeader } from "@/components/common/page-header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getStudentClasses, getViewer } from "@/lib/data/queries";
+import { requireUser } from "@/lib/auth";
+import { getStudentClasses } from "@/lib/db/classes";
 
 export const metadata: Metadata = { title: "Clasele mele" };
 
 export default async function MyClassesPage() {
-  const me = await getViewer("student");
+  const me = await requireUser("student");
   const { active, archived } = await getStudentClasses(me.id);
 
   return (
     <div className="grid gap-6">
       <PageHeader
         title="Clasele mele"
-        description="Clasele în care ești înscris. Intră într-una ca să vezi materialele, temele și clasamentul."
+        description="Clasele în care ești înscris. Intră într-una ca să vezi lecțiile, temele și clasamentul."
         actions={<JoinClassDialog />}
       />
 

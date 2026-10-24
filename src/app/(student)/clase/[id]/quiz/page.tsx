@@ -1,15 +1,15 @@
-import { History, ListChecks, Radio } from "lucide-react";
+import { History, ListChecks } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/common/empty-state";
 import { Section } from "@/components/common/section";
 import {
   AssignedQuizRow,
+  OpenSessionCard,
   PastSessionRow,
-  UpcomingSessionCard,
 } from "@/components/student-class/quiz-rows";
 import { SectionSkeleton } from "@/components/student-class/skeletons";
-import { getClassQuizzesForStudent } from "@/lib/data/student-class-queries";
+import { getLiveSessions, getStudentQuizzes } from "@/lib/db/quizzes";
 import { loadStudentClass } from "../load-class";
 
 type Props = PageProps<"/clase/[id]/quiz">;
@@ -26,16 +26,30 @@ export default function ClassQuizzesPage({ params }: Props) {
 
 async function Content({ params }: { params: Props["params"] }) {
   const { viewer, classRoom: c } = await loadStudentClass(params);
-  const { assigned, upcoming, past } = await getClassQuizzesForStudent(
-    viewer,
-    c.id,
-  );
+  const [quizzes, sessions] = await Promise.all([
+    getStudentQuizzes(viewer.id),
+    getLiveSessions(),
+  ]);
+  const assigned = quizzes.filter((q) => q.classIds.includes(c.id));
+  const mine = sessions.filter((s) => s.classId === c.id);
+  const open = mine.filter((s) => s.status !== "ended");
+  const past = mine.filter((s) => s.status === "ended");
 
   return (
     <div className="grid gap-6">
+      {open.length > 0 ? (
+        <ul className="grid gap-2">
+          {open.map((s) => (
+            <li key={s.id}>
+              <OpenSessionCard session={s} />
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
       <Section
         title="Quiz-uri date de mentor"
-        description="Le poți rezolva până la termen, în limita încercărilor."
+        description="Prima rezolvare aduce XP după scor; o refacere mai aduce 1 XP."
         bodyClassName="p-3"
       >
         {assigned.length > 0 ? (
@@ -50,51 +64,30 @@ async function Content({ params }: { params: Props["params"] }) {
           <EmptyState
             icon={ListChecks}
             title="Niciun quiz dat în această clasă"
-            description="Între timp, poți exersa cu quiz-urile din secțiunea Quiz-uri."
+            description="Între timp, poți exersa cu quiz-urile din Învățare."
             className="border-0"
           />
         )}
       </Section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Section title="Quiz-uri live programate" bodyClassName="p-3">
-          {upcoming.length > 0 ? (
-            <ul className="stagger grid gap-2">
-              {upcoming.map((s) => (
-                <li key={s.id}>
-                  <UpcomingSessionCard session={s} />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <EmptyState
-              icon={Radio}
-              title="Niciun quiz live programat"
-              description="Mentorul pornește quiz-urile live în timpul întâlnirilor. Vei primi o notificare."
-              className="border-0"
-            />
-          )}
-        </Section>
-
-        <Section title="Quiz-uri live încheiate" bodyClassName="p-3">
-          {past.length > 0 ? (
-            <ul className="stagger grid gap-2">
-              {past.map((s) => (
-                <li key={s.id}>
-                  <PastSessionRow session={s} />
-                </li>
-              ))}
-            </ul>
-          ) : (
-            <EmptyState
-              icon={History}
-              title="Niciun quiz live încă"
-              description="După fiecare sesiune, aici vei vedea locul tău și XP-ul primit."
-              className="border-0"
-            />
-          )}
-        </Section>
-      </div>
+      <Section title="Quiz-uri live încheiate" bodyClassName="p-3">
+        {past.length > 0 ? (
+          <ul className="stagger grid gap-2">
+            {past.map((s) => (
+              <li key={s.id}>
+                <PastSessionRow session={s} studentId={viewer.id} />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <EmptyState
+            icon={History}
+            title="Niciun quiz live încă"
+            description="Mentorul pornește quiz-urile live în timpul întâlnirilor. După fiecare, aici vezi locul și XP-ul tău."
+            className="border-0"
+          />
+        )}
+      </Section>
     </div>
   );
 }

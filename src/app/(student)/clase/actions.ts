@@ -1,6 +1,9 @@
 "use server";
 
-import { getViewer, joinClassByCode } from "@/lib/data/queries";
+import { revalidatePath } from "next/cache";
+import { requireUser } from "@/lib/auth";
+import { getVisibleClasses } from "@/lib/db/classes";
+import { db } from "@/lib/db/core";
 
 export type JoinClassState =
   | { status: "idle" }
@@ -10,24 +13,40 @@ export type JoinClassState =
 const MESSAGES = {
   format: "Codul are 6 caractere: litere și cifre (de exemplu PY7K2Q).",
   invalid:
-    "Nu am găsit nicio clasă cu acest cod. Verifică literele și cifrele.",
-  expired: "Codul nu mai este valabil. Cere-i mentorului un cod nou.",
-  archived: "Clasa aceasta a fost arhivată și nu mai primește elevi.",
+    "Codul nu e valabil: verifică literele și cifrele sau cere-i mentorului un cod nou.",
   already: "Ești deja înscris în această clasă.",
 } as const;
 
-/** Verifică un cod de invitație pe server. În demo nu modifică datele. */
+/** Intrarea într-o clasă cu codul de invitație (verificat de baza de date, în join_class). */
 export async function joinClass(
   _prev: JoinClassState,
   formData: FormData,
 ): Promise<JoinClassState> {
-  const me = await getViewer("student");
-  const code = String(formData.get("code") ?? "");
-  const result = await joinClassByCode(me.id, code);
-  if (!result.ok) return { status: "error", message: MESSAGES[result.reason] };
+  const me = await requireUser("student");
+  const code = String(formData.get("code") ?? "")
+    .trim()
+    .toUpperCase();
+  if (!/^[A-Z0-9]{6}$/.test(code))
+    return { status: "error", message: MESSAGES.format };
+
+  const before = await getVisibleClasses();
+  const supabase = await db();
+  const { data: classId, error } = await supabase.rpc("join_class", {
+    p_code: code,
+  });
+  if (error || !classId) return { status: "error", message: MESSAGES.invalid };
+  if (before.some((c) => c.id === classId && c.studentIds.includes(me.id)))
+    return { status: "error", message: MESSAGES.already };
+
+  const { data: cls } = await supabase
+    .from("classes")
+    .select("name, mentor:profiles!classes_mentor_id_fkey(display_name)")
+    .eq("id", classId)
+    .single();
+  revalidatePath("/", "layout");
   return {
     status: "success",
-    className: result.classRoom.name,
-    mentorName: result.classRoom.mentor.displayName,
+    className: cls?.name ?? "clasă",
+    mentorName: cls?.mentor?.display_name ?? "",
   };
 }

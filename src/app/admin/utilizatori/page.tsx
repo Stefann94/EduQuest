@@ -2,14 +2,14 @@ import { Info, Lock } from "lucide-react";
 import type { Metadata } from "next";
 import { UsersTable } from "@/components/admin/users-table";
 import { PageHeader } from "@/components/common/page-header";
-import { getAdminUsers } from "@/lib/data/admin-queries";
-import { getViewer } from "@/lib/data/queries";
+import { requireUser } from "@/lib/auth";
+import { getAdminUsers } from "@/lib/db/admin";
 
 export const metadata: Metadata = { title: "Utilizatori" };
 
 export default async function UsersPage() {
-  const me = await getViewer("admin");
-  const users = await getAdminUsers(me);
+  const me = await requireUser("admin");
+  const users = await getAdminUsers();
 
   return (
     <div className="grid gap-6">

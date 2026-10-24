@@ -1,5 +1,7 @@
 // Rulează fiecare exemplu Python dintr-un curs și compară ce afișează cu „output”-ul
 // scris în lecție. Codul fără output e doar compilat (verificăm sintaxa).
+// Verifică și quiz-urile: cel puțin 9 întrebări și 2 exerciții pe lecție, variante
+// diferite între ele, iar la întrebările „ce afișează” varianta corectă e exact ieșirea.
 // Rulare: pnpm content:check   (are nevoie de Python instalat: comanda „py” sau „python3”)
 
 import { spawnSync } from "node:child_process";
@@ -7,6 +9,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { course } from "../content/python-modulul-1";
+import { quizzes } from "../content/python-quizzes";
 import { courseSchema } from "../src/lib/content/schema";
 
 const parsed = courseSchema.parse(course);
@@ -45,15 +48,60 @@ function inputsFrom(code: string, output: string) {
 
 let failed = 0;
 let checked = 0;
+const fail = (msg: string) => {
+  failed++;
+  console.log(`✗ ${msg}`);
+};
 for (const lesson of parsed.lessons) {
   const dir = mkdtempSync(join(tmpdir(), "eduquest-py-"));
-  const samples = lesson.blocks.flatMap((b) => {
-    if (b.type === "code" && b.language === "python")
-      return [{ label: b.title ?? "exemplu", code: b.code, output: b.output }];
-    if (b.type === "exercise" && b.solution.language === "python")
-      return [{ label: b.title, code: b.solution.code, output: b.output }];
-    return [];
-  });
+  const quiz = quizzes[lesson.slug] ?? [];
+  if (quiz.length < 9)
+    fail(`${lesson.slug}: quiz-ul are ${quiz.length} întrebări (minim 9)`);
+  const exercises = lesson.blocks.filter((b) => b.type === "exercise").length;
+  if (exercises < 2)
+    fail(
+      `${lesson.slug}: are ${exercises} exerciții (minim 2, devin problemele lecției)`,
+    );
+  for (const [i, q] of quiz.entries()) {
+    checked++;
+    if (q.options.length < 2 || q.options.length > 4)
+      fail(`${lesson.slug} · întrebarea ${i + 1}: 2–4 variante`);
+    if (new Set(q.options).size !== q.options.length)
+      fail(`${lesson.slug} · întrebarea ${i + 1}: variante repetate`);
+    if (q.correct < 0 || q.correct >= q.options.length)
+      fail(`${lesson.slug} · întrebarea ${i + 1}: răspuns corect inexistent`);
+  }
+  type Sample = { label: string; code: string; output: string | undefined };
+  const samples: Sample[] = [
+    ...lesson.blocks.flatMap((b): Sample[] => {
+      if (b.type === "code" && b.language === "python")
+        return [
+          { label: b.title ?? "exemplu", code: b.code, output: b.output },
+        ];
+      if (b.type === "exercise" && b.solution.language === "python")
+        return [{ label: b.title, code: b.solution.code, output: b.output }];
+      return [];
+    }),
+    ...quiz.flatMap((q, i): Sample[] =>
+      q.check && q.code
+        ? [
+            {
+              label: `quiz, întrebarea ${i + 1}`,
+              code: q.code,
+              output: q.options[q.correct],
+            },
+          ]
+        : q.code
+          ? [
+              {
+                label: `quiz, întrebarea ${i + 1}`,
+                code: q.code,
+                output: undefined,
+              },
+            ]
+          : [],
+    ),
+  ];
   for (const s of samples) {
     checked++;
     if (s.output === undefined) {
@@ -93,7 +141,7 @@ for (const lesson of parsed.lessons) {
 
 console.log(
   failed === 0
-    ? `Toate cele ${checked} exemple din „${parsed.title}” sunt corecte.`
+    ? `Toate cele ${checked} exemple și întrebări din „${parsed.title}” sunt corecte.`
     : `${failed} din ${checked} exemple nu se potrivesc.`,
 );
 process.exit(failed === 0 ? 0 : 1);

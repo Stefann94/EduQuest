@@ -1,10 +1,12 @@
 import {
-  CalendarCheck,
-  CalendarX,
+  CheckCircle2,
   ChevronRight,
+  CircleDashed,
+  Clock,
   ListChecks,
   Lock,
   Radio,
+  RotateCcw,
   Star,
   Trophy,
 } from "lucide-react";
@@ -14,8 +16,8 @@ import { EmptyState } from "@/components/common/empty-state";
 import { PageHeader } from "@/components/common/page-header";
 import { Section } from "@/components/common/section";
 import {
+  AttendanceBadge,
   StatusBadge,
-  SUBMISSION_STATUS,
   XpBadge,
 } from "@/components/common/status";
 import { XpHistoryTable } from "@/components/student-activity/xp-history-table";
@@ -29,49 +31,36 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  getLeaderboard,
-  getLiveSessions,
-  getStudentAssignments,
-  getStudentAttendance,
-  getStudentClasses,
-  getStudentQuizzes,
-  getViewer,
-  getXpHistory,
-  getXpTotal,
-} from "@/lib/data/queries";
-import type { SubmissionStatus } from "@/lib/data/types";
+import { requireUser } from "@/lib/auth";
+import { getStudentAttendance, MAX_ABSENCES } from "@/lib/db/attendance";
+import { getStudentClasses } from "@/lib/db/classes";
+import { getStudentHomework } from "@/lib/db/homework";
+import { getLiveSessions, getStudentQuizzes } from "@/lib/db/quizzes";
+import { getLeaderboard, getXpHistory } from "@/lib/db/xp";
 import { daysUntil, formatDay, formatShortDate, plural } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Progresul meu" };
 
-const STATES: SubmissionStatus[] = [
-  "not_started",
-  "submitted",
-  "needs_changes",
-  "reviewed",
-];
+const STATES = [
+  { key: "missing", label: "De trimis", icon: CircleDashed, tone: "neutral" },
+  { key: "waiting", label: "Așteaptă evaluarea", icon: Clock, tone: "info" },
+  { key: "changes", label: "De refăcut", icon: RotateCcw, tone: "warning" },
+  { key: "accepted", label: "Acceptate", icon: CheckCircle2, tone: "success" },
+] as const;
 
 export default async function ProgressPage() {
-  const me = await getViewer("student");
-  const [
-    totalXp,
-    history,
-    classes,
-    attendance,
-    assignments,
-    quizzes,
-    sessions,
-  ] = await Promise.all([
-    getXpTotal(me.id),
-    getXpHistory(me.id),
-    getStudentClasses(me.id),
-    getStudentAttendance(me.id),
-    getStudentAssignments(me.id),
-    getStudentQuizzes(me.id),
-    getLiveSessions(me),
-  ]);
+  const me = await requireUser("student");
+  const [history, classes, attendanceByClass, homework, quizzes, sessions] =
+    await Promise.all([
+      getXpHistory(me.id),
+      getStudentClasses(me.id),
+      getStudentAttendance(me.id),
+      getStudentHomework(me.id),
+      getStudentQuizzes(me.id),
+      getLiveSessions(),
+    ]);
+  const totalXp = history.reduce((s, t) => s + t.amount, 0);
 
   const allClasses = [...classes.active, ...classes.archived];
   const perClass = await Promise.all(
@@ -101,27 +90,37 @@ export default async function ProgressPage() {
     .filter((c) => history.some((t) => t.classId === c.id))
     .map((c) => ({ id: c.id, name: c.name }));
 
+  const attendance = allClasses.flatMap((c) => {
+    const a = attendanceByClass.get(c.id);
+    return a && a.total > 0 ? [{ classRoom: c, ...a }] : [];
+  });
+  const stateOf = (h: (typeof homework)[number]) =>
+    h.problems.some((p) => p.state === "needs_changes")
+      ? "changes"
+      : !h.complete
+        ? "missing"
+        : h.problems.every(
+              (p) => p.state === "accepted" || p.state === "not_started",
+            )
+          ? "accepted"
+          : "waiting";
   const counts = Object.fromEntries(
     STATES.map((s) => [
-      s,
-      assignments.filter((a) => a.submissionState === s).length,
+      s.key,
+      homework.filter((h) => stateOf(h) === s.key).length,
     ]),
-  ) as Record<SubmissionStatus, number>;
+  ) as Record<(typeof STATES)[number]["key"], number>;
   const recent = history
     .filter((t) => daysUntil(t.at) >= -30)
     .reduce((s, t) => s + t.amount, 0);
 
-  const practiceAttempts = [...quizzes.practice, ...quizzes.assigned]
-    .flatMap((q) =>
-      q.attempts.map((a) => ({ ...a, title: q.title, quizId: q.id })),
-    )
-    .sort((a, b) => b.at.localeCompare(a.at));
+  const solved = quizzes.filter((q) => q.attempts.count > 0);
   const liveResults = sessions
     .filter((s) => s.status === "ended")
     .map((s) => ({
       ...s,
-      mine: s.results?.find((r) => r.studentId === me.id),
-      participants: s.results?.length ?? 0,
+      mine: s.results.find((r) => r.student.id === me.id),
+      participants: s.results.length,
     }))
     .filter((s) => s.mine);
 
@@ -138,8 +137,8 @@ export default async function ProgressPage() {
       />
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <section className="rounded-xl border bg-card p-5 shadow-xs">
-          <h2 className="font-semibold">XP total</h2>
+        <section className="cut bg-card p-5">
+          <h2 className="text-xl">XP total</h2>
           <p className="mt-3 flex items-baseline gap-2">
             <Star
               className="size-6 self-center fill-xp text-xp"
@@ -171,7 +170,7 @@ export default async function ProgressPage() {
               <li key={p.classRoom.id}>
                 <Link
                   href={`/clase/${p.classRoom.id}/clasament`}
-                  className="group flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border px-4 py-3 outline-none transition-colors hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/40"
+                  className="group flex cut-sm flex-wrap items-center gap-x-4 gap-y-1 bg-muted/50 px-4 py-3 outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/70"
                 >
                   <span className="min-w-0 flex-1 basis-48">
                     <span className="block font-medium group-hover:text-primary">
@@ -221,7 +220,7 @@ export default async function ProgressPage() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Section
           title="Prezența"
-          description="Întâlnirile la care ai participat"
+          description={`Prezent sau recuperat. Cu mai mult de ${MAX_ABSENCES} absențe nu poți termina cursul.`}
         >
           {attendance.length > 0 ? (
             <ul className="stagger grid gap-5">
@@ -232,6 +231,11 @@ export default async function ProgressPage() {
                     <div className="flex items-baseline justify-between gap-3">
                       <span className="min-w-0 truncate font-medium text-sm">
                         {a.classRoom.name}
+                        {a.blocked ? (
+                          <span className="ml-2 text-destructive">
+                            · {a.absent} absențe
+                          </span>
+                        ) : null}
                       </span>
                       <span className="shrink-0 text-muted-foreground text-sm tabular-nums">
                         {a.attended} din {a.total} · {rate}%
@@ -258,15 +262,7 @@ export default async function ProgressPage() {
                               </span>{" "}
                               · {m.topic}
                             </span>
-                            {m.present ? (
-                              <StatusBadge icon={CalendarCheck} tone="success">
-                                Prezent
-                              </StatusBadge>
-                            ) : (
-                              <StatusBadge icon={CalendarX} tone="neutral">
-                                Absent
-                              </StatusBadge>
-                            )}
+                            <AttendanceBadge status={m.status} />
                           </li>
                         ))}
                       </ul>
@@ -284,29 +280,26 @@ export default async function ProgressPage() {
 
         <Section
           title="Activitatea la teme"
-          description="Temele din clasele tale active"
+          description="Temele din clasele tale"
         >
           <ul className="grid grid-cols-2 gap-3">
-            {STATES.map((s) => {
-              const st = SUBMISSION_STATUS[s];
-              return (
-                <li key={s} className="rounded-lg border p-3">
-                  <StatusBadge icon={st.icon} tone={st.tone}>
-                    {st.label}
-                  </StatusBadge>
-                  <p className="mt-2 font-semibold text-2xl tabular-nums">
-                    {counts[s]}
-                  </p>
-                </li>
-              );
-            })}
+            {STATES.map((s) => (
+              <li key={s.key} className="cut-sm bg-muted/50 p-3">
+                <StatusBadge icon={s.icon} tone={s.tone}>
+                  {s.label}
+                </StatusBadge>
+                <p className="mt-2 font-bold font-heading text-3xl tabular-nums">
+                  {counts[s.key]}
+                </p>
+              </li>
+            ))}
           </ul>
           <p className="mt-4 text-muted-foreground text-sm">
-            {counts.reviewed > 0
-              ? `${plural(counts.reviewed, "temă a primit", "teme au primit")} feedback de la mentor.`
-              : "Feedback-ul mentorului apare aici după primul review."}{" "}
-            {counts.needs_changes > 0
-              ? `${plural(counts.needs_changes, "temă așteaptă", "teme așteaptă")} o variantă nouă.`
+            {counts.accepted > 0
+              ? `${plural(counts.accepted, "temă a fost acceptată", "teme au fost acceptate")} de mentor.`
+              : "Feedbackul mentorului apare la fiecare problemă, după evaluare."}{" "}
+            {counts.changes > 0
+              ? `${plural(counts.changes, "temă are", "teme au")} probleme de refăcut.`
               : null}
           </p>
         </Section>
@@ -331,26 +324,26 @@ export default async function ProgressPage() {
                 className="size-4 text-muted-foreground"
                 aria-hidden="true"
               />
-              Încercări individuale
+              Quiz-uri rezolvate
             </h3>
-            {practiceAttempts.length > 0 ? (
+            {solved.length > 0 ? (
               <ul className="stagger mt-3 grid gap-2">
-                {practiceAttempts.map((a) => (
-                  <li key={a.id}>
+                {solved.map((q) => (
+                  <li key={q.id}>
                     <Link
-                      href={`/quiz/${a.quizId}`}
-                      className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-sm hover:bg-muted/40"
+                      href={`/quiz/${q.id}`}
+                      className="flex cut-sm items-center justify-between gap-3 bg-muted/50 px-3 py-2.5 text-sm hover:bg-muted"
                     >
                       <span className="min-w-0">
                         <span className="block truncate font-medium">
-                          {a.title}
+                          {q.title}
                         </span>
                         <span className="text-muted-foreground text-xs">
-                          {formatDay(a.at)}
+                          {plural(q.attempts.count, "încercare", "încercări")}
                         </span>
                       </span>
                       <span className="shrink-0 tabular-nums">
-                        {a.correct} din {a.total} corecte
+                        Cel mai bun: {q.attempts.best} din {q.attempts.total}
                       </span>
                     </Link>
                   </li>
@@ -375,15 +368,15 @@ export default async function ProgressPage() {
                 {liveResults.map((s) => (
                   <li
                     key={s.id}
-                    className="flex items-center justify-between gap-3 rounded-lg border px-3 py-2.5 text-sm"
+                    className="flex cut-sm items-center justify-between gap-3 bg-muted/50 px-3 py-2.5 text-sm"
                   >
                     <span className="min-w-0">
                       <span className="block truncate font-medium">
                         {s.title}
                       </span>
                       <span className="text-muted-foreground text-xs">
-                        {s.className} · {formatDay(s.startsAt)} · locul{" "}
-                        {s.mine?.rank} din {s.participants}
+                        {s.className} · {formatDay(s.endedAt ?? s.createdAt)} ·
+                        locul {s.mine?.rank} din {s.participants}
                       </span>
                     </span>
                     <XpBadge amount={s.mine?.xp ?? 0} />
@@ -403,9 +396,9 @@ export default async function ProgressPage() {
 
       <Section
         title="Cum câștigi XP"
-        description="Aceleași reguli în toate clasele. Exersarea individuală nu oferă XP."
+        description="Aceleași reguli în toate clasele. XP-ul se acordă de baza de date, o singură dată pentru fiecare activitate."
       >
-        <div className="max-w-xl rounded-lg border">
+        <div className="max-w-xl cut-sm bg-muted/40">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">

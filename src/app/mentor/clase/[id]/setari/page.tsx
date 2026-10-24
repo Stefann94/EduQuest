@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { ClassSettings } from "@/components/mentor-classes/class-settings";
 import { SectionSkeleton } from "@/components/mentor-classes/skeletons";
-import { demoIds, getClass, getViewer } from "@/lib/data/queries";
+import { placeholderParams } from "@/lib/db/core";
+import { loadMentorClass } from "../load-class";
 
 export const metadata: Metadata = { title: "Setările clasei" };
 
 type Props = PageProps<"/mentor/clase/[id]/setari">;
 
 export function generateStaticParams() {
-  return demoIds.classes();
+  return placeholderParams("id");
 }
 
 export default function ClassSettingsPage({ params }: Props) {
@@ -22,10 +22,7 @@ export default function ClassSettingsPage({ params }: Props) {
 }
 
 async function Settings({ params }: { params: Props["params"] }) {
-  const { id } = await params;
-  const me = await getViewer("mentor");
-  const c = await getClass(me, id);
-  if (!c) notFound();
+  const { classRoom: c } = await loadMentorClass(params);
 
   return (
     <div className="grid gap-4">

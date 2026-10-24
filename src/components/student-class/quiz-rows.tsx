@@ -1,115 +1,77 @@
 import {
-  CalendarClock,
   CheckCircle2,
   ChevronRight,
-  Clock,
   ListChecks,
-  Lock,
   PlayCircle,
   Radio,
+  RotateCcw,
   Trophy,
 } from "lucide-react";
 import Link from "next/link";
 import { StatusBadge, XpBadge } from "@/components/common/status";
 import { buttonVariants } from "@/components/ui/button";
-import type {
-  AssignedQuiz,
-  PastLiveSession,
-  UpcomingLiveSession,
-} from "@/lib/data/student-class-queries";
-import { formatDateTime, formatDay, isPast, relativeDays } from "@/lib/format";
+import { xpOutlook } from "@/lib/db/quiz-rules";
+import type { LiveSession, StudentQuiz } from "@/lib/db/quizzes";
+import { formatDateTime, plural } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
-function quizState(q: AssignedQuiz) {
-  const a = q.assignment;
-  if (!a) return "open" as const;
-  if (q.attempts.length >= a.maxAttempts) return "done" as const;
-  if (isPast(a.deadline)) return "closed" as const;
-  if (!isPast(a.opensAt)) return "soon" as const;
-  return "open" as const;
-}
-
-function QuizStateBadge({ quiz }: { quiz: AssignedQuiz }) {
-  switch (quizState(quiz)) {
-    case "done":
-      return (
-        <StatusBadge icon={CheckCircle2} tone="success">
-          Finalizat
-        </StatusBadge>
-      );
-    case "closed":
-      return (
-        <StatusBadge icon={Lock} tone="neutral">
-          Închis
-        </StatusBadge>
-      );
-    case "soon":
-      return (
-        <StatusBadge icon={Clock} tone="info">
-          Se deschide în curând
-        </StatusBadge>
-      );
-    default:
-      return quiz.attempts.length > 0 ? (
-        <StatusBadge icon={PlayCircle} tone="primary">
-          Încă o încercare
-        </StatusBadge>
-      ) : (
-        <StatusBadge icon={PlayCircle} tone="primary">
-          Disponibil
-        </StatusBadge>
-      );
-  }
-}
-
-/** Un quiz dat în clasă: termen, încercări folosite și XP. */
-export function AssignedQuizRow({ quiz: q }: { quiz: AssignedQuiz }) {
-  const a = q.assignment;
-  const best = q.attempts.reduce(
-    (m, x) => (x.correct > (m?.correct ?? -1) ? x : m),
-    undefined as (typeof q.attempts)[number] | undefined,
+function QuizStateBadge({ quiz: q }: { quiz: StudentQuiz }) {
+  if (q.attempts.count === 0)
+    return (
+      <StatusBadge icon={PlayCircle} tone="primary">
+        Nou
+      </StatusBadge>
+    );
+  if (q.attempts.best === q.attempts.total)
+    return (
+      <StatusBadge icon={CheckCircle2} tone="success">
+        Perfect
+      </StatusBadge>
+    );
+  return (
+    <StatusBadge icon={RotateCcw} tone="neutral">
+      Rezolvat
+    </StatusBadge>
   );
+}
+
+/** Un quiz dat clasei: lecțiile pe care le verifică, rezultatul și XP-ul rămas. */
+export function AssignedQuizRow({ quiz: q }: { quiz: StudentQuiz }) {
+  const outlook = xpOutlook(q.xp, q.attempts.count);
   return (
     <Link
       href={`/quiz/${q.id}`}
-      className="group flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-card px-4 py-3 outline-none transition-colors hover:border-foreground/15 hover:bg-muted/40 focus-visible:ring-3 focus-visible:ring-ring/40"
+      className="group flex cut-sm flex-wrap items-center gap-x-4 gap-y-2 bg-card px-4 py-3 outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/70 focus-visible:ring-inset"
     >
       <span
         aria-hidden="true"
-        className="grid size-10 shrink-0 place-items-center rounded-lg bg-primary-soft text-primary"
+        className="grid size-10 shrink-0 cut-xs place-items-center bg-primary-soft text-primary"
       >
         <ListChecks className="size-[18px]" />
       </span>
       <div className="min-w-0 flex-1 basis-56">
-        <p className="font-medium group-hover:text-primary">{q.title}</p>
+        <p className="font-bold font-heading text-lg uppercase leading-tight tracking-wide">
+          {q.title}
+        </p>
         <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-muted-foreground text-sm">
-          {a ? (
-            <>
-              <span className="inline-flex items-center gap-1">
-                <CalendarClock className="size-3.5" aria-hidden="true" />
-                Termen {formatDay(a.deadline)} ({relativeDays(a.deadline)})
-              </span>
-              <span aria-hidden="true">·</span>
-              <span>
-                {q.attempts.length} din {a.maxAttempts}{" "}
-                {a.maxAttempts === 1 ? "încercare" : "încercări"} folosite
-              </span>
-            </>
-          ) : (
-            <span>{q.topic}</span>
-          )}
-          {best ? (
+          <span>
+            {q.kind === "recap" ? "Recapitulare" : "Lecție"}
+            {q.lessons.length > 0 ? `: ${q.lessons.join(", ")}` : ""}
+          </span>
+          <span aria-hidden="true">·</span>
+          <span>{plural(q.questionCount, "întrebare", "întrebări")}</span>
+          {q.attempts.best !== null ? (
             <>
               <span aria-hidden="true">·</span>
               <span>
-                Cel mai bun rezultat: {best.correct}/{best.total}
+                Cel mai bun rezultat: {q.attempts.best}/{q.attempts.total}
               </span>
             </>
           ) : null}
         </p>
       </div>
       <div className="flex items-center gap-2">
-        {a ? <XpBadge amount={a.xp} /> : null}
+        {outlook.max > 0 ? <XpBadge amount={outlook.max} /> : null}
         <QuizStateBadge quiz={q} />
       </div>
       <ChevronRight
@@ -120,59 +82,65 @@ export function AssignedQuizRow({ quiz: q }: { quiz: AssignedQuiz }) {
   );
 }
 
-/** O sesiune live programată: data și intrarea cu codul sesiunii. */
-export function UpcomingSessionCard({
-  session: s,
-}: {
-  session: UpcomingLiveSession;
-}) {
+/** O sesiune live deschisă acum: elevul intră cu codul primit de la mentor. */
+export function OpenSessionCard({ session: s }: { session: LiveSession }) {
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border bg-card p-4">
+    <div className="flex cut-sm flex-wrap items-center gap-x-4 gap-y-3 bg-primary-soft p-4">
       <span
         aria-hidden="true"
-        className="grid size-10 shrink-0 place-items-center rounded-full bg-primary-soft text-primary"
+        className="grid size-10 shrink-0 hex place-items-center bg-primary text-primary-foreground"
       >
         <Radio className="size-[18px]" />
       </span>
       <div className="min-w-0 flex-1 basis-48">
-        <p className="font-medium">{s.title}</p>
-        <p className="mt-0.5 flex items-center gap-1 text-muted-foreground text-sm">
-          <CalendarClock className="size-3.5" aria-hidden="true" />
-          {formatDateTime(s.startsAt)} ({relativeDays(s.startsAt)})
+        <p className="font-bold font-heading text-lg uppercase leading-tight tracking-wide">
+          {s.title}
+        </p>
+        <p className="mt-0.5 text-muted-foreground text-sm">
+          {s.status === "running" ? "În desfășurare" : "Se așteaptă jucătorii"}{" "}
+          · cere-i mentorului codul
         </p>
       </div>
       <Link
         href="/live"
-        className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+        className={cn(buttonVariants({ variant: "cta", size: "sm" }))}
       >
-        Intră cu codul sesiunii
+        Intră în joc
       </Link>
     </div>
   );
 }
 
 /** O sesiune live încheiată, cu locul și XP-ul elevului. */
-export function PastSessionRow({ session: s }: { session: PastLiveSession }) {
-  const r = s.myResult;
+export function PastSessionRow({
+  session: s,
+  studentId,
+}: {
+  session: LiveSession;
+  studentId: string;
+}) {
+  const r = s.results.find((x) => x.student.id === studentId);
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-card px-4 py-3">
+    <div className="flex cut-sm flex-wrap items-center gap-x-4 gap-y-2 bg-card px-4 py-3">
       <span
         aria-hidden="true"
-        className="grid size-10 shrink-0 place-items-center rounded-full bg-secondary text-muted-foreground"
+        className="grid size-10 shrink-0 hex place-items-center bg-secondary text-muted-foreground"
       >
         <Trophy className="size-[18px]" />
       </span>
       <div className="min-w-0 flex-1 basis-48">
         <p className="font-medium">{s.title}</p>
         <p className="mt-0.5 text-muted-foreground text-sm">
-          {formatDateTime(s.startsAt)}
+          {formatDateTime(s.endedAt ?? s.createdAt)}
         </p>
       </div>
       {r ? (
         <div className="flex items-center gap-2">
           <span className="text-sm">
             Locul <span className="font-semibold tabular-nums">{r.rank}</span>{" "}
-            <span className="text-muted-foreground">din {s.participants}</span>
+            <span className="text-muted-foreground">
+              din {s.results.length}
+            </span>
           </span>
           <XpBadge amount={r.xp} />
         </div>

@@ -19,8 +19,8 @@ import { PageHeader } from "@/components/common/page-header";
 import { Section } from "@/components/common/section";
 import { ApplicationStatusBadge } from "@/components/common/status";
 import { buttonVariants } from "@/components/ui/button";
-import { getAdminStats } from "@/lib/data/admin-queries";
-import { getMentorApplications, getViewer } from "@/lib/data/queries";
+import { requireUser } from "@/lib/auth";
+import { getAdminStats, getMentorApplications } from "@/lib/db/admin";
 import {
   formatDate,
   formatWeekday,
@@ -33,9 +33,9 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = { title: "Prezentare generală" };
 
 export default async function AdminOverviewPage() {
-  const me = await getViewer("admin");
+  await requireUser("admin");
   const [stats, applications] = await Promise.all([
-    getAdminStats(me),
+    getAdminStats(),
     getMentorApplications(),
   ]);
 

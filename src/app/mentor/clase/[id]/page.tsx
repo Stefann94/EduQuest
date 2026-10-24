@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/common/empty-state";
 import { Section } from "@/components/common/section";
@@ -18,33 +17,26 @@ import { OverviewSkeleton } from "@/components/mentor-classes/skeletons";
 import { StatCard } from "@/components/mentor-classes/stat-card";
 import { SubmissionRow } from "@/components/mentor-classes/submission-row";
 import { buttonVariants } from "@/components/ui/button";
+import { getClassMeetings } from "@/lib/db/attendance";
+import { placeholderParams } from "@/lib/db/core";
+import { getReviewQueue } from "@/lib/db/homework";
+import { getLiveSessions } from "@/lib/db/quizzes";
 import {
-  getClassRecentSubmissions,
-  nextMeetingFromSchedule,
-} from "@/lib/data/mentor-class-queries";
-import {
-  demoIds,
-  getClass,
-  getClassAttendance,
-  getLiveSessions,
-  getReviewQueue,
-  getViewer,
-} from "@/lib/data/queries";
-import {
-  formatDateTime,
   formatDay,
   formatWeekday,
   now,
   plural,
   relativeDays,
 } from "@/lib/format";
+import { nextMeetingFromSchedule } from "@/lib/meetings";
+import { loadMentorClass } from "./load-class";
 
 export const metadata: Metadata = { title: "Prezentarea clasei" };
 
 type Props = PageProps<"/mentor/clase/[id]">;
 
 export function generateStaticParams() {
-  return demoIds.classes();
+  return placeholderParams("id");
 }
 
 export default function ClassOverviewPage({ params }: Props) {
@@ -56,26 +48,21 @@ export default function ClassOverviewPage({ params }: Props) {
 }
 
 async function Overview({ params }: { params: Props["params"] }) {
-  const { id } = await params;
-  const me = await getViewer("mentor");
-  const c = await getClass(me, id);
-  if (!c) notFound();
-
-  const [queue, meetings, sessions, recent] = await Promise.all([
+  const { me, classRoom: c } = await loadMentorClass(params);
+  const [queue, meetings, sessions] = await Promise.all([
     getReviewQueue(me.id),
-    getClassAttendance(c.id),
-    getLiveSessions(me),
-    getClassRecentSubmissions(me.id, c.id, 6),
+    getClassMeetings(c.id),
+    getLiveSessions(),
   ]);
-  const toReview = queue.filter((r) => r.assignment.classId === c.id);
+  const toReview = queue.filter((r) => r.className === c.name);
   const last = meetings[0];
   const lastPresent = last
-    ? Object.values(last.records).filter(Boolean).length
+    ? Object.values(last.records).filter((s) => s !== "absent").length
     : 0;
   const lastTotal = last ? Object.keys(last.records).length : 0;
-  const nextLive = sessions
-    .filter((s) => s.classId === c.id && s.status !== "ended")
-    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0];
+  const openLive = sessions.find(
+    (s) => s.classId === c.id && s.status !== "ended",
+  );
   const nextMeeting =
     c.status === "active"
       ? nextMeetingFromSchedule(c.schedule, now())
@@ -102,12 +89,16 @@ async function Overview({ params }: { params: Props["params"] }) {
           <StatCard
             icon={ClipboardCheck}
             tone={toReview.length > 0 ? "primary" : "neutral"}
-            label="De revizuit"
+            label="De evaluat"
             value={toReview.length}
             detail={
               toReview.length > 0
-                ? plural(toReview.length, "trimitere nouă", "trimiteri noi")
-                : "Ești la zi cu review-urile"
+                ? plural(
+                    toReview.length,
+                    "problemă trimisă",
+                    "probleme trimise",
+                  )
+                : "Ești la zi cu evaluările"
             }
             href={`${base}/teme`}
           />
@@ -120,7 +111,7 @@ async function Overview({ params }: { params: Props["params"] }) {
             value={last ? `${lastPresent} din ${lastTotal}` : "—"}
             detail={
               last
-                ? `prezenți · ${formatDay(last.date)}, ${last.topic}`
+                ? `prezenți sau recuperat · ${formatDay(last.date)}, ${last.lessonTitle ?? last.topic}`
                 : "Nicio prezență înregistrată"
             }
             href={`${base}/prezenta`}
@@ -130,22 +121,22 @@ async function Overview({ params }: { params: Props["params"] }) {
           <StatCard
             icon={Radio}
             tone="info"
-            label="Următorul quiz live"
-            value={nextLive ? relativeDays(nextLive.startsAt) : "—"}
+            label="Quiz live"
+            value={openLive ? openLive.code : "—"}
             detail={
-              nextLive
-                ? `${formatDateTime(nextLive.startsAt)} · ${nextLive.title}`
-                : "Niciun quiz live programat"
+              openLive
+                ? `Deschis acum · ${openLive.title}`
+                : "Pornește unul din Quiz-uri"
             }
-            href={`${base}/quiz`}
+            href={openLive ? `/mentor/live/${openLive.id}` : `${base}/quiz`}
           />
         </li>
       </ul>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <Section
-          title="Trimiteri recente"
-          description="Cele mai noi teme trimise de elevii clasei"
+          title="De evaluat"
+          description="Problemele trimise de elevii clasei, cele mai vechi primele"
           className="lg:col-span-2"
           bodyClassName="p-2"
           actions={
@@ -157,17 +148,16 @@ async function Overview({ params }: { params: Props["params"] }) {
             </Link>
           }
         >
-          {recent.length > 0 ? (
+          {toReview.length > 0 ? (
             <ul className="stagger">
-              {recent.map((r) => (
-                <li key={r.submission.id}>
+              {toReview.slice(0, 8).map((r) => (
+                <li key={r.submissionId}>
                   <SubmissionRow
+                    href={`/mentor/teme/${r.homeworkId}/${r.assignmentId}/${r.student.id}`}
                     student={r.student}
-                    assignmentId={r.assignment.id}
-                    assignmentTitle={r.assignment.title}
-                    submissionId={r.submission.id}
-                    at={r.lastAt}
-                    status={r.submission.status}
+                    title={r.title}
+                    problemTitle={r.problemTitle}
+                    at={r.at}
                     isResubmission={r.isResubmission}
                   />
                 </li>
@@ -176,8 +166,8 @@ async function Overview({ params }: { params: Props["params"] }) {
           ) : (
             <EmptyState
               icon={Inbox}
-              title="Nicio trimitere încă"
-              description="Când elevii trimit teme, le vei vedea aici."
+              title="Nimic de evaluat"
+              description="Când elevii trimit probleme din teme, le vei vedea aici."
               className="m-3"
             />
           )}
@@ -190,8 +180,8 @@ async function Overview({ params }: { params: Props["params"] }) {
             active={c.inviteCodeActive}
             archived={c.status === "archived"}
           />
-          <section className="rounded-xl border bg-card p-5 shadow-xs">
-            <h2 className="font-semibold">Următoarea întâlnire</h2>
+          <section className="cut bg-card p-5">
+            <h2 className="text-xl">Următoarea întâlnire</h2>
             {nextMeeting ? (
               <p className="mt-3 flex items-center gap-2 text-sm">
                 <CalendarDays

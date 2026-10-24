@@ -1,62 +1,73 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
-import { rankLiveResults } from "@/components/mentor-content/live-ranking";
-import { getLiveSessionForMentor } from "@/lib/data/mentor-content-queries";
-import { getViewer } from "@/lib/data/queries";
+import { requireUser } from "@/lib/auth";
+import { mentorClassIds } from "@/lib/db/classes";
+import { db, isUuid } from "@/lib/db/core";
+import { notifyClassStudents } from "@/lib/db/notify";
 
-// Încheierea unei sesiuni live: serverul recalculează clasamentul și XP-ul
-// din punctaje (clientul nu decide XP-ul). În demo nu salvează nimic.
+const startSchema = z.object({
+  quizId: z.uuid({ error: "Alege quiz-ul." }),
+  classId: z.uuid({ error: "Alege clasa." }),
+  seconds: z.number().int().min(5).max(120),
+});
 
-export type FinishLiveResult =
-  | {
-      ok: true;
-      message: string;
-      detail: string;
-      results: { studentId: string; score: number; rank: number; xp: number }[];
-    }
-  | { ok: false; message: string };
-
-const scoresSchema = z
-  .array(
-    z.object({
-      studentId: z.string(),
-      score: z.number().int().min(0).max(100_000),
-    }),
-  )
-  .max(200);
-
-export async function finishLiveSession(
-  sessionId: string,
-  scores: { studentId: string; score: number }[],
-): Promise<FinishLiveResult> {
-  const me = await getViewer("mentor");
-  const data = await getLiveSessionForMentor(me.id, sessionId);
-  if (!data) return { ok: false, message: "Nu ai acces la această sesiune." };
-  if (data.session.status === "ended")
-    return { ok: false, message: "Sesiunea a fost deja încheiată." };
-
-  const parsed = scoresSchema.safeParse(scores);
+/**
+ * Deschide o sesiune live: baza de date generează un cod unic de 6 cifre
+ * (create_live_session). Elevii clasei primesc o notificare.
+ */
+export async function startLiveSession(input: {
+  quizId: string;
+  classId: string;
+  seconds: number;
+}) {
+  const me = await requireUser("mentor");
+  const parsed = startSchema.safeParse(input);
   if (!parsed.success)
-    return { ok: false, message: "Punctajele nu au putut fi citite." };
+    return { ok: false as const, message: parsed.error.issues[0].message };
+  if (!(await mentorClassIds(me.id)).includes(parsed.data.classId))
+    return {
+      ok: false as const,
+      message: "Poți porni quiz-uri live doar în clasele tale.",
+    };
 
-  const members = new Set(data.students.map((s) => s.id));
-  const seen = new Set<string>();
-  for (const s of parsed.data) {
-    if (!members.has(s.studentId) || seen.has(s.studentId))
-      return {
-        ok: false,
-        message: "Doar elevii clasei pot primi XP, o singură dată.",
-      };
-    seen.add(s.studentId);
-  }
+  const supabase = await db();
+  const { data: id, error } = await supabase.rpc("create_live_session", {
+    p_quiz: parsed.data.quizId,
+    p_class: parsed.data.classId,
+  });
+  if (error || !id)
+    return { ok: false as const, message: "Sesiunea nu s-a putut deschide." };
+  await supabase
+    .from("live_sessions")
+    .update({ question_seconds: parsed.data.seconds })
+    .eq("id", id);
+  await notifyClassStudents([parsed.data.classId], {
+    kind: "live_quiz",
+    title: "Quiz live deschis",
+    body: "Intră cu codul afișat de mentor.",
+    href: "/live",
+  });
+  revalidatePath("/mentor", "layout");
+  redirect(`/mentor/live/${id}`);
+}
 
-  const results = rankLiveResults(parsed.data);
-  const totalXp = results.reduce((sum, r) => sum + r.xp, 0);
-  return {
-    ok: true,
-    message: "Sesiunea s-a încheiat. Rezultatele au fost salvate.",
-    detail: `${results.length} participanți primesc în total ${totalXp} XP. Demo: salvarea reală vine cu baza de date.`,
-    results,
-  };
+/** Comenzile din panoul de control: start, dezvăluie, următoarea, încheie. */
+export async function controlLive(
+  sessionId: string,
+  action: "start" | "reveal" | "next" | "finish",
+) {
+  await requireUser("mentor");
+  if (!isUuid(sessionId)) return { ok: false, message: "Sesiunea nu există." };
+  const supabase = await db();
+  const { error } = await supabase.rpc("live_control", {
+    p_session: sessionId,
+    p_action: action,
+  });
+  if (error) return { ok: false, message: error.message };
+  if (action === "finish" || action === "next")
+    revalidatePath("/mentor", "layout");
+  return { ok: true, message: "" };
 }

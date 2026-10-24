@@ -1,12 +1,9 @@
 "use server";
 
-import { getViewer } from "@/lib/data/queries";
-import {
-  fieldErrors,
-  generateInviteCode,
-  readClassDetails,
-  submittedValues,
-} from "./class-schema";
+import { revalidatePath } from "next/cache";
+import { requireUser } from "@/lib/auth";
+import { db } from "@/lib/db/core";
+import { fieldErrors, readClassDetails, submittedValues } from "./class-schema";
 import {
   type ClassFieldErrors,
   type ClassFormValues,
@@ -15,15 +12,21 @@ import {
 
 export type CreateClassState =
   | { status: "idle" }
-  | { status: "success"; name: string; schedule: string; code: string }
+  | {
+      status: "success";
+      id: string;
+      name: string;
+      schedule: string;
+      code: string;
+    }
   | { status: "error"; errors: ClassFieldErrors; values: ClassFormValues };
 
-/** Creează o clasă nouă și îi generează codul de invitație. În demo nu salvează nimic. */
+/** Creează o clasă nouă. Codul de invitație (unic) îl generează baza de date. */
 export async function createClass(
   _prev: CreateClassState,
   formData: FormData,
 ): Promise<CreateClassState> {
-  await getViewer("mentor");
+  const me = await requireUser("mentor");
   const parsed = readClassDetails(formData);
   if (!parsed.success)
     return {
@@ -31,10 +34,30 @@ export async function createClass(
       errors: fieldErrors(parsed.error),
       values: submittedValues(formData),
     };
+  const schedule = formatSchedule(parsed.data);
+  const supabase = await db();
+  const { data, error } = await supabase
+    .from("classes")
+    .insert({
+      name: parsed.data.name,
+      description: parsed.data.description,
+      schedule,
+      mentor_id: me.id,
+    })
+    .select("id, invite_code")
+    .single();
+  if (error || !data)
+    return {
+      status: "error",
+      errors: { name: "Clasa nu s-a putut crea. Încearcă din nou." },
+      values: submittedValues(formData),
+    };
+  revalidatePath("/mentor", "layout");
   return {
     status: "success",
+    id: data.id,
     name: parsed.data.name,
-    schedule: formatSchedule(parsed.data),
-    code: generateInviteCode(),
+    schedule,
+    code: data.invite_code,
   };
 }

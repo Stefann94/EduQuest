@@ -1,6 +1,7 @@
 import {
   Bell,
   BookOpen,
+  ClipboardList,
   House,
   ListChecks,
   Radio,
@@ -16,16 +17,12 @@ import type { SearchItem } from "@/components/shell/search-menu";
 import { ShellFallback } from "@/components/shell/shell-fallback";
 import { XpMeter } from "@/components/shell/xp-meter";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  getNotifications,
-  getStudentAssignments,
-  getStudentClasses,
-  getStudentMaterials,
-  getStudentQuizzes,
-  getStudentWorkedProblems,
-  getViewer,
-  getXpTotal,
-} from "@/lib/data/queries";
+import { requireUser } from "@/lib/auth";
+import { getStudentClasses } from "@/lib/db/classes";
+import { getStudentHomework } from "@/lib/db/homework";
+import { getNotifications } from "@/lib/db/notifications";
+import { getStudentQuizzes } from "@/lib/db/quizzes";
+import { getXpTotal } from "@/lib/db/xp";
 import { cn } from "@/lib/utils";
 
 // Sesiunea se citește în interiorul unui <Suspense>, ca restul paginii să nu aștepte
@@ -39,31 +36,25 @@ export default function Layout({ children }: LayoutProps<"/">) {
 }
 
 async function StudentShell({ children }: { children: React.ReactNode }) {
-  const me = await getViewer("student");
-  const [
-    notifications,
-    classes,
-    assignments,
-    materials,
-    problems,
-    quizzes,
-    xp,
-  ] = await Promise.all([
+  const me = await requireUser("student");
+  const [notifications, classes, homework, quizzes, xp] = await Promise.all([
     getNotifications(me.id),
     getStudentClasses(me.id),
-    getStudentAssignments(me.id),
-    getStudentMaterials(me.id),
-    getStudentWorkedProblems(me.id),
+    getStudentHomework(me.id),
     getStudentQuizzes(me.id),
     getXpTotal(me.id),
   ]);
   const unread = notifications.filter((n) => !n.read).length;
+  const toDo = homework.filter(
+    (h) => h.required && !h.complete && !h.overdue,
+  ).length;
 
   const nav: NavGroup[] = [
     {
       items: [
         { label: "Acasă", href: "/", icon: <House />, exact: true },
         { label: "Clase", href: "/clase", icon: <Users /> },
+        { label: "Teme", href: "/teme", icon: <ClipboardList />, badge: toDo },
         { label: "Învățare", href: "/invatare", icon: <BookOpen /> },
         { label: "Quiz-uri", href: "/quiz", icon: <ListChecks /> },
         { label: "Progres", href: "/progres", icon: <TrendingUp /> },
@@ -98,27 +89,21 @@ async function StudentShell({ children }: { children: React.ReactNode }) {
       href: `/clase/${c.id}`,
       kind: "class" as const,
     })),
-    ...assignments.map((a) => ({
-      label: a.title,
-      hint: `Temă · ${a.className}`,
-      href: `/teme/${a.id}`,
-      kind: "assignment" as const,
-    })),
-    ...materials.map((m) => ({
-      label: m.title,
-      hint: `Material · ${m.topic}`,
-      href: `/invatare/materiale/${m.id}`,
+    ...[...classes.active, ...classes.archived].map((c) => ({
+      label: `Lecțiile: ${c.name}`,
+      hint: "Lecții și materiale",
+      href: `/clase/${c.id}/lectii`,
       kind: "material" as const,
     })),
-    ...problems.map((p) => ({
-      label: p.title,
-      hint: `Problemă rezolvată · ${p.topic}`,
-      href: `/invatare/probleme/${p.id}`,
-      kind: "problem" as const,
+    ...homework.map((h) => ({
+      label: h.title,
+      hint: `Temă · ${h.className}`,
+      href: `/teme/${h.id}`,
+      kind: "assignment" as const,
     })),
-    ...[...quizzes.assigned, ...quizzes.practice].map((q) => ({
+    ...quizzes.map((q) => ({
       label: q.title,
-      hint: `Quiz · ${q.topic}`,
+      hint: `Quiz · ${q.classNames.join(", ")}`,
       href: `/quiz/${q.id}`,
       kind: "quiz" as const,
     })),

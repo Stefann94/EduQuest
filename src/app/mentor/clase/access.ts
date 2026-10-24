@@ -1,16 +1,14 @@
 // Verificarea accesului în Server Actions: mentorul poate modifica doar clasele lui.
-// Ascunderea butoanelor în interfață nu e suficientă (docs/PROJECT.md §12.3).
+// Ascunderea butoanelor în interfață nu e suficientă; regulile RLS verifică din nou.
 
-import { getClass, getViewer } from "@/lib/data/queries";
+import { requireUser } from "@/lib/auth";
+import { getClass } from "@/lib/db/classes";
 
 export async function ownedClass(classId: string) {
-  const me = await getViewer("mentor");
-  const c = await getClass(me, classId);
-  return c ? { me, classRoom: c } : undefined;
+  const me = await requireUser("mentor");
+  const c = await getClass(classId);
+  return c && c.mentorId === me.id ? { me, classRoom: c } : undefined;
 }
 
 export const NO_ACCESS =
   "Nu ai acces la această clasă sau clasa nu mai există.";
-
-export const DEMO_NOTE =
-  "Demo: modificarea se salvează după conectarea la baza de date.";

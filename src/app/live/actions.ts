@@ -1,78 +1,65 @@
 "use server";
 
-import { z } from "zod";
-import { getViewer } from "@/lib/data/queries";
-import {
-  joinLiveSession,
-  LIVE_QUESTION_MS,
-  type LiveRoundResult,
-  type LiveSessionInfo,
-  scoreLiveSession,
-} from "@/lib/data/student-activity-queries";
+import { requireUser } from "@/lib/auth";
+import { db, isUuid } from "@/lib/db/core";
+import { type LiveState, liveStateSchema } from "@/lib/live";
 
-export type JoinLiveState =
-  | { status: "idle" }
-  | { status: "error"; message: string }
-  | { status: "joined"; session: LiveSessionInfo };
+export type JoinResult =
+  | { ok: true; sessionId: string }
+  | { ok: false; message: string };
 
-const MESSAGES = {
-  format: "Codul sesiunii are 6 cifre.",
-  invalid:
-    "Nu am găsit nicio sesiune activă cu acest cod. Verifică cifrele sau întreabă-l pe mentor.",
-  not_member:
-    "Sesiunea aparține unei clase din care nu faci parte. Poți intra doar în sesiunile claselor tale.",
-} as const;
-
-/** Verifică codul sesiunii pe server și întoarce sesiunea, fără răspunsurile corecte. */
-export async function joinLive(
-  _prev: JoinLiveState,
-  formData: FormData,
-): Promise<JoinLiveState> {
-  const me = await getViewer("student");
-  const result = await joinLiveSession(me, String(formData.get("code") ?? ""));
-  if (!result.ok) return { status: "error", message: MESSAGES[result.reason] };
-  return { status: "joined", session: result.session };
+/** Intrarea în quiz-ul live cu codul de 6 cifre (verificat de join_live). */
+export async function joinLive(rawCode: string): Promise<JoinResult> {
+  await requireUser("student");
+  const code = rawCode.replace(/\s/g, "");
+  if (!/^\d{6}$/.test(code))
+    return { ok: false, message: "Codul are 6 cifre." };
+  const supabase = await db();
+  const { data, error } = await supabase.rpc("join_live", { p_code: code });
+  if (error || !data)
+    return {
+      ok: false,
+      message:
+        error?.code === "42501"
+          ? "Sesiunea e pentru altă clasă."
+          : "Cod greșit sau sesiunea s-a încheiat. Verifică cifrele.",
+    };
+  return { ok: true, sessionId: data };
 }
 
-const answersSchema = z
-  .array(
-    z.object({
-      answer: z.number().int().min(0).max(3).nullable(),
-      msLeft: z.number().min(0).max(LIVE_QUESTION_MS),
-    }),
-  )
-  .min(1)
-  .max(50);
+/** Starea jocului (citită la fiecare secundă). */
+export async function getLiveState(
+  sessionId: string,
+): Promise<LiveState | null> {
+  if (!isUuid(sessionId)) return null;
+  const supabase = await db();
+  const { data, error } = await supabase.rpc("live_state", {
+    p_session: sessionId,
+  });
+  if (error) return null;
+  const parsed = liveStateSchema.safeParse(data);
+  return parsed.success ? parsed.data : null;
+}
 
-const avatarSchema = z.enum([
-  "fox",
-  "panda",
-  "owl",
-  "cat",
-  "robot",
-  "rocket",
-  "octopus",
-  "penguin",
-]);
-
-/**
- * Înregistrează răspunsul la întrebarea curentă și întoarce răspunsul corect,
- * punctajul și clasamentul. Răspunsul corect ajunge în browser doar după ce
- * elevul a răspuns (sau a expirat timpul).
- */
+/** Răspunsul la întrebarea curentă. Timpul și punctele le calculează serverul. */
 export async function answerLive(
-  code: string,
-  avatar: string,
-  answers: { answer: number | null; msLeft: number }[],
-): Promise<LiveRoundResult> {
-  const me = await getViewer("student");
-  const parsedAnswers = answersSchema.safeParse(answers);
-  const parsedAvatar = avatarSchema.safeParse(avatar);
+  sessionId: string,
+  position: number,
+  answer: number,
+) {
+  await requireUser("student");
   if (
-    !parsedAnswers.success ||
-    !parsedAvatar.success ||
-    typeof code !== "string"
+    !isUuid(sessionId) ||
+    !Number.isInteger(position) ||
+    !Number.isInteger(answer)
   )
-    return { ok: false };
-  return scoreLiveSession(me, code, parsedAvatar.data, parsedAnswers.data);
+    return { ok: false, message: "Răspuns invalid." };
+  const supabase = await db();
+  const { error } = await supabase.rpc("answer_live", {
+    p_session: sessionId,
+    p_position: position,
+    p_answer: answer,
+  });
+  if (error) return { ok: false, message: error.message };
+  return { ok: true, message: "" };
 }

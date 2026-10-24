@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 const SECTIONS = [
   { label: "Prezentare", slug: "" },
   { label: "Membri", slug: "membri" },
-  { label: "Materiale", slug: "materiale" },
+  { label: "Lecții", slug: "lectii" },
   { label: "Teme", slug: "teme" },
   { label: "Quiz-uri", slug: "quiz" },
   { label: "Prezență", slug: "prezenta" },

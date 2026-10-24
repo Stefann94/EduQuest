@@ -1,13 +1,10 @@
 import { Circle, CircleDot, ClipboardList } from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { AssignmentRow } from "@/components/assignments/assignment-row";
 import { EmptyState } from "@/components/common/empty-state";
+import { HomeworkRow } from "@/components/homework/homework-row";
 import { SectionSkeleton } from "@/components/student-class/skeletons";
-import {
-  getClassAssignmentsForStudent,
-  type StudentAssignment,
-} from "@/lib/data/queries";
+import { getStudentHomework, type StudentHomework } from "@/lib/db/homework";
 import { plural } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { loadStudentClass } from "../load-class";
@@ -24,21 +21,20 @@ export default function ClassAssignmentsPage({ params }: Props) {
   );
 }
 
-const byDeadline = (a: StudentAssignment, b: StudentAssignment) =>
-  (a.deadline ?? "9999").localeCompare(b.deadline ?? "9999");
-
 async function Content({ params }: { params: Props["params"] }) {
   const { viewer, classRoom: c } = await loadStudentClass(params);
-  const all = await getClassAssignmentsForStudent(c.id, viewer.id);
-  const required = all.filter((a) => a.type === "required").sort(byDeadline);
-  const optional = all.filter((a) => a.type === "optional").sort(byDeadline);
+  const all = (await getStudentHomework(viewer.id)).filter(
+    (h) => h.classId === c.id,
+  );
+  const required = all.filter((h) => h.required);
+  const optional = all.filter((h) => !h.required);
 
   if (all.length === 0)
     return (
       <EmptyState
         icon={ClipboardList}
-        title="Nicio temă publicată"
-        description="Când mentorul publică o temă pentru această clasă, o vei vedea aici."
+        title="Nicio temă încă"
+        description="Când mentorul dă o temă acestei clase, o vei vedea aici."
       />
     );
 
@@ -79,7 +75,7 @@ function Group({
   description: string;
   icon: typeof Circle;
   emphasis?: boolean;
-  items: StudentAssignment[];
+  items: StudentHomework[];
   empty: string;
 }) {
   return (
@@ -110,9 +106,9 @@ function Group({
       </div>
       {items.length > 0 ? (
         <ul className="stagger grid gap-2">
-          {items.map((a) => (
-            <li key={a.id}>
-              <AssignmentRow assignment={a} showClass={false} />
+          {items.map((h) => (
+            <li key={h.id}>
+              <HomeworkRow homework={h} showClass={false} />
             </li>
           ))}
         </ul>

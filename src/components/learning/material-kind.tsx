@@ -1,19 +1,20 @@
 import {
+  FileCode2,
   FileText,
   Link2,
   type LucideIcon,
   Newspaper,
   PlayCircle,
 } from "lucide-react";
-import type { MaterialKind } from "@/lib/data/types";
+import type { ItemKind } from "@/lib/content/items";
 import { cn } from "@/lib/utils";
 
 export const MATERIAL_KIND: Record<
-  MaterialKind,
+  ItemKind,
   { label: string; icon: LucideIcon; className: string }
 > = {
   article: {
-    label: "Lecție",
+    label: "Lecție scrisă",
     icon: Newspaper,
     className: "bg-primary-soft text-primary",
   },
@@ -23,7 +24,7 @@ export const MATERIAL_KIND: Record<
     className: "bg-danger-soft text-destructive",
   },
   link: {
-    label: "Link extern",
+    label: "Link",
     icon: Link2,
     className: "bg-info-soft text-info",
   },
@@ -32,13 +33,18 @@ export const MATERIAL_KIND: Record<
     icon: PlayCircle,
     className: "bg-success-soft text-success",
   },
+  problem: {
+    label: "Problemă",
+    icon: FileCode2,
+    className: "bg-xp-soft text-xp-foreground",
+  },
 };
 
 export function MaterialKindIcon({
   kind,
   className,
 }: {
-  kind: MaterialKind;
+  kind: ItemKind;
   className?: string;
 }) {
   const { icon: Icon, className: tone } = MATERIAL_KIND[kind];
@@ -46,7 +52,7 @@ export function MaterialKindIcon({
     <span
       aria-hidden="true"
       className={cn(
-        "grid size-10 shrink-0 place-items-center rounded-lg",
+        "grid size-10 shrink-0 cut-xs place-items-center",
         tone,
         className,
       )}

@@ -37,8 +37,8 @@ const KINDS: Record<SearchKind, { group: string; icon: LucideIcon }> = {
   page: { group: "Pagini", icon: LayoutGrid },
   class: { group: "Clase", icon: Users },
   assignment: { group: "Teme", icon: ClipboardList },
-  material: { group: "Materiale", icon: BookOpen },
-  problem: { group: "Probleme rezolvate", icon: FileCode2 },
+  material: { group: "Lecții", icon: BookOpen },
+  problem: { group: "Probleme", icon: FileCode2 },
   quiz: { group: "Quiz-uri", icon: ListChecks },
 };
 

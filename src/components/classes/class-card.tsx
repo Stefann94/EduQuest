@@ -1,7 +1,7 @@
 import { CalendarDays, ChevronRight, ClipboardList, Users } from "lucide-react";
 import Link from "next/link";
 import { UserAvatar } from "@/components/common/user-avatar";
-import type { ClassSummary } from "@/lib/data/queries";
+import type { ClassSummary } from "@/lib/db/classes";
 import { plural } from "@/lib/format";
 import { cn } from "@/lib/utils";
 

@@ -1,155 +1,225 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
-import { fromLocalInput } from "@/components/mentor-content/drafts";
-import {
-  type FormState,
-  invalid,
-  json,
-  text,
-  toFieldErrors,
-} from "@/components/mentor-content/form-state";
-import { canEditContent } from "@/lib/data/mentor-content-queries";
-import { getMentorClasses, getQuiz, getViewer } from "@/lib/data/queries";
-import { plural } from "@/lib/format";
+import { requireUser } from "@/lib/auth";
+import { mentorClassIds } from "@/lib/db/classes";
+import { db, isUuid } from "@/lib/db/core";
+import { getMentorLessons } from "@/lib/db/lessons";
+import { notifyClassStudents } from "@/lib/db/notify";
+import { getQuizForEditor } from "@/lib/db/quizzes";
 
-// Salvarea unui quiz (nou sau editat). În demo validează datele, fără să salveze.
+// Quiz-urile mentorului: pe o lecție sau pe mai multe (recapitulare), cu fiecare întrebare
+// etichetată pe lecția pe care o verifică (de aici vine tabelul „elevi × lecții”).
+// Nu există quiz-uri programate: un quiz dat clasei e disponibil imediat.
 
-const question = z.object({
-  prompt: z.string().trim().min(3, "Scrie textul întrebării."),
-  code: z.string(),
-  options: z.array(z.string().trim()),
-  correct: z.number().int().nullable(),
-  explanation: z
+export type ActionResult =
+  | { ok: true; message: string; id?: string }
+  | { ok: false; message: string; errors?: Record<string, string> };
+
+function issues(error: z.ZodError) {
+  const out: Record<string, string> = {};
+  for (const i of error.issues) {
+    const key = i.path.map(String).join(".") || "form";
+    out[key] ??= i.message;
+  }
+  return out;
+}
+
+const refresh = () => {
+  revalidatePath("/mentor", "layout");
+  revalidatePath("/", "layout");
+};
+
+const questionSchema = z
+  .object({
+    prompt: z
+      .string()
+      .trim()
+      .min(3, "Scrie întrebarea.")
+      .max(500, "Întrebarea are cel mult 500 de caractere."),
+    code: z.string().max(2000, "Codul are cel mult 2000 de caractere."),
+    options: z
+      .array(
+        z
+          .string()
+          .trim()
+          .min(1, "Completează varianta.")
+          .max(200, "Varianta are cel mult 200 de caractere."),
+      )
+      .min(2, "Cel puțin 2 variante.")
+      .max(4, "Cel mult 4 variante."),
+    correct: z.number({ error: "Alege varianta corectă." }).int().min(0),
+    explanation: z
+      .string()
+      .trim()
+      .max(600, "Explicația are cel mult 600 de caractere."),
+    lessonId: z.string().nullable(),
+  })
+  .refine((q) => q.correct < q.options.length, {
+    path: ["correct"],
+    error: "Alege varianta corectă.",
+  });
+
+const quizSchema = z.object({
+  title: z
     .string()
     .trim()
-    .max(500, "Explicația are cel mult 500 de caractere."),
+    .min(3, "Titlul are cel puțin 3 caractere.")
+    .max(120, "Titlul are cel mult 120 de caractere."),
+  description: z
+    .string()
+    .trim()
+    .max(300, "Descrierea are cel mult 300 de caractere."),
+  lessonIds: z.array(z.uuid()).max(30),
+  xp: z
+    .number()
+    .int()
+    .min(0, "XP-ul e între 0 și 5.")
+    .max(5, "XP-ul e între 0 și 5."),
+  timeLimitSec: z
+    .number()
+    .int()
+    .min(30, "Cel puțin 30 de secunde.")
+    .max(7200, "Cel mult 2 ore.")
+    .nullable(),
+  questions: z
+    .array(questionSchema)
+    .min(1, "Adaugă cel puțin o întrebare.")
+    .max(40, "Cel mult 40 de întrebări."),
+  classIds: z.array(z.uuid()).max(30),
 });
 
-export async function saveQuiz(
-  _prev: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  const me = await getViewer("mentor");
-  const { active } = await getMentorClasses(me.id);
-  const id = text(formData, "id");
+export type QuizInput = z.input<typeof quizSchema>;
 
-  if (id) {
-    const existing = await getQuiz(me, id);
-    if (!existing || !canEditContent(me.id, existing))
-      return {
-        status: "error",
-        message: "Nu poți modifica acest quiz.",
-        errors: {},
-      };
+/** Creează sau modifică un quiz, cu întrebările, lecțiile și clasele cărora le e dat. */
+export async function saveQuiz(
+  id: string | null,
+  input: QuizInput,
+): Promise<ActionResult> {
+  const me = await requireUser("mentor");
+  const parsed = quizSchema.safeParse(input);
+  if (!parsed.success)
+    return {
+      ok: false,
+      message: "Verifică câmpurile marcate.",
+      errors: issues(parsed.error),
+    };
+  const q = parsed.data;
+  const existing =
+    id && isUuid(id) ? await getQuizForEditor(me.id, id) : undefined;
+  if (id && !existing)
+    return { ok: false, message: "Quiz-ul nu mai există sau nu e al tău." };
+
+  // Doar lecțiile proprii și doar clasele în care predă.
+  const myLessons = new Set((await getMentorLessons(me.id)).map((l) => l.id));
+  const lessonIds = q.lessonIds.filter((l) => myLessons.has(l));
+  const myClasses = await mentorClassIds(me.id);
+  const classIds = q.classIds.filter((c) => myClasses.includes(c));
+  const lessonOf = (l: string | null) =>
+    l && lessonIds.includes(l) ? l : null;
+
+  const supabase = await db();
+  const row = {
+    title: q.title,
+    description: q.description,
+    kind: (lessonIds.length > 1 ? "recap" : "lesson") as "recap" | "lesson",
+    xp: q.xp,
+    time_limit_sec: q.timeLimitSec,
+  };
+  let quizId = existing?.id;
+  if (existing) {
+    const { error } = await supabase
+      .from("quizzes")
+      .update(row)
+      .eq("id", existing.id);
+    if (error) return { ok: false, message: "Quiz-ul nu s-a putut salva." };
+  } else {
+    const { data, error } = await supabase
+      .from("quizzes")
+      .insert({ ...row, author_id: me.id })
+      .select("id")
+      .single();
+    if (error || !data)
+      return { ok: false, message: "Quiz-ul nu s-a putut crea." };
+    quizId = data.id;
+  }
+  if (!quizId) return { ok: false, message: "Quiz-ul nu s-a putut salva." };
+
+  // Întrebările se rescriu în ordine (pozițiile 1…n); răspunsurile corecte separat.
+  await supabase.from("quiz_questions").delete().eq("quiz_id", quizId);
+  const { data: inserted, error: qError } = await supabase
+    .from("quiz_questions")
+    .insert(
+      q.questions.map((x, i) => ({
+        quiz_id: quizId as string,
+        position: i + 1,
+        prompt: x.prompt,
+        code: x.code.trim() ? x.code : null,
+        options: x.options,
+        lesson_id: lessonOf(x.lessonId),
+      })),
+    )
+    .select("id, position");
+  if (qError || !inserted)
+    return { ok: false, message: "Întrebările nu s-au putut salva." };
+  const byPos = new Map(inserted.map((r) => [r.position, r.id]));
+  const { error: kError } = await supabase.from("quiz_answer_keys").insert(
+    q.questions.map((x, i) => ({
+      question_id: byPos.get(i + 1) as string,
+      correct: x.correct,
+      explanation: x.explanation || null,
+    })),
+  );
+  if (kError)
+    return { ok: false, message: "Răspunsurile corecte nu s-au putut salva." };
+
+  await supabase.from("quiz_lessons").delete().eq("quiz_id", quizId);
+  if (lessonIds.length)
+    await supabase.from("quiz_lessons").insert(
+      lessonIds.map((lesson_id) => ({
+        quiz_id: quizId as string,
+        lesson_id,
+      })),
+    );
+
+  // Clasele: cele noi primesc quiz-ul (și o notificare); cele debifate îl pierd.
+  const before = new Set(existing?.classIds ?? []);
+  const added = classIds.filter((c) => !before.has(c));
+  const removed = [...before].filter((c) => !classIds.includes(c));
+  if (removed.length)
+    await supabase
+      .from("quiz_assignments")
+      .delete()
+      .eq("quiz_id", quizId)
+      .in("class_id", removed);
+  if (added.length) {
+    await supabase
+      .from("quiz_assignments")
+      .insert(
+        added.map((class_id) => ({ quiz_id: quizId as string, class_id })),
+      );
+    await notifyClassStudents(added, {
+      kind: "assignment_new",
+      title: `Quiz nou: ${q.title}`,
+      body: `${q.questions.length} întrebări${q.xp > 0 ? ` · până la ${q.xp} XP` : ""}`,
+      href: `/quiz/${quizId}`,
+    });
   }
 
-  const schema = z
-    .object({
-      title: z
-        .string()
-        .trim()
-        .min(3, "Titlul are cel puțin 3 caractere.")
-        .max(120, "Titlul are cel mult 120 de caractere."),
-      description: z
-        .string()
-        .trim()
-        .max(300, "Descrierea are cel mult 300 de caractere."),
-      topic: z
-        .string()
-        .trim()
-        .min(2, "Scrie tema, de exemplu „Python”.")
-        .max(60, "Tema are cel mult 60 de caractere."),
-      difficulty: z.enum(["1", "2", "3"], { error: "Alege dificultatea." }),
-      scope: z.enum(["global", "class"], {
-        error: "Alege unde este disponibil quiz-ul.",
-      }),
-      classId: z.string(),
-      opensAt: z.string(),
-      deadline: z.string(),
-      maxAttempts: z.string(),
-      xp: z.string(),
-      timeLimit: z.string().trim(),
-      timeUnit: z.enum(["sec", "min"]),
-      questions: z
-        .array(question, { error: "Întrebările nu au putut fi citite." })
-        .min(1, "Adaugă cel puțin o întrebare.")
-        .max(30, "Un quiz are cel mult 30 de întrebări."),
-    })
-    .superRefine((v, ctx) => {
-      const add = (path: (string | number)[], message: string) =>
-        ctx.addIssue({ code: "custom", path, message });
+  refresh();
+  if (!existing) redirect(`/mentor/quiz/${quizId}`);
+  return { ok: true, message: "Quiz-ul a fost salvat.", id: quizId };
+}
 
-      if (v.scope === "class") {
-        if (!active.some((c) => c.id === v.classId))
-          add(["classId"], "Alege una dintre clasele tale active.");
-        const opens = fromLocalInput(v.opensAt);
-        const deadline = fromLocalInput(v.deadline);
-        if (!opens) add(["opensAt"], "Alege de când este disponibil.");
-        if (!deadline) add(["deadline"], "Alege termenul.");
-        if (opens && deadline && deadline <= opens)
-          add(["deadline"], "Termenul trebuie să fie după deschidere.");
-        const attempts = Number(v.maxAttempts);
-        if (!Number.isInteger(attempts) || attempts < 1 || attempts > 10)
-          add(["maxAttempts"], "Alege între 1 și 10 încercări.");
-        const xp = Number(v.xp);
-        if (!Number.isInteger(xp) || xp < 0 || xp > 10)
-          add(["xp"], "XP-ul este un număr întreg între 0 și 10.");
-      }
-
-      if (v.timeLimit) {
-        const n = Number(v.timeLimit);
-        const sec = v.timeUnit === "min" ? n * 60 : n;
-        if (!Number.isFinite(n) || n <= 0)
-          add(["timeLimit"], "Scrie un număr pozitiv sau lasă gol.");
-        else if (sec < 10 || sec > 7200)
-          add(["timeLimit"], "Limita este între 10 secunde și 120 de minute.");
-      }
-
-      v.questions.forEach((q, i) => {
-        if (q.options.length < 2 || q.options.length > 4)
-          add(["questions", i, "options"], "O întrebare are 2–4 variante.");
-        q.options.forEach((o, j) => {
-          if (!o) add(["questions", i, "options", j], "Completează varianta.");
-        });
-        if (
-          q.correct === null ||
-          q.correct < 0 ||
-          q.correct >= q.options.length ||
-          !q.options[q.correct]
-        )
-          add(["questions", i, "correct"], "Marchează răspunsul corect.");
-      });
-    });
-
-  const parsed = schema.safeParse({
-    title: text(formData, "title"),
-    description: text(formData, "description"),
-    topic: text(formData, "topic"),
-    difficulty: text(formData, "difficulty"),
-    scope: text(formData, "scope"),
-    classId: text(formData, "classId"),
-    opensAt: text(formData, "opensAt"),
-    deadline: text(formData, "deadline"),
-    maxAttempts: text(formData, "maxAttempts"),
-    xp: text(formData, "xp"),
-    timeLimit: text(formData, "timeLimit"),
-    timeUnit: text(formData, "timeUnit") || "min",
-    questions: json(formData, "questions"),
-  });
-  if (!parsed.success) return invalid(toFieldErrors(parsed.error));
-
-  const v = parsed.data;
-  const cls = active.find((c) => c.id === v.classId);
-  const count = plural(v.questions.length, "întrebare", "întrebări");
-  return {
-    status: "success",
-    message: id
-      ? `Quiz-ul „${v.title}” a fost salvat (${count}).`
-      : `Quiz-ul „${v.title}” a fost creat (${count}).`,
-    detail:
-      v.scope === "class" && cls
-        ? `Elevii din ${cls.name} îl văd la data deschiderii și primesc o notificare. Demo: salvarea reală vine cu baza de date.`
-        : "Este disponibil pentru exersare tuturor elevilor. Demo: salvarea reală vine cu baza de date.",
-  };
+export async function deleteQuiz(id: string): Promise<ActionResult> {
+  const me = await requireUser("mentor");
+  const quiz = isUuid(id) ? await getQuizForEditor(me.id, id) : undefined;
+  if (!quiz) return { ok: false, message: "Quiz-ul nu mai există." };
+  const supabase = await db();
+  const { error } = await supabase.from("quizzes").delete().eq("id", id);
+  if (error) return { ok: false, message: "Quiz-ul nu s-a putut șterge." };
+  refresh();
+  redirect("/mentor/quiz");
 }

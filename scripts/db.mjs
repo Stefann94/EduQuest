@@ -15,6 +15,16 @@ const [command = "push", ...rest] = process.argv.slice(2);
 const args = {
   push: ["db", "push", "--db-url", url, "--include-all", "--yes", ...rest],
   lint: ["db", "lint", "--db-url", url, ...rest],
+  types: [
+    "gen",
+    "types",
+    "typescript",
+    "--db-url",
+    url,
+    "--schema",
+    "public",
+    ...rest,
+  ],
 }[command];
 if (!args) {
   console.error(`Comandă necunoscută: ${command}`);
@@ -31,6 +41,16 @@ const hide = (s) =>
   s
     .replaceAll(url, "[SUPABASE_DB_URL]")
     .replace(/postgres(ql)?:\/\/[^\s"']+/g, "[url]");
-process.stdout.write(hide(res.stdout ?? ""));
+// `types` scrie direct fișierul de tipuri folosit de aplicație.
+if (command === "types" && res.status === 0) {
+  const { writeFileSync } = await import("node:fs");
+  writeFileSync(
+    new URL("../src/lib/supabase/database.types.ts", import.meta.url),
+    `// Generat cu „pnpm db:types” din baza de date. Nu edita manual.
+
+${res.stdout}`,
+  );
+  console.log("Am scris src/lib/supabase/database.types.ts");
+} else process.stdout.write(hide(res.stdout ?? ""));
 process.stderr.write(hide(res.stderr ?? ""));
 process.exit(res.status ?? 1);

@@ -14,7 +14,8 @@
     "db:seed": "tsx scripts/seed-demo.mts",
     "db:check": "tsx scripts/check-access.mts",
     "content:check": "tsx scripts/check-content.mts",
-    "db:content": "tsx scripts/seed-content.mts"
+    "db:content": "tsx scripts/seed-content.mts",
+    "db:types": "node scripts/db.mjs types"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

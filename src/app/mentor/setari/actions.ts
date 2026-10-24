@@ -1,10 +1,15 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getViewer } from "@/lib/data/queries";
-
-const DEMO_NOTE =
-  "Demo: modificarea se salvează după conectarea la baza de date.";
+import {
+  passwordMatches,
+  saveProfile,
+  setPassword,
+  startEmailChange,
+} from "@/lib/account";
+import { requireUser } from "@/lib/auth";
+import { db } from "@/lib/db/core";
 
 export type FormState<F extends string> =
   | { status: "idle" }
@@ -34,16 +39,22 @@ export async function updateProfile(
   _prev: FormState<"displayName">,
   formData: FormData,
 ): Promise<FormState<"displayName">> {
-  await getViewer("mentor");
+  const me = await requireUser("mentor");
   const parsed = profileSchema.safeParse({
     displayName: String(formData.get("displayName") ?? ""),
   });
   if (!parsed.success)
     return { status: "error", errors: firstErrors(parsed.error) };
+  if (!(await saveProfile(me.id, parsed.data)))
+    return {
+      status: "error",
+      errors: { displayName: "Numele nu s-a putut salva. Încearcă din nou." },
+    };
+  revalidatePath("/mentor", "layout");
   return {
     status: "success",
     message: `Numele afișat este acum „${parsed.data.displayName}”.`,
-    note: DEMO_NOTE,
+    note: "Elevii îl văd în clasele tale.",
   };
 }
 
@@ -55,7 +66,7 @@ export async function requestEmailChange(
   _prev: FormState<EmailField>,
   formData: FormData,
 ): Promise<FormState<EmailField>> {
-  const me = await getViewer("mentor");
+  const me = await requireUser("mentor");
   const schema = z.object({
     email: z
       .email("Scrie o adresă de email validă, de forma nume@exemplu.ro.")
@@ -72,10 +83,29 @@ export async function requestEmailChange(
   });
   if (!parsed.success)
     return { status: "error", errors: firstErrors(parsed.error) };
+  if (!(await passwordMatches(me.email, parsed.data.currentPassword)))
+    return {
+      status: "error",
+      errors: { currentPassword: "Parola actuală nu e corectă." },
+    };
+  const result = await startEmailChange(parsed.data.email);
+  if (result === "taken")
+    return {
+      status: "error",
+      errors: { email: "Adresa aceasta e folosită deja de alt cont." },
+    };
+  if (result !== "ok")
+    return {
+      status: "error",
+      errors: {
+        email:
+          "Nu am putut trimite linkul. Verifică adresa sau încearcă mai târziu.",
+      },
+    };
   return {
     status: "success",
     message: `Am trimis un link de confirmare la ${parsed.data.email}.`,
-    note: `Până confirmi, te autentifici în continuare cu ${me.email}. ${DEMO_NOTE}`,
+    note: `Până confirmi, te autentifici în continuare cu ${me.email}.`,
   };
 }
 
@@ -105,7 +135,7 @@ export async function changePassword(
   _prev: FormState<PasswordField>,
   formData: FormData,
 ): Promise<FormState<PasswordField>> {
-  await getViewer("mentor");
+  const me = await requireUser("mentor");
   const parsed = passwordSchema.safeParse({
     currentPassword: String(formData.get("currentPassword") ?? ""),
     newPassword: String(formData.get("newPassword") ?? ""),
@@ -113,10 +143,28 @@ export async function changePassword(
   });
   if (!parsed.success)
     return { status: "error", errors: firstErrors(parsed.error) };
+  if (!(await passwordMatches(me.email, parsed.data.currentPassword)))
+    return {
+      status: "error",
+      errors: { currentPassword: "Parola actuală nu e corectă." },
+    };
+  const result = await setPassword(parsed.data.newPassword);
+  if (result === "same")
+    return {
+      status: "error",
+      errors: {
+        newPassword: "Parola nouă trebuie să fie diferită de cea actuală.",
+      },
+    };
+  if (result !== "ok")
+    return {
+      status: "error",
+      errors: { newPassword: "Parola nu s-a putut schimba. Încearcă din nou." },
+    };
   return {
     status: "success",
     message: "Parola a fost schimbată.",
-    note: `Celelalte sesiuni deschise vor fi deconectate. ${DEMO_NOTE}`,
+    note: "Celelalte dispozitive au fost deconectate.",
   };
 }
 
@@ -126,19 +174,31 @@ export async function updateNotificationPreferences(
   _prev: FormState<never>,
   formData: FormData,
 ): Promise<FormState<never>> {
-  await getViewer("mentor");
+  const me = await requireUser("mentor");
   const on = (k: string) => formData.get(k) === "on";
+  const prefs = {
+    submissions: on("submissions"),
+    resubmissions: on("resubmissions"),
+    classActivity: on("classActivity"),
+  };
+  const supabase = await db();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ notification_prefs: prefs })
+    .eq("id", me.id);
+  if (error) return { status: "error", errors: {} };
+  revalidatePath("/mentor", "layout");
   const enabled = [
-    on("submissions") && "trimiteri noi",
-    on("resubmissions") && "retrimiteri",
-    on("classActivity") && "activitate în clase",
+    prefs.submissions && "trimiteri noi",
+    prefs.resubmissions && "retrimiteri",
+    prefs.classActivity && "aplicații și activitate",
   ].filter(Boolean);
   return {
     status: "success",
     message: "Preferințele de notificare au fost salvate.",
     note:
       enabled.length > 0
-        ? `Primești notificări pentru: ${enabled.join(", ")}. ${DEMO_NOTE}`
-        : `Nu vei primi notificări în aplicație. ${DEMO_NOTE}`,
+        ? `Vezi notificări pentru: ${enabled.join(", ")}.`
+        : "Nu vei mai vedea notificări în aplicație.",
   };
 }

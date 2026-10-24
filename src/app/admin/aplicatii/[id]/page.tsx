@@ -14,8 +14,10 @@ import { PageHeader } from "@/components/common/page-header";
 import { Section } from "@/components/common/section";
 import { ApplicationStatusBadge } from "@/components/common/status";
 import { Skeleton } from "@/components/ui/skeleton";
-import { demoIds, getMentorApplication, getViewer } from "@/lib/data/queries";
+import { requireUser } from "@/lib/auth";
 import type { MentorApplication } from "@/lib/data/types";
+import { getMentorApplication } from "@/lib/db/admin";
+import { placeholderParams } from "@/lib/db/core";
 import { formatDate, formatTime, relativeDays } from "@/lib/format";
 
 type Props = PageProps<"/admin/aplicatii/[id]">;
@@ -23,7 +25,7 @@ type Props = PageProps<"/admin/aplicatii/[id]">;
 export const metadata: Metadata = { title: "Verificare aplicație" };
 
 export function generateStaticParams() {
-  return demoIds.applications();
+  return placeholderParams("id");
 }
 
 export default function ApplicationReviewPage({ params }: Props) {
@@ -36,7 +38,7 @@ export default function ApplicationReviewPage({ params }: Props) {
 
 async function Content({ params }: { params: Props["params"] }) {
   const { id } = await params;
-  await getViewer("admin");
+  await requireUser("admin");
   const application = await getMentorApplication(id);
   if (!application) notFound();
   const a = application;

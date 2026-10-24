@@ -1,28 +1,32 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { PageHeader } from "@/components/common/page-header";
-import { AssignmentForm } from "@/components/mentor-content/assignment-form";
-import { getMentorClasses, getViewer } from "@/lib/data/queries";
+import { HomeworkForm } from "@/components/homework/homework-form";
+import { FormSkeleton } from "@/components/mentor-content/skeletons";
+import { requireUser } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Temă nouă" };
 
-export default async function NewAssignmentPage() {
-  const me = await getViewer("mentor");
-  const { active } = await getMentorClasses(me.id);
-
+export default function NewHomeworkPage() {
   return (
-    <div className="grid gap-6">
+    <div className="grid max-w-4xl gap-6">
       <PageHeader
-        title="Temă nouă"
-        description="O temă pentru una dintre clasele tale. Elevii o pot trimite ca text, fișiere sau link, iar tu le răspunzi cu feedback și XP, fără note."
         back={{ href: "/mentor/teme", label: "Teme" }}
+        title="Temă nouă"
+        description="Scrie problemele temei. În pasul următor o dai uneia sau mai multor clase, fiecare cu termenul ei."
       />
-      <AssignmentForm
-        classes={active.map((c) => ({
-          id: c.id,
-          name: c.name,
-          students: c.studentIds.length,
-        }))}
-      />
+      <Suspense fallback={<FormSkeleton />}>
+        <Form />
+      </Suspense>
     </div>
+  );
+}
+
+async function Form() {
+  await requireUser("mentor");
+  return (
+    <HomeworkForm
+      draft={{ title: "", description: "", required: true, problems: [] }}
+    />
   );
 }

@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { MembersTable } from "@/components/mentor-classes/members-table";
 import { SectionSkeleton } from "@/components/mentor-classes/skeletons";
-import { getClassMembers } from "@/lib/data/mentor-class-queries";
-import { demoIds, getClass, getViewer } from "@/lib/data/queries";
+import { placeholderParams } from "@/lib/db/core";
+import { getClassMembers } from "@/lib/db/members";
 import { plural } from "@/lib/format";
+import { loadMentorClass } from "../load-class";
 
 export const metadata: Metadata = { title: "Membrii clasei" };
 
 type Props = PageProps<"/mentor/clase/[id]/membri">;
 
 export function generateStaticParams() {
-  return demoIds.classes();
+  return placeholderParams("id");
 }
 
 export default function ClassMembersPage({ params }: Props) {
@@ -24,11 +24,8 @@ export default function ClassMembersPage({ params }: Props) {
 }
 
 async function Members({ params }: { params: Props["params"] }) {
-  const { id } = await params;
-  const me = await getViewer("mentor");
-  const c = await getClass(me, id);
-  if (!c) notFound();
-  const members = await getClassMembers(me.id, c.id);
+  const { classRoom: c } = await loadMentorClass(params);
+  const members = await getClassMembers(c.id);
 
   return (
     <div className="grid gap-4">
@@ -51,6 +48,8 @@ async function Members({ params }: { params: Props["params"] }) {
           avatar: m.student.avatar,
           xp: m.xp,
           attended: m.attended,
+          absent: m.absent,
+          blocked: m.blocked,
           meetings: m.meetings,
           attendanceRate: m.attendanceRate,
           submitted: m.submitted,

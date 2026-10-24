@@ -1,6 +1,7 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import type { Database } from "./database.types";
 
 /**
  * Client Supabase cu sesiunea utilizatorului (din cookie-uri). Toate citirile și
@@ -9,7 +10,7 @@ import { cookies } from "next/headers";
  */
 export async function createSupabaseServerClient() {
   const cookieStore = await cookies();
-  return createServerClient(
+  return createServerClient<Database>(
     // biome-ignore lint/style/noNonNullAssertion: verificate în proxy.ts și la pornire
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     // biome-ignore lint/style/noNonNullAssertion: verificate în proxy.ts și la pornire

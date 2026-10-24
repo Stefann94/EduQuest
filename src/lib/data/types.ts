@@ -149,6 +149,7 @@ export type XpSource =
   | "quality_bonus"
   | "live_quiz"
   | "practice_quiz"
+  | "class_quiz"
   | "adjustment";
 
 export type XpTransaction = {

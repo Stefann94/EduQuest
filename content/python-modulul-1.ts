@@ -1,12 +1,13 @@
-// Cursul „Aventura Python · Modulul 1”, rescris din prezentarea lecțiilor.
-// Se încarcă în baza de date cu: pnpm db:content
+// Cursul „Introducere în Python”, rescris din prezentarea lecțiilor (Modulul 1).
+// Se încarcă în baza de date cu: pnpm db:content. Fiecare lecție devine o lecție scrisă,
+// primele două exerciții devin problemele lecției, iar quiz-ul vine din python-quizzes.ts.
 // Tipurile de blocuri și ce face fiecare: src/lib/content/schema.ts.
 
 import type { CourseSource } from "../src/lib/content/schema";
 
 export const course: CourseSource = {
-  slug: "python-modulul-1",
-  title: "Aventura Python · Modulul 1",
+  slug: "introducere-in-python",
+  title: "Introducere în Python",
   subtitle: "De la prima variabilă la primul tău proiect",
   description:
     "Unsprezece lecții care te duc de la zero la un program al tău: variabile, decizii, bucle, liste, șiruri, funcții, dicționare și fișiere. La final, un hackathon.",
@@ -1794,6 +1795,52 @@ print(criptat)`,
             "**Demo**: rulează-l live. Dacă apare un bug, explică-l: face parte din meseria de programator.",
             "**Viitorul**: ce ai mai adăuga dacă ai avea încă o săptămână.",
           ],
+        },
+        {
+          type: "exercise",
+          title: "Decodificatorul",
+          text: "Mesajul `vdoxw` a fost criptat cu cifrul lui Cezar, cu cheia 3. Scrie programul care îl decodifică și afișează mesajul inițial.",
+          hint: "Faci drumul invers: în loc să aduni cheia la poziția literei, o scazi. `% 26` are grijă de literele de la începutul alfabetului.",
+          solution: {
+            language: "python",
+            code: `alfabet = "abcdefghijklmnopqrstuvwxyz"
+cheie = 3
+criptat = "vdoxw"
+mesaj = ""
+for litera in criptat:
+    poz = alfabet.find(litera)
+    mesaj = mesaj + alfabet[(poz - cheie) % 26]
+print(mesaj)`,
+          },
+          output: "salut",
+          explanation:
+            "Pentru „a”, poziția 0 minus 3 dă -3, iar `-3 % 26` este 23, adică „x”. Așa alfabetul se „închide în cerc” și în sens invers.",
+        },
+        {
+          type: "exercise",
+          title: "Contul din bancă",
+          text: "Scrie funcțiile `depune(sold, suma)` și `retrage(sold, suma)`, care întorc soldul nou. Dacă vrei să retragi mai mult decât ai, `retrage` afișează `Fonduri insuficiente` și lasă soldul neschimbat. Pornește de la 0, depune 100, retrage 30, apoi încearcă să retragi 500.",
+          hint: "Fiecare funcție primește soldul actual și îl întoarce pe cel nou, cu `return`. În program, salvezi rezultatul înapoi: `sold = depune(sold, 100)`.",
+          solution: {
+            language: "python",
+            code: `def depune(sold, suma):
+    return sold + suma
+
+def retrage(sold, suma):
+    if suma > sold:
+        print("Fonduri insuficiente")
+        return sold
+    return sold - suma
+
+sold = 0
+sold = depune(sold, 100)
+sold = retrage(sold, 30)
+sold = retrage(sold, 500)
+print("Sold:", sold)`,
+          },
+          output: "Fonduri insuficiente\nSold: 70",
+          explanation:
+            "E începutul misiunii „Banca”: adaugă un meniu cu `while` și `input()`, și ai un program complet.",
         },
         {
           type: "keypoints",

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { buttonVariants } from "@/components/ui/button";
 import { Popover, PopoverTrigger } from "@/components/ui/popover";
+import { markNotificationsRead } from "@/lib/actions/notifications";
 import type { Notification } from "@/lib/data/types";
 import { formatDay, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
@@ -18,17 +19,19 @@ export function NotificationsMenu({
   initial: Notification[];
   allHref: string;
 }) {
-  // Demo: starea „citită” e locală. Cu Supabase vine din baza de date.
+  // Starea „citită” se schimbă imediat în meniu și se salvează în baza de date.
   const [items, setItems] = useState(initial);
   const [open, setOpen] = useState(false);
   const unread = items.filter((n) => !n.read).length;
 
-  const markRead = (id?: string) =>
+  const markRead = (id?: string) => {
     setItems((list) =>
       list.map((n) =>
         id === undefined || n.id === id ? { ...n, read: true } : n,
       ),
     );
+    void markNotificationsRead(id ? [id] : undefined);
+  };
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

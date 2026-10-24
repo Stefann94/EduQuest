@@ -9,7 +9,6 @@ import {
   Clock,
   Info,
   ListChecks,
-  Lock,
   Play,
   RotateCcw,
   Send,
@@ -19,38 +18,41 @@ import {
 import Link from "next/link";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
-import { submitQuiz } from "@/app/(student)/quiz/[id]/actions";
-import { DifficultyBadge, XpBadge } from "@/components/common/status";
+import {
+  type GradeResult,
+  submitQuiz,
+} from "@/app/(student)/quiz/[id]/actions";
+import { XpBadge } from "@/components/common/status";
+import { RichText } from "@/components/learning/rich-text";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import type {
-  GradeResult,
-  PublicQuestion,
-  QuizMode,
-} from "@/lib/data/student-activity-queries";
+import { xpOutlook } from "@/lib/db/quiz-rules";
 import { cn } from "@/lib/utils";
 import { QuestionCode } from "./question-code";
+
+/** O întrebare fără răspunsul corect (singura formă trimisă în browser). */
+export type PublicQuestion = {
+  id: string;
+  prompt: string;
+  code?: string;
+  options: string[];
+};
 
 export type QuizPlayerData = {
   id: string;
   title: string;
   description: string;
-  topic: string;
-  difficulty: 1 | 2 | 3;
+  /** „Recapitulare: lecțiile 3–4”, „Lecția 2” etc. */
+  label: string;
   className?: string;
   timeLimitSec?: number;
   questions: PublicQuestion[];
-  mode: QuizMode;
-  isLiveQuiz: boolean;
-  /** Pentru quiz-urile date de mentor. */
-  assigned?: {
-    deadlineLabel: string;
-    maxAttempts: number;
-    used: number;
-    xp: number;
-    open: boolean;
-    closedReason?: string;
-  };
+  /** XP-ul maxim al quiz-ului (la prima încercare, după scor). */
+  xp: number;
+  /** Încercările făcute deja (dinainte de această vizită). */
+  used: number;
+  backHref: string;
+  backLabel: string;
 };
 
 type Phase = "intro" | "question" | "review" | "results";
@@ -80,9 +82,8 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
   const answersRef = useRef(answers);
   const mounted = useRef(false);
 
-  const a = quiz.assigned;
-  const attemptsLeft = a ? a.maxAttempts - a.used - attemptsHere : Infinity;
-  const canStart = a ? a.open && attemptsLeft > 0 : true;
+  const used = quiz.used + attemptsHere;
+  const outlook = xpOutlook(quiz.xp, used);
 
   useEffect(() => {
     answersRef.current = answers;
@@ -103,8 +104,8 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
       const r = await submitQuiz(quiz.id, final);
       if (!r.ok) {
         toast.error(
-          r.reason === "closed"
-            ? "Quiz-ul nu mai acceptă încercări."
+          r.reason === "unavailable"
+            ? "Quiz-ul nu mai e disponibil."
             : "Răspunsurile nu au putut fi trimise. Încearcă din nou.",
         );
         setPhase("review");
@@ -173,25 +174,22 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
     return (
       <section
         aria-labelledby="quiz-intro"
-        className="mx-auto w-full max-w-2xl rounded-xl border bg-card p-6 shadow-xs sm:p-8"
+        className="mx-auto w-full max-w-2xl cut bg-card p-6 sm:p-8"
       >
-        <div className="flex flex-wrap items-center gap-2">
-          <span className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-            {quiz.topic}
-          </span>
-          <DifficultyBadge level={quiz.difficulty} />
-        </div>
+        <p className="font-bold font-heading text-muted-foreground text-xs uppercase tracking-[0.2em]">
+          {quiz.label}
+        </p>
         <h2
           id="quiz-intro"
           ref={headingRef}
           tabIndex={-1}
-          className="mt-3 font-semibold text-xl outline-none"
+          className="mt-2 text-3xl leading-tight outline-none"
         >
           {quiz.title}
         </h2>
         <p className="mt-1 text-muted-foreground">{quiz.description}</p>
 
-        <dl className="mt-6 grid gap-3 rounded-lg border p-4 text-sm sm:grid-cols-2">
+        <dl className="mt-6 grid gap-3 bg-muted/60 p-4 text-sm sm:grid-cols-2">
           <IntroItem icon={ListChecks} label="Întrebări">
             {total}, cu un singur răspuns corect
           </IntroItem>
@@ -200,20 +198,17 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
               ? `${Math.round(quiz.timeLimitSec / 60)} minute în total`
               : "Fără limită de timp"}
           </IntroItem>
-          {a ? (
-            <>
-              <IntroItem icon={RotateCcw} label="Încercări">
-                {a.used + attemptsHere} folosite din {a.maxAttempts}
-              </IntroItem>
-              <IntroItem icon={Clock} label="Termen">
-                {a.deadlineLabel}
-              </IntroItem>
-            </>
-          ) : null}
+          <IntroItem icon={RotateCcw} label="Încercări">
+            {used === 0
+              ? "Prima încercare"
+              : `Rezolvat de ${used === 1 ? "o dată" : `${used} ori`}; îl poți reface oricând`}
+          </IntroItem>
           <IntroItem icon={Star} label="XP">
-            {a
-              ? `+${a.xp} XP la prima finalizare, până la termen`
-              : "Exersarea nu oferă XP"}
+            {outlook.kind === "first"
+              ? `Până la +${quiz.xp} XP, după câte răspunsuri corecte ai`
+              : outlook.kind === "retake"
+                ? "+1 XP pentru prima refacere"
+                : "Fără XP: acum e doar exersare"}
           </IntroItem>
           {quiz.className ? (
             <IntroItem icon={Info} label="Clasa">
@@ -222,25 +217,10 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
           ) : null}
         </dl>
 
-        {quiz.isLiveQuiz && !a ? (
-          <p className="mt-4 flex gap-2 rounded-lg bg-muted px-3 py-2 text-muted-foreground text-sm">
-            <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            Acest quiz se folosește în sesiunile live ale clasei. Aici îl poți
-            exersa în ritmul tău.
-          </p>
-        ) : null}
-
         <div className="mt-6 flex flex-wrap items-center gap-3">
-          {canStart ? (
-            <Button size="lg" onClick={start}>
-              <Play /> Începe quiz-ul
-            </Button>
-          ) : (
-            <p className="flex items-center gap-2 text-muted-foreground text-sm">
-              <Lock className="size-4" aria-hidden="true" />
-              {a?.closedReason ?? "Nu mai ai încercări disponibile."}
-            </p>
-          )}
+          <Button size="lg" variant="cta" onClick={start}>
+            <Play /> {used === 0 ? "Începe quiz-ul" : "Reia quiz-ul"}
+          </Button>
           <p className="text-muted-foreground text-xs">
             Poți naviga între întrebări și îți poți schimba răspunsurile până
             trimiți.
@@ -265,7 +245,7 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
       <div className="mx-auto grid w-full max-w-3xl gap-6">
         <section
           aria-labelledby="quiz-results"
-          className="rounded-xl border bg-card p-6 shadow-xs sm:p-8"
+          className="cut bg-card p-6 sm:p-8"
         >
           <h2
             id="quiz-results"
@@ -290,48 +270,36 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
           />
           <p className="mt-4">{message}</p>
           <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">
-            {a ? (
-              result.xp > 0 && attemptsHere === 1 ? (
-                <>
-                  <XpBadge amount={result.xp} /> pentru finalizarea quiz-ului
-                </>
-              ) : (
-                <span className="text-muted-foreground">
-                  XP-ul pentru acest quiz se acordă o singură dată.
-                </span>
-              )
+            {result.xp > 0 ? (
+              <>
+                <XpBadge amount={result.xp} />
+                {used === 1
+                  ? "pentru prima rezolvare"
+                  : "pentru refacerea quiz-ului"}
+              </>
             ) : (
               <span className="text-muted-foreground">
-                Exersarea nu oferă XP, dar te pregătește pentru teme și quiz-uri
-                live.
+                {used <= 1
+                  ? "Niciun răspuns corect, deci fără XP de data asta. Recitește lecția și reia quiz-ul: prima refacere aduce 1 XP."
+                  : "De acum încolo, refacerile sunt doar pentru exersare, fără XP."}
               </span>
             )}
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
-            {canStart ? (
-              <Button onClick={start}>
-                <RotateCcw /> Încearcă din nou
-              </Button>
-            ) : null}
+            <Button onClick={start}>
+              <RotateCcw /> Reia quiz-ul
+            </Button>
             <Link
-              href="/quiz"
+              href={quiz.backHref}
               className={buttonVariants({ variant: "outline" })}
             >
-              Înapoi la quiz-uri
+              {quiz.backLabel}
             </Link>
           </div>
-          {a ? (
-            <p className="mt-3 text-muted-foreground text-xs">
-              {attemptsLeft > 0
-                ? `Mai ai ${attemptsLeft === 1 ? "o încercare" : `${attemptsLeft} încercări`}.`
-                : "Ai folosit toate încercările."}{" "}
-              Demo: încercarea se salvează după conectarea la baza de date.
-            </p>
-          ) : (
-            <p className="mt-3 text-muted-foreground text-xs">
-              Demo: rezultatul se salvează după conectarea la baza de date.
-            </p>
-          )}
+          <p className="mt-3 text-muted-foreground text-xs">
+            Rezultatul a fost salvat.
+            {outlook.kind === "retake" ? " Prima refacere mai aduce 1 XP." : ""}
+          </p>
         </section>
 
         <section aria-labelledby="quiz-review" className="grid gap-3">
@@ -342,14 +310,11 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
             {quiz.questions.map((q, i) => {
               const r = result.results[i];
               return (
-                <li
-                  key={q.id}
-                  className="rounded-xl border bg-card p-5 shadow-xs"
-                >
+                <li key={q.id} className="cut-sm bg-card p-5">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <p className="font-medium">
                       <span className="text-muted-foreground">{i + 1}.</span>{" "}
-                      {q.prompt}
+                      <RichText text={q.prompt} />
                     </p>
                     {r.isCorrect ? (
                       <span className="inline-flex items-center gap-1 font-medium text-sm text-success">
@@ -391,7 +356,7 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
                             {LETTERS[oi]}
                           </span>
                           <span className="min-w-0 flex-1 font-mono text-xs">
-                            {opt}
+                            <RichText text={opt} />
                           </span>
                           {isCorrect ? (
                             <span className="inline-flex items-center gap-1 font-medium text-success text-xs">
@@ -428,7 +393,7 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
                         className="mt-0.5 size-4 shrink-0 text-muted-foreground"
                         aria-hidden="true"
                       />
-                      {r.explanation}
+                      <RichText text={r.explanation} />
                     </p>
                   ) : null}
                 </li>
@@ -447,7 +412,7 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
     return (
       <section
         aria-labelledby="quiz-check"
-        className="mx-auto w-full max-w-2xl rounded-xl border bg-card p-6 shadow-xs sm:p-8"
+        className="mx-auto w-full max-w-2xl cut bg-card p-6 sm:p-8"
       >
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2
@@ -476,7 +441,9 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
                 className="flex w-full items-center gap-3 rounded-lg border px-3 py-2.5 text-left text-sm outline-none transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50"
               >
                 <span className="font-medium tabular-nums">{i + 1}.</span>
-                <span className="min-w-0 flex-1 truncate">{q.prompt}</span>
+                <span className="min-w-0 flex-1 truncate">
+                  <RichText text={q.prompt} />
+                </span>
                 {answers[i] !== null ? (
                   <span className="inline-flex shrink-0 items-center gap-1 text-success text-xs">
                     <CheckCircle2 className="size-3.5" aria-hidden="true" />
@@ -500,7 +467,11 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
           </p>
         ) : null}
         <div className="mt-6 flex flex-wrap gap-3">
-          <Button onClick={() => submit(answers)} disabled={pending}>
+          <Button
+            variant="cta"
+            onClick={() => submit(answers)}
+            disabled={pending}
+          >
             <Send /> {pending ? "Se verifică…" : "Trimite răspunsurile"}
           </Button>
           <Button
@@ -523,7 +494,7 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
   return (
     <section
       aria-labelledby="quiz-question"
-      className="mx-auto w-full max-w-2xl rounded-xl border bg-card p-6 shadow-xs sm:p-8"
+      className="mx-auto w-full max-w-2xl cut bg-card p-6 sm:p-8"
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="font-medium text-muted-foreground text-sm">
@@ -553,7 +524,7 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
               tabIndex={-1}
               className="font-semibold text-lg outline-none"
             >
-              {q.prompt}
+              <RichText text={q.prompt} />
             </h2>
           </legend>
           {q.code ? <QuestionCode code={q.code} className="mt-4" /> : null}
@@ -582,7 +553,9 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
                 <span className="grid size-6 shrink-0 place-items-center rounded-md bg-secondary font-medium text-xs">
                   {LETTERS[oi]}
                 </span>
-                <span className="min-w-0 font-mono text-sm">{opt}</span>
+                <span className="min-w-0 font-mono text-sm">
+                  <RichText text={opt} />
+                </span>
               </label>
             ))}
           </div>

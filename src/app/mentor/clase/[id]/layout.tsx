@@ -5,13 +5,15 @@ import { PageHeader } from "@/components/common/page-header";
 import { ClassNav } from "@/components/mentor-classes/class-nav";
 import { ClassStatusBadge } from "@/components/mentor-classes/class-status";
 import { ClassHeaderSkeleton } from "@/components/mentor-classes/skeletons";
-import { demoIds, getClass, getViewer } from "@/lib/data/queries";
+import { requireUser } from "@/lib/auth";
+import { getClass } from "@/lib/db/classes";
+import { placeholderParams } from "@/lib/db/core";
 import { plural } from "@/lib/format";
 
 type Props = LayoutProps<"/mentor/clase/[id]">;
 
 export function generateStaticParams() {
-  return demoIds.classes();
+  return placeholderParams("id");
 }
 
 export default function MentorClassLayout({ params, children }: Props) {
@@ -27,9 +29,9 @@ export default function MentorClassLayout({ params, children }: Props) {
 
 async function ClassHeader({ params }: { params: Props["params"] }) {
   const { id } = await params;
-  const me = await getViewer("mentor");
-  const c = await getClass(me, id);
-  if (!c) notFound();
+  const me = await requireUser("mentor");
+  const c = await getClass(id);
+  if (!c || c.mentorId !== me.id) notFound();
 
   return (
     <div className="grid gap-5">

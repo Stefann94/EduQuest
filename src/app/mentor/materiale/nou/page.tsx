@@ -1,26 +1,50 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { PageHeader } from "@/components/common/page-header";
-import { materialDraft } from "@/components/mentor-content/drafts";
-import { MaterialForm } from "@/components/mentor-content/material-form";
-import { getMentorClasses, getViewer } from "@/lib/data/queries";
+import { NewLessonForm } from "@/components/lesson-editor/new-lesson-form";
+import { FormSkeleton } from "@/components/mentor-content/skeletons";
+import { requireUser } from "@/lib/auth";
+import { getMentorClasses } from "@/lib/db/classes";
+import { nextLessonNumber } from "@/lib/db/lessons";
 
-export const metadata: Metadata = { title: "Material nou" };
+export const metadata: Metadata = { title: "Lecție nouă" };
 
-export default async function NewMaterialPage() {
-  const me = await getViewer("mentor");
-  const { active } = await getMentorClasses(me.id);
-
+export default function NewLessonPage({
+  searchParams,
+}: PageProps<"/mentor/materiale/nou">) {
   return (
     <div className="grid gap-6">
       <PageHeader
-        title="Material nou"
-        description="O lecție scrisă direct în platformă, o fișă PDF, un link util sau un videoclip. Îl poți salva ca ciornă și publica mai târziu."
-        back={{ href: "/mentor/materiale", label: "Materiale" }}
+        back={{ href: "/mentor/materiale", label: "Lecții și materiale" }}
+        title="Lecție nouă"
+        description="Pornești cu titlul; materialele (lecție scrisă, PDF, link, video, probleme) le adaugi în pasul următor."
       />
-      <MaterialForm
-        draft={materialDraft()}
-        classes={active.map((c) => ({ id: c.id, name: c.name }))}
-      />
+      <Suspense fallback={<FormSkeleton />}>
+        <Form searchParams={searchParams} />
+      </Suspense>
     </div>
+  );
+}
+
+async function Form({
+  searchParams,
+}: {
+  searchParams: PageProps<"/mentor/materiale/nou">["searchParams"];
+}) {
+  const { clasa } = await searchParams;
+  const me = await requireUser("mentor");
+  const { active } = await getMentorClasses(me.id);
+  const classes = await Promise.all(
+    active.map(async (c) => ({
+      id: c.id,
+      name: c.name,
+      nextNumber: await nextLessonNumber(c.id),
+    })),
+  );
+  return (
+    <NewLessonForm
+      classes={classes}
+      preselected={typeof clasa === "string" ? clasa : undefined}
+    />
   );
 }

@@ -26,6 +26,9 @@ export type MemberRow = {
   avatar: AvatarId;
   xp: number;
   attended: number;
+  absent: number;
+  /** Mai mult de 2 absențe: nu mai poate termina cursul. */
+  blocked: boolean;
   meetings: number;
   attendanceRate: number | null;
   submitted: number;
@@ -43,7 +46,7 @@ export function MembersTable({
   rows: MemberRow[];
   canRemove: boolean;
 }) {
-  // Demo: eliminarea e locală. Cu Supabase, lista vine din baza de date.
+  // Elevul eliminat dispare imediat; lista se reîncarcă apoi din baza de date.
   const [removed, setRemoved] = useState<string[]>([]);
   const visible = rows.filter((r) => !removed.includes(r.id));
 
@@ -106,6 +109,11 @@ export function MembersTable({
                     <span className="block text-muted-foreground text-xs">
                       {r.attended} din {r.meetings} întâlniri
                     </span>
+                    {r.blocked ? (
+                      <span className="block font-medium text-destructive text-xs">
+                        {r.absent} absențe · nu poate termina cursul
+                      </span>
+                    ) : null}
                   </>
                 )}
               </TableCell>

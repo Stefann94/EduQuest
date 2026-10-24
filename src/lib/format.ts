@@ -1,5 +1,3 @@
-import { DEMO_TODAY } from "./data/clock";
-
 // Toate datele se formatează în română, pe ora României, ca serverul și browserul
 // să afișeze același text (fără nepotriviri la hidratare).
 const TZ = "Europe/Bucharest";
@@ -55,8 +53,8 @@ export const formatDateTime = (iso: string) =>
 /** „23.10.2026” */
 export const formatShortDate = (iso: string) => shortDate.format(new Date(iso));
 
-/** „Acum” pentru demo. Cu Supabase devine ora reală a serverului. */
-export const now = () => new Date(DEMO_TODAY);
+/** „Acum”: ora reală (pe server se citește la cerere, după sesiune). */
+export const now = () => new Date();
 
 const DAY = 24 * 60 * 60 * 1000;
 

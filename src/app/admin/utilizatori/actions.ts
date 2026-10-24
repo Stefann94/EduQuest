@@ -1,7 +1,9 @@
 "use server";
 
-import { getUser, getViewer } from "@/lib/data/queries";
+import { revalidatePath } from "next/cache";
+import { requireUser } from "@/lib/auth";
 import type { AccountStatus } from "@/lib/data/types";
+import { getAccountStatus, setAccountStatus } from "@/lib/db/admin";
 
 export type AccountAction = "suspend" | "reactivate" | "deactivate";
 
@@ -26,13 +28,13 @@ const ALLOWED_FROM: Record<AccountAction, AccountStatus[]> = {
 /**
  * Schimbă starea unui cont. Verifică pe server: rolul de administrator, că
  * administratorul nu își modifică propriul cont și că trecerea este permisă.
- * Rolul utilizatorului nu se poate schimba de aici. În demo nu salvează nimic.
+ * Rolul utilizatorului nu se poate schimba de aici.
  */
 export async function changeAccountStatus(
   _prev: AccountState,
   formData: FormData,
 ): Promise<AccountState> {
-  const viewer = await getViewer("admin");
+  const viewer = await requireUser("admin");
   if (viewer.role !== "admin")
     return {
       status: "error",
@@ -42,14 +44,12 @@ export async function changeAccountStatus(
   const userId = String(formData.get("userId") ?? "");
   const raw = String(formData.get("action") ?? "");
   const reason = String(formData.get("reason") ?? "").trim();
-  // Starea curentă văzută în interfață (în demo, modificările anterioare nu se salvează).
-  const shown = String(formData.get("currentStatus") ?? "");
 
   if (!(raw in NEW_STATUS))
     return { status: "error", message: "Acțiune necunoscută." };
   const action = raw as AccountAction;
 
-  const user = await getUser(userId);
+  const user = await getAccountStatus(userId);
   if (!user) return { status: "error", message: "Contul nu mai există." };
   if (user.id === viewer.id)
     return {
@@ -57,11 +57,7 @@ export async function changeAccountStatus(
       message: "Nu îți poți modifica propriul cont din această pagină.",
     };
 
-  const current = (["active", "suspended", "deactivated"] as const).includes(
-    shown as AccountStatus,
-  )
-    ? (shown as AccountStatus)
-    : user.status;
+  const current = user.status;
   if (!ALLOWED_FROM[action].includes(current))
     return {
       status: "error",
@@ -87,7 +83,12 @@ export async function changeAccountStatus(
       reason,
     };
 
-  // Demo: aici s-ar salva starea și motivul, s-ar închide sesiunile active
-  // (la suspendare sau dezactivare) și s-ar anunța utilizatorul pe email.
+  // Suspendarea și dezactivarea blochează autentificarea și închid sesiunile deschise.
+  if (!(await setAccountStatus(user.id, NEW_STATUS[action])))
+    return {
+      status: "error",
+      message: "Modificarea nu s-a putut salva. Încearcă din nou.",
+    };
+  revalidatePath("/admin", "layout");
   return { status: "success", userId: user.id, newStatus: NEW_STATUS[action] };
 }

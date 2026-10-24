@@ -1,34 +1,20 @@
-import { CalendarClock, CheckCircle2, Radio, Users } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { CodeBlock } from "@/components/common/code-block";
 import { PageHeader } from "@/components/common/page-header";
-import { Section } from "@/components/common/section";
-import { StatusBadge } from "@/components/common/status";
-import {
-  LiveControl,
-  type LiveQuestion,
-} from "@/components/mentor-content/live-control";
-import {
-  formatPoints,
-  LiveResults,
-} from "@/components/mentor-content/live-results";
+import { LiveControl } from "@/components/mentor-content/live-control";
 import { DetailSkeleton } from "@/components/mentor-content/skeletons";
-import {
-  codeLanguageForClass,
-  getLiveSessionForMentor,
-  liveSessionParams,
-} from "@/lib/data/mentor-content-queries";
-import { getViewer } from "@/lib/data/queries";
-import { formatDateTime, plural } from "@/lib/format";
+import { requireUser } from "@/lib/auth";
+import { mentorClassIds } from "@/lib/db/classes";
+import { placeholderParams } from "@/lib/db/core";
+import { getLiveSession } from "@/lib/db/quizzes";
+
+export const metadata: Metadata = { title: "Quiz live" };
 
 type Props = PageProps<"/mentor/live/[id]">;
 
-export const metadata: Metadata = { title: "Sesiune live" };
-
 export function generateStaticParams() {
-  return liveSessionParams();
+  return placeholderParams("id");
 }
 
 export default function LiveSessionPage({ params }: Props) {
@@ -41,118 +27,21 @@ export default function LiveSessionPage({ params }: Props) {
 
 async function Content({ params }: { params: Props["params"] }) {
   const { id } = await params;
-  const me = await getViewer("mentor");
-  const data = await getLiveSessionForMentor(me.id, id);
-  if (!data) notFound();
-  const { session, quiz, className, students, results } = data;
-  const ended = session.status === "ended";
-
-  const header = (
-    <PageHeader
-      title={session.title}
-      description={`${className} · quiz „${quiz.title}” · ${plural(quiz.questions.length, "întrebare", "întrebări")}`}
-      back={{ href: "/mentor/live", label: "Sesiuni live" }}
-      meta={
-        <>
-          {ended ? (
-            <StatusBadge icon={CheckCircle2} tone="success">
-              Încheiată
-            </StatusBadge>
-          ) : (
-            <StatusBadge icon={Radio} tone="primary">
-              Programată
-            </StatusBadge>
-          )}
-          <span className="inline-flex items-center gap-1 text-muted-foreground text-sm">
-            <CalendarClock className="size-4" aria-hidden="true" />
-            {formatDateTime(session.startsAt)}
-          </span>
-          <span className="inline-flex items-center gap-1 text-muted-foreground text-sm">
-            <Users className="size-4" aria-hidden="true" />
-            {plural(students.length, "elev", "elevi")} în clasă
-          </span>
-        </>
-      }
-    />
-  );
-
-  if (ended) {
-    const totalXp = results.reduce((s, r) => s + r.xp, 0);
-    const best = results[0];
-    return (
-      <div className="grid gap-6">
-        {header}
-        <ul className="stagger grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Stat
-            label="Participanți"
-            value={`${results.length} din ${students.length}`}
-          />
-          <Stat label="XP acordat în total" value={`${totalXp} XP`} />
-          <Stat
-            label="Cel mai bun punctaj"
-            value={
-              best
-                ? `${formatPoints(best.score)} · ${best.student.displayName.split(" ")[0]}`
-                : "—"
-            }
-          />
-        </ul>
-        <Section
-          title="Clasament final"
-          description="Rezultatele salvate la încheierea sesiunii."
-        >
-          <LiveResults
-            rows={results.map((r) => ({
-              studentId: r.studentId,
-              name: r.student.displayName,
-              avatar: r.student.avatar,
-              score: r.score,
-              rank: r.rank,
-              xp: r.xp,
-            }))}
-          />
-        </Section>
-      </div>
-    );
-  }
-
-  const language = codeLanguageForClass(session.classId);
-  const questions: LiveQuestion[] = quiz.questions.map((q) => ({
-    id: q.id,
-    prompt: q.prompt,
-    options: q.options,
-    correct: q.correct,
-    explanation: q.explanation,
-    code: q.code ? <CodeBlock code={q.code} language={language} /> : undefined,
-  }));
-  // În sesiunile live, limita de timp se aplică fiecărei întrebări.
-  const seconds =
-    quiz.timeLimitSec && quiz.timeLimitSec <= 120 ? quiz.timeLimitSec : 30;
+  const me = await requireUser("mentor");
+  const [session, mine] = await Promise.all([
+    getLiveSession(id),
+    mentorClassIds(me.id),
+  ]);
+  if (!session || !mine.includes(session.classId)) notFound();
 
   return (
     <div className="grid gap-6">
-      {header}
-      <LiveControl
-        sessionId={session.id}
-        code={session.code}
-        quizTitle={quiz.title}
-        questions={questions}
-        secondsPerQuestion={seconds}
-        students={students.map((s) => ({
-          id: s.id,
-          name: s.displayName,
-          avatar: s.avatar,
-        }))}
+      <PageHeader
+        back={{ href: "/mentor/live", label: "Sesiuni live" }}
+        title="Panoul quiz-ului live"
+        description={`Quiz: ${session.quizTitle}. Proiectează pagina în clasă; elevii răspund de pe dispozitivele lor.`}
       />
+      <LiveControl sessionId={session.id} className={session.className} />
     </div>
-  );
-}
-
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <li className="rounded-xl border bg-card p-4 shadow-xs">
-      <p className="text-muted-foreground text-sm">{label}</p>
-      <p className="mt-1 font-semibold text-xl tabular-nums">{value}</p>
-    </li>
   );
 }

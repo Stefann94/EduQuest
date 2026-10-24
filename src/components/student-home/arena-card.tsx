@@ -1,40 +1,20 @@
 import { Swords } from "lucide-react";
 import Link from "next/link";
 import { buttonVariants } from "@/components/ui/button";
-import { formatDateTime, now, plural } from "@/lib/format";
+import { plural } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const PIN_LENGTH = 6;
 
-/** Timpul până la început, în zile/ore/minute (ora din demo, nu a browserului). */
-function countdown(iso: string) {
-  const ms = Math.max(0, new Date(iso).getTime() - now().getTime());
-  const min = Math.floor(ms / 60000);
-  const days = Math.floor(min / 1440);
-  const hours = Math.floor((min % 1440) / 60);
-  const minutes = min % 60;
-  return days > 0
-    ? [
-        { value: days, label: days === 1 ? "zi" : "zile" },
-        { value: hours, label: "ore" },
-        { value: minutes, label: "min" },
-      ]
-    : [
-        { value: hours, label: "ore" },
-        { value: minutes, label: "min" },
-      ];
-}
-
-/** Următorul quiz live („arena”), cu numărătoare inversă și locul pentru PIN. */
+/** Quiz-ul live deschis acum („arena”), cu locul pentru PIN. Nu există sesiuni programate. */
 export function ArenaCard({
   session,
 }: {
   session?: {
     title: string;
     className: string;
-    startsAt: string;
     players: number;
-    live: boolean;
+    running: boolean;
   };
 }) {
   if (!session)
@@ -45,16 +25,17 @@ export function ArenaCard({
           Arena live
         </p>
         <h2 className="font-extrabold text-3xl leading-none">
-          Nicio arenă programată
+          Nicio arenă deschisă
         </h2>
         <p className="text-muted-foreground text-sm">
-          Până la următorul quiz live, încearcă un quiz de exersare.
+          Mentorul deschide quiz-urile live în timpul întâlnirilor. Până atunci,
+          exersează.
         </p>
         <Link
           href="/quiz"
           className={cn(buttonVariants({ variant: "cta", size: "lg" }), "mt-2")}
         >
-          Quiz-uri de exersare
+          Quiz-urile tale
         </Link>
       </section>
     );
@@ -67,7 +48,7 @@ export function ArenaCard({
       />
       <p className="relative flex items-center gap-2 font-bold font-heading text-sm uppercase tracking-widest">
         <span aria-hidden="true" className="size-2 rounded-full bg-cta" />
-        Arena live · {formatDateTime(session.startsAt)}
+        Arena live · {session.running ? "în desfășurare" : "deschisă acum"}
       </p>
       <h2 className="relative mt-2 font-extrabold text-4xl leading-[0.95]">
         {session.title}
@@ -76,35 +57,9 @@ export function ArenaCard({
         {session.className} · {plural(session.players, "jucător", "jucători")}
       </p>
 
-      {session.live ? (
-        <p className="relative mt-4 inline-block bg-black/15 px-3 py-1.5 font-bold font-heading uppercase tracking-wide">
-          A început, intră acum
-        </p>
-      ) : (
-        <div className="relative mt-4">
-          <p className="sr-only">
-            Începe în{" "}
-            {countdown(session.startsAt)
-              .map((c) => `${c.value} ${c.label}`)
-              .join(", ")}
-          </p>
-          <div aria-hidden="true" className="flex gap-2">
-            {countdown(session.startsAt).map((c) => (
-              <span
-                key={c.label}
-                className="min-w-16 bg-black/15 px-3 py-1.5 text-center"
-              >
-                <b className="block font-extrabold font-heading text-3xl tabular-nums leading-none">
-                  {String(c.value).padStart(2, "0")}
-                </b>
-                <span className="text-xs uppercase tracking-widest opacity-80">
-                  {c.label}
-                </span>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+      <p className="relative mt-4 inline-block bg-black/15 px-3 py-1.5 font-bold font-heading uppercase tracking-wide">
+        {session.running ? "A început, intră acum" : "Se așteaptă jucătorii"}
+      </p>
 
       {/* Locurile pentru PIN-ul de 6 cifre, primit de la mentor la început. */}
       <div aria-hidden="true" className="relative mt-4 flex gap-1.5">

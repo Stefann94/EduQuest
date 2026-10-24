@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { LeaderboardRow } from "@/lib/data/queries";
+import type { LeaderboardRow } from "@/lib/db/xp";
 import { cn } from "@/lib/utils";
 
 /** Primii din clasament, plus elevul (dacă nu e printre ei). */

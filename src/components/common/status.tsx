@@ -24,7 +24,14 @@ import { cn } from "@/lib/utils";
 
 // Fiecare stare are iconiță ȘI text, ca să nu depindă doar de culoare (docs/PROJECT.md §13.3).
 
-type Tone = "neutral" | "primary" | "success" | "warning" | "info" | "danger";
+type Tone =
+  | "neutral"
+  | "primary"
+  | "success"
+  | "warning"
+  | "info"
+  | "danger"
+  | "xp";
 
 const TONES: Record<Tone, string> = {
   neutral: "bg-secondary text-secondary-foreground",
@@ -33,6 +40,7 @@ const TONES: Record<Tone, string> = {
   warning: "bg-warning-soft text-warning",
   info: "bg-info-soft text-info",
   danger: "bg-danger-soft text-destructive",
+  xp: "bg-xp-soft text-xp-foreground",
 };
 
 export function StatusBadge({
@@ -91,6 +99,66 @@ export function SubmissionStatusBadge({
   return (
     <StatusBadge icon={s.icon} tone={s.tone}>
       {s.label}
+    </StatusBadge>
+  );
+}
+
+/** Starea unei probleme dintr-o temă, pentru elev și mentor. */
+export const PROBLEM_STATUS: Record<
+  "not_started" | "submitted" | "accepted" | "needs_changes",
+  { label: string; icon: LucideIcon; tone: Tone }
+> = {
+  not_started: { label: "Netrimisă", icon: CircleDashed, tone: "neutral" },
+  submitted: { label: "Trimisă", icon: Clock, tone: "info" },
+  accepted: { label: "Acceptată", icon: CheckCircle2, tone: "success" },
+  needs_changes: { label: "De refăcut", icon: RotateCcw, tone: "warning" },
+};
+
+export function ProblemStatusBadge({
+  status,
+}: {
+  status: keyof typeof PROBLEM_STATUS;
+}) {
+  const s = PROBLEM_STATUS[status];
+  return (
+    <StatusBadge icon={s.icon} tone={s.tone}>
+      {s.label}
+    </StatusBadge>
+  );
+}
+
+/** Prezența: „recuperat” e galben și contează ca prezent (a venit la altă grupă). */
+export const ATTENDANCE_STATUS: Record<
+  "present" | "absent" | "recovered",
+  { label: string; icon: LucideIcon; tone: Tone }
+> = {
+  present: { label: "Prezent", icon: CheckCircle2, tone: "success" },
+  absent: { label: "Absent", icon: XCircle, tone: "danger" },
+  recovered: { label: "Recuperat", icon: RotateCcw, tone: "xp" },
+};
+
+export function AttendanceBadge({
+  status,
+}: {
+  status: keyof typeof ATTENDANCE_STATUS;
+}) {
+  const s = ATTENDANCE_STATUS[status];
+  return (
+    <StatusBadge icon={s.icon} tone={s.tone}>
+      {s.label}
+    </StatusBadge>
+  );
+}
+
+/** Un material sau o lecție: vizibil elevilor sau ascuns (ciornă). */
+export function VisibilityBadge({ published }: { published: boolean }) {
+  return published ? (
+    <StatusBadge icon={Eye} tone="success">
+      Vizibil
+    </StatusBadge>
+  ) : (
+    <StatusBadge icon={EyeOff} tone="neutral">
+      Ascuns
     </StatusBadge>
   );
 }

@@ -7,8 +7,9 @@ import { toast } from "sonner";
 import { EmptyState } from "@/components/common/empty-state";
 import { NotificationIcon } from "@/components/shell/notification-icon";
 import { Button } from "@/components/ui/button";
-import type { NotificationGroup } from "@/lib/data/student-activity-queries";
+import { markNotificationsRead } from "@/lib/actions/notifications";
 import type { NotificationKind } from "@/lib/data/types";
+import type { NotificationGroup } from "@/lib/notification-group";
 import { cn } from "@/lib/utils";
 
 export type NotificationItem = {
@@ -28,7 +29,7 @@ const GROUPS: { id: NotificationGroup; label: string }[] = [
   { id: "earlier", label: "Mai devreme" },
 ];
 
-/** Lista de notificări cu filtru și marcare ca citite (în demo, doar în browser). */
+/** Lista de notificări cu filtru și marcare ca citite (salvată în baza de date). */
 export function NotificationsList({
   initial,
 }: {
@@ -39,10 +40,12 @@ export function NotificationsList({
   const unread = items.filter((n) => !n.read).length;
   const visible = filter === "all" ? items : items.filter((n) => !n.read);
 
-  const markRead = (id: string) =>
+  const markRead = (id: string) => {
     setItems((list) =>
       list.map((n) => (n.id === id ? { ...n, read: true } : n)),
     );
+    void markNotificationsRead([id]);
+  };
 
   return (
     <div className="grid gap-4">
@@ -77,6 +80,7 @@ export function NotificationsList({
           disabled={unread === 0}
           onClick={() => {
             setItems((list) => list.map((n) => ({ ...n, read: true })));
+            void markNotificationsRead();
             toast.success("Toate notificările au fost marcate ca citite");
           }}
         >

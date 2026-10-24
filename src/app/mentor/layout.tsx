@@ -15,15 +15,12 @@ import type { NavGroup } from "@/components/shell/nav";
 import type { SearchItem } from "@/components/shell/search-menu";
 import { ShellFallback } from "@/components/shell/shell-fallback";
 import { buttonVariants } from "@/components/ui/button";
-import {
-  getMentorAssignments,
-  getMentorClasses,
-  getMentorContent,
-  getMentorQuizzes,
-  getNotifications,
-  getReviewQueue,
-  getViewer,
-} from "@/lib/data/queries";
+import { requireUser } from "@/lib/auth";
+import { getMentorClasses } from "@/lib/db/classes";
+import { getMentorHomeworks, getReviewQueue } from "@/lib/db/homework";
+import { getMentorLessons } from "@/lib/db/lessons";
+import { getNotifications } from "@/lib/db/notifications";
+import { getMentorQuizzes } from "@/lib/db/quizzes";
 import { cn } from "@/lib/utils";
 
 // Sesiunea se citește în interiorul unui <Suspense>, ca restul paginii să nu aștepte
@@ -37,13 +34,13 @@ export default function Layout({ children }: LayoutProps<"/mentor">) {
 }
 
 async function MentorShell({ children }: { children: React.ReactNode }) {
-  const me = await getViewer("mentor");
-  const [notifications, classes, assignments, content, quizzes, queue] =
+  const me = await requireUser("mentor");
+  const [notifications, classes, homeworks, lessons, quizzes, queue] =
     await Promise.all([
       getNotifications(me.id),
       getMentorClasses(me.id),
-      getMentorAssignments(me.id),
-      getMentorContent(me.id),
+      getMentorHomeworks(me.id),
+      getMentorLessons(me.id),
       getMentorQuizzes(me.id),
       getReviewQueue(me.id),
     ]);
@@ -98,27 +95,21 @@ async function MentorShell({ children }: { children: React.ReactNode }) {
       href: `/mentor/clase/${c.id}`,
       kind: "class" as const,
     })),
-    ...assignments.map((a) => ({
-      label: a.title,
-      hint: `Temă · ${a.className}`,
-      href: `/mentor/teme/${a.id}`,
+    ...homeworks.map((h) => ({
+      label: h.title,
+      hint: `Temă · ${h.assignments.map((a) => a.className).join(", ") || "neatribuită"}`,
+      href: `/mentor/teme/${h.id}`,
       kind: "assignment" as const,
     })),
-    ...content.materials.map((m) => ({
-      label: m.title,
-      hint: `Material · ${m.className ?? "Resursă globală"}`,
-      href: `/mentor/materiale/${m.id}`,
+    ...lessons.map((l) => ({
+      label: l.title,
+      hint: `Lecție · ${l.items.length} materiale`,
+      href: `/mentor/materiale/${l.id}`,
       kind: "material" as const,
-    })),
-    ...content.problems.map((p) => ({
-      label: p.title,
-      hint: `Problemă rezolvată · ${p.topic}`,
-      href: `/mentor/materiale/probleme/${p.id}`,
-      kind: "problem" as const,
     })),
     ...quizzes.map((q) => ({
       label: q.title,
-      hint: `Quiz · ${q.className ?? "Exersare globală"}`,
+      hint: `Quiz · ${q.classes.map((c) => c.name).join(", ") || "neatribuit"}`,
       href: `/mentor/quiz/${q.id}`,
       kind: "quiz" as const,
     })),

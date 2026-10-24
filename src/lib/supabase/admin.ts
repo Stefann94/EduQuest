@@ -1,11 +1,12 @@
 import "server-only";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { Database } from "./database.types";
 
-// Client cu cheia secretă: ocolește regulile RLS, deci se folosește DOAR pe server și
-// doar pentru citiri care filtrează singure ce e public (ex. cursurile globale publicate).
-// După ce vin conturile reale, paginile elevilor vor citi cu sesiunea fiecărui utilizator.
+// Client cu cheia secretă: ocolește regulile RLS, deci se folosește DOAR pe server, pentru
+// citiri care filtrează singure ce e public (cursurile globale publicate) și pentru scrieri
+// pe care regulile nu le permit utilizatorilor (notificările altora), după verificarea dreptului.
 
-let client: SupabaseClient | null | undefined;
+let client: SupabaseClient<Database> | null | undefined;
 
 /** null dacă proiectul nu are încă cheile Supabase (ex. un build fără variabile de mediu). */
 export function supabaseAdmin() {
@@ -14,7 +15,7 @@ export function supabaseAdmin() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   client =
     url && key
-      ? createClient(url, key, {
+      ? createClient<Database>(url, key, {
           auth: { persistSession: false, autoRefreshToken: false },
         })
       : null;

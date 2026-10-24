@@ -5,12 +5,13 @@ import { EmptyState } from "@/components/common/empty-state";
 import { PageHeader } from "@/components/common/page-header";
 import { CreateClassDialog } from "@/components/mentor-classes/create-class-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getMentorClasses, getViewer } from "@/lib/data/queries";
+import { requireUser } from "@/lib/auth";
+import { getMentorClasses } from "@/lib/db/classes";
 
 export const metadata: Metadata = { title: "Clasele mele" };
 
 export default async function MentorClassesPage() {
-  const me = await getViewer("mentor");
+  const me = await requireUser("mentor");
   const { active, archived } = await getMentorClasses(me.id);
 
   return (

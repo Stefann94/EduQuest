@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 const SECTIONS = [
   { label: "Prezentare", path: "" },
-  { label: "Materiale", path: "/materiale" },
+  { label: "Lecții", path: "/lectii" },
   { label: "Teme", path: "/teme" },
   { label: "Quiz-uri", path: "/quiz" },
   { label: "Prezență", path: "/prezenta" },

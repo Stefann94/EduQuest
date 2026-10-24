@@ -1,11 +1,20 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { getViewer } from "@/lib/data/queries";
+import {
+  passwordMatches,
+  saveProfile,
+  setPassword,
+  startEmailChange,
+} from "@/lib/account";
+import { requireUser } from "@/lib/auth";
 import type { AvatarId } from "@/lib/data/types";
+import { db } from "@/lib/db/core";
+import { PREF_KINDS, type PrefKey } from "@/lib/notification-prefs";
 
-// Setările contului. În demo, acțiunile validează datele și întorc rezultatul,
-// fără să salveze nimic.
+// Setările contului elevului, salvate în Supabase (profilul prin RLS, emailul și
+// parola prin serviciul de autentificare).
 
 const AVATAR_IDS = [
   "fox",
@@ -42,7 +51,7 @@ export async function updateProfile(
   _prev: FormState<"displayName" | "avatar">,
   formData: FormData,
 ): Promise<FormState<"displayName" | "avatar">> {
-  await getViewer("student");
+  const me = await requireUser("student");
   const parsed = profileSchema.safeParse({
     displayName: String(formData.get("displayName") ?? ""),
     avatar: String(formData.get("avatar") ?? ""),
@@ -52,6 +61,12 @@ export async function updateProfile(
       status: "error",
       errors: z.flattenError(parsed.error).fieldErrors,
     };
+  if (!(await saveProfile(me.id, parsed.data)))
+    return {
+      status: "error",
+      errors: { form: ["Profilul nu s-a putut salva. Încearcă din nou."] },
+    };
+  revalidatePath("/", "layout");
   return { status: "success", message: "Profilul a fost actualizat." };
 }
 
@@ -61,7 +76,7 @@ export async function changeEmail(
   _prev: FormState<"email">,
   formData: FormData,
 ): Promise<FormState<"email">> {
-  const me = await getViewer("student");
+  const me = await requireUser("student");
   const parsed = z
     .object({
       email: z
@@ -80,6 +95,24 @@ export async function changeEmail(
     return {
       status: "error",
       errors: { email: ["Aceasta este deja adresa contului tău."] },
+    };
+  const result = await startEmailChange(parsed.data.email);
+  if (result === "taken")
+    return {
+      status: "error",
+      errors: { email: ["Adresa aceasta e folosită deja de alt cont."] },
+    };
+  if (result === "invalid")
+    return {
+      status: "error",
+      errors: { email: ["Adresa nu pare validă. Verifică-o."] },
+    };
+  if (result !== "ok")
+    return {
+      status: "error",
+      errors: {
+        form: ["Nu am putut trimite linkul. Încearcă din nou mai târziu."],
+      },
     };
   return {
     status: "success",
@@ -117,7 +150,7 @@ export async function changePassword(
   _prev: FormState<"current" | "next" | "confirm">,
   formData: FormData,
 ): Promise<FormState<"current" | "next" | "confirm">> {
-  await getViewer("student");
+  const me = await requireUser("student");
   const parsed = passwordSchema.safeParse({
     current: String(formData.get("current") ?? ""),
     next: String(formData.get("next") ?? ""),
@@ -128,8 +161,27 @@ export async function changePassword(
       status: "error",
       errors: z.flattenError(parsed.error).fieldErrors,
     };
-  // Cu Supabase: verificăm parola actuală și închidem celelalte sesiuni.
-  return { status: "success", message: "Parola a fost schimbată." };
+  if (!(await passwordMatches(me.email, parsed.data.current)))
+    return {
+      status: "error",
+      errors: { current: ["Parola actuală nu e corectă."] },
+    };
+  const result = await setPassword(parsed.data.next);
+  if (result === "same")
+    return {
+      status: "error",
+      errors: { next: ["Parola nouă trebuie să fie diferită de cea actuală."] },
+    };
+  if (result !== "ok")
+    return {
+      status: "error",
+      errors: { form: ["Parola nu s-a putut schimba. Încearcă din nou."] },
+    };
+  return {
+    status: "success",
+    message:
+      "Parola a fost schimbată. Celelalte dispozitive au fost deconectate.",
+  };
 }
 
 /* ---------- Notificări ---------- */
@@ -147,6 +199,18 @@ export type NotificationPrefs = z.infer<typeof prefsSchema>;
 export async function saveNotificationPrefs(
   prefs: NotificationPrefs,
 ): Promise<{ ok: boolean }> {
-  await getViewer("student");
-  return { ok: prefsSchema.safeParse(prefs).success };
+  const me = await requireUser("student");
+  const parsed = prefsSchema.safeParse(prefs);
+  if (!parsed.success) return { ok: false };
+  // Doar cheile cunoscute ajung în baza de date.
+  const clean = Object.fromEntries(
+    Object.entries(parsed.data).filter(([k]) => k in PREF_KINDS),
+  ) as Partial<Record<PrefKey, boolean>>;
+  const supabase = await db();
+  const { error } = await supabase
+    .from("profiles")
+    .update({ notification_prefs: clean })
+    .eq("id", me.id);
+  revalidatePath("/", "layout");
+  return { ok: !error };
 }

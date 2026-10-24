@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
 import { PageHeader } from "@/components/common/page-header";
-import { DemoNote } from "@/components/student-activity/field-error";
 import {
   type NotificationItem,
   NotificationsList,
 } from "@/components/student-activity/notifications-list";
-import { getNotifications, getViewer } from "@/lib/data/queries";
-import { notificationGroup } from "@/lib/data/student-activity-queries";
+import { requireUser } from "@/lib/auth";
+import { getNotifications } from "@/lib/db/notifications";
 import { formatDay, formatTime } from "@/lib/format";
+import { notificationGroup } from "@/lib/notification-group";
 
 export const metadata: Metadata = { title: "Notificări" };
 
 export default async function NotificationsPage() {
-  const me = await getViewer("student");
+  const me = await requireUser("student");
   const notifications = await getNotifications(me.id);
 
   const items: NotificationItem[] = notifications.map((n) => {
@@ -39,10 +39,9 @@ export default async function NotificationsPage() {
         description="Teme noi, termene, feedback și quiz-uri din clasele tale."
       />
       <NotificationsList initial={items} />
-      <DemoNote>
-        Demo: starea „citită” se păstrează după conectarea la baza de date. Poți
-        alege ce notificări primești din Setări cont.
-      </DemoNote>
+      <p className="text-muted-foreground text-sm">
+        Poți alege ce notificări vezi din Setări cont.
+      </p>
     </div>
   );
 }
