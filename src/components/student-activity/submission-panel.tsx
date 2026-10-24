@@ -259,7 +259,7 @@ function SubmissionForm({
             onChange={(e) => setText(e.target.value)}
             placeholder="Lipește aici codul sau explică soluția…"
             spellCheck={false}
-            className="min-h-40 font-mono text-[13px] md:text-[13px]"
+            className="min-h-40 font-mono text-xs md:text-xs"
             aria-invalid={errors.text ? true : undefined}
             aria-describedby={errors.text ? "sub-text-error" : undefined}
           />

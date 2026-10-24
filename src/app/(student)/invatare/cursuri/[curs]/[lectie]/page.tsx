@@ -88,7 +88,7 @@ async function Content({ params }: { params: Props["params"] }) {
       </header>
 
       <div className="grid gap-10 lg:grid-cols-[minmax(0,1fr)_17rem]">
-        <div className="min-w-0 max-w-3xl">
+        <div className="min-w-0 max-w-[46rem]">
           {toc.length > 0 ? (
             <details className="cut-sm mb-6 bg-card px-4 py-3 lg:hidden">
               <summary className="font-bold font-heading text-sm uppercase tracking-widest">

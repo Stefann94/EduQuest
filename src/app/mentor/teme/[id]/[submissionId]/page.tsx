@@ -205,7 +205,7 @@ function Attempt({
                   className="size-4 shrink-0 text-muted-foreground"
                   aria-hidden="true"
                 />
-                <span className="min-w-0 flex-1 truncate font-mono text-[13px]">
+                <span className="min-w-0 flex-1 truncate font-mono text-xs">
                   {f.name}
                 </span>
                 <span className="text-muted-foreground text-xs tabular-nums">

@@ -63,13 +63,10 @@ export function ArenaCard({
     <section className="relative cut overflow-hidden bg-[linear-gradient(140deg,var(--primary),#8a3a22_75%)] p-6 text-primary-foreground">
       <span
         aria-hidden="true"
-        className="pointer-events-none absolute -top-5 -right-5 size-40 bg-[repeating-linear-gradient(-45deg,rgb(255_255_255/0.12)_0_8px,transparent_8px_16px)]"
+        className="pointer-events-none absolute -top-5 -right-5 size-40 bg-[repeating-linear-gradient(-45deg,rgb(255_255_255/0.07)_0_8px,transparent_8px_16px)]"
       />
       <p className="relative flex items-center gap-2 font-bold font-heading text-sm uppercase tracking-widest">
-        <span
-          aria-hidden="true"
-          className="size-2 animate-pulse rounded-full bg-cta"
-        />
+        <span aria-hidden="true" className="size-2 rounded-full bg-cta" />
         Arena live · {formatDateTime(session.startsAt)}
       </p>
       <h2 className="relative mt-2 font-extrabold text-4xl leading-[0.95]">
@@ -100,7 +97,7 @@ export function ArenaCard({
                 <b className="block font-extrabold font-heading text-3xl tabular-nums leading-none">
                   {String(c.value).padStart(2, "0")}
                 </b>
-                <span className="text-[11px] uppercase tracking-widest opacity-80">
+                <span className="text-xs uppercase tracking-widest opacity-80">
                   {c.label}
                 </span>
               </span>

@@ -216,7 +216,7 @@ export function QuizForm({
                               update(i, { code: e.target.value })
                             }
                             spellCheck={false}
-                            className="min-h-20 font-mono text-[13px]"
+                            className="min-h-20 font-mono text-xs"
                           />
                         </Field>
                       ) : null}

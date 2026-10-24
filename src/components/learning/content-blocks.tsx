@@ -43,7 +43,10 @@ export function RichText({ text }: { text: string }) {
           );
         if (part.startsWith("*") && part.endsWith("*") && part.length > 2)
           return (
-            <em key={key} className="text-foreground italic">
+            <em
+              key={key}
+              className="font-semibold text-secondary-foreground not-italic"
+            >
               {part.slice(1, -1)}
             </em>
           );
@@ -158,7 +161,7 @@ function Table({
         </figcaption>
       ) : null}
       <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-left text-[15px]">
+        <table className="w-full border-collapse text-left text-sm">
           <thead>
             <tr className="bg-muted">
               {columns.map((c) => (
@@ -181,7 +184,7 @@ function Table({
                     key={`${j}-${cell}`}
                     className={cn(
                       "px-4 py-2.5 align-top",
-                      mono && "font-mono text-[14px]",
+                      mono && "font-mono text-sm",
                       j === 0 && "font-semibold",
                     )}
                   >
@@ -218,7 +221,7 @@ function Boxes({
             <div key={b.name} className="min-w-36">
               <span
                 className={cn(
-                  "slant inline-block px-3 py-0.5 font-bold font-mono text-[13px]",
+                  "slant inline-block px-3 py-0.5 font-bold font-mono text-xs",
                   a.bar,
                   a.fg,
                 )}
@@ -416,7 +419,7 @@ function Cards({
                 {c.code}
               </p>
             ) : null}
-            <p className="mt-2 text-[15px] leading-relaxed">
+            <p className="mt-2 text-sm leading-relaxed">
               <RichText text={c.text} />
             </p>
           </div>
@@ -457,7 +460,7 @@ function Steps({ items }: { items: { title: string; text: string }[] }) {
             >
               {s.title}
             </p>
-            <p className="mt-0.5 text-[15px] text-muted-foreground leading-relaxed">
+            <p className="mt-0.5 text-sm text-muted-foreground leading-relaxed">
               <RichText text={s.text} />
             </p>
           </li>
@@ -475,7 +478,7 @@ function Exercise(b: Extract<ContentBlock, { type: "exercise" }>) {
         className="absolute inset-y-0 left-0 w-1.5 bg-xp"
       />
       <div className="flex flex-wrap items-center gap-3">
-        <span className="slant inline-flex items-center gap-1.5 bg-cta px-3 py-0.5 font-bold font-heading text-[13px] text-cta-foreground uppercase tracking-widest">
+        <span className="slant inline-flex items-center gap-1.5 bg-cta px-3 py-0.5 font-bold font-heading text-xs text-cta-foreground uppercase tracking-widest">
           <Dumbbell className="size-3.5" aria-hidden="true" />
           Exercițiu
         </span>
@@ -523,7 +526,7 @@ function Exercise(b: Extract<ContentBlock, { type: "exercise" }>) {
 /** Conținutul unei lecții sau al unui material, bloc cu bloc. */
 export function ContentBlocks({ blocks }: { blocks: ContentBlock[] }) {
   return (
-    <div className="grid gap-6 text-[16.5px] text-foreground/90 leading-relaxed">
+    <div className="grid gap-6 text-foreground/90 text-lg leading-[1.7] [&>p]:max-w-[64ch] [&>ul]:max-w-[64ch] [&>ol]:max-w-[64ch]">
       {blocks.map((b, i) => {
         // Blocurile nu au id propriu; ordinea lor e fixă, deci indexul e o cheie stabilă.
         const key = `${b.type}-${i}`;

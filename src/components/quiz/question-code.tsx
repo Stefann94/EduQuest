@@ -14,7 +14,7 @@ export function QuestionCode({
   return (
     <pre
       className={cn(
-        "overflow-x-auto rounded-lg border border-code bg-code px-4 py-3 font-mono text-[13.5px] text-code-foreground leading-6",
+        "overflow-x-auto rounded-lg border border-code bg-code px-4 py-3 font-mono text-sm text-code-foreground leading-6",
         className,
       )}
     >

@@ -15,7 +15,7 @@ export function XpMeter({ xp, href }: { xp: number; href: string }) {
     <Link
       href={href}
       title={`${xp} XP · încă ${next - xp} până la ${next}`}
-      className="hidden items-center gap-2.5 px-2 py-1 font-bold font-heading text-[15px] outline-none hover:text-cyan focus-visible:ring-3 focus-visible:ring-ring/70 md:flex"
+      className="hidden items-center gap-2.5 px-2 py-1 font-bold font-heading text-sm outline-none hover:text-cyan focus-visible:ring-3 focus-visible:ring-ring/70 xl:flex"
     >
       <span className="whitespace-nowrap tabular-nums">{xp} XP</span>
       <span className="flex gap-[3px]" aria-hidden="true">

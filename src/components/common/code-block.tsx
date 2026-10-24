@@ -47,16 +47,16 @@ export async function CodeBlock({
         {title ? <span>{LANGS[language] ?? language}</span> : null}
       </figcaption>
       <div
-        className="overflow-x-auto px-4 py-3.5 font-mono text-[14px] leading-6 [&_pre]:bg-transparent!"
+        className="overflow-x-auto px-4 py-3.5 font-mono text-sm leading-6 [&_pre]:bg-transparent!"
         // biome-ignore lint/security/noDangerouslySetInnerHtml: HTML generat de Shiki din codul nostru, cu caracterele escapate
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {output !== undefined ? (
         <div className="border-white/10 border-t bg-black/30 px-4 py-3">
-          <p className="mb-1 font-bold font-heading text-[#8fd6a3] text-[11px] uppercase tracking-widest">
+          <p className="mb-1 font-bold font-heading text-[#8fd6a3] text-xs uppercase tracking-widest">
             Rezultat
           </p>
-          <pre className="overflow-x-auto whitespace-pre font-mono text-[#b7e8c2] text-[14px] leading-6">
+          <pre className="overflow-x-auto whitespace-pre font-mono text-[#b7e8c2] text-sm leading-6">
             {output}
           </pre>
         </div>

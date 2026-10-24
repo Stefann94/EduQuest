@@ -62,7 +62,7 @@ export function AttemptsTimeline({
             </a>
           ) : null}
           {a.text ? (
-            <pre className="mt-2 max-h-28 overflow-hidden rounded-md bg-code px-3 py-2 font-mono text-[12px] text-code-foreground leading-5">
+            <pre className="mt-2 max-h-28 overflow-hidden rounded-md bg-code px-3 py-2 font-mono text-xs text-code-foreground leading-5">
               {a.text.split("\n").slice(0, 5).join("\n")}
               {a.text.split("\n").length > 5 ? "\n…" : ""}
             </pre>

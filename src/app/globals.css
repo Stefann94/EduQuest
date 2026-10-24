@@ -79,6 +79,12 @@
   --color-chart-4: var(--warning);
   --color-chart-5: var(--muted-foreground);
 
+  /* Cele mai mici texte rămân ușor de citit: xs ≈ 14px, sm ≈ 16px (cu baza de 17px). */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.5;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.5;
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -185,19 +191,18 @@
     scrollbar-color: color-mix(in oklch, var(--foreground) 22%, transparent)
       transparent;
   }
+  /*
+   * Lizibilitate pentru 10–19 ani (vezi docs/CONVENTIONS.md, „Lizibilitate și atenție”):
+   * textul de bază e 17px (106.25% din setarea browserului, deci respectă și preferința
+   * elevului), iar fundalul e simplu: un model în spatele textului obosește ochii.
+   */
   html {
     @apply font-sans;
     color-scheme: light;
+    font-size: 106.25%;
   }
   body {
     @apply bg-background text-foreground antialiased;
-    /* Dungi diagonale foarte discrete, ca fundalul unui meniu de joc. */
-    background-image: repeating-linear-gradient(
-      -45deg,
-      transparent 0 22px,
-      rgb(29 42 34 / 0.02) 22px 44px
-    );
-    background-attachment: fixed;
   }
   /* Titlurile: condensat, majuscule. */
   h1,

@@ -175,7 +175,7 @@ export function ProblemForm({
                                 updateExample(i, { input: ev.target.value })
                               }
                               spellCheck={false}
-                              className="min-h-16 font-mono text-[13px]"
+                              className="min-h-16 font-mono text-xs"
                             />
                           </Field>
                           <Field
@@ -193,7 +193,7 @@ export function ProblemForm({
                                 updateExample(i, { output: ev.target.value })
                               }
                               spellCheck={false}
-                              className="min-h-16 font-mono text-[13px]"
+                              className="min-h-16 font-mono text-xs"
                             />
                           </Field>
                           <Field
@@ -251,7 +251,7 @@ export function ProblemForm({
                     name="solutionCode"
                     defaultValue={draft.solutionCode}
                     spellCheck={false}
-                    className="min-h-44 font-mono text-[13px]"
+                    className="min-h-44 font-mono text-xs"
                   />
                 </Field>
                 <Field

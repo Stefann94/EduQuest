@@ -390,7 +390,7 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
                           <span className="font-medium text-muted-foreground">
                             {LETTERS[oi]}
                           </span>
-                          <span className="min-w-0 flex-1 font-mono text-[13px]">
+                          <span className="min-w-0 flex-1 font-mono text-xs">
                             {opt}
                           </span>
                           {isCorrect ? (
@@ -582,7 +582,7 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
                 <span className="grid size-6 shrink-0 place-items-center rounded-md bg-secondary font-medium text-xs">
                   {LETTERS[oi]}
                 </span>
-                <span className="min-w-0 font-mono text-[14px]">{opt}</span>
+                <span className="min-w-0 font-mono text-sm">{opt}</span>
               </label>
             ))}
           </div>

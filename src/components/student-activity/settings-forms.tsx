@@ -153,7 +153,7 @@ export function ProfileForm({
                 <span className="text-2xl" aria-hidden="true">
                   {AVATARS[id].emoji}
                 </span>
-                <span className="text-[11px] text-muted-foreground">
+                <span className="text-xs text-muted-foreground">
                   {AVATARS[id].label}
                 </span>
               </label>

@@ -16,7 +16,7 @@ export function CourseCard({ course: c }: { course: CourseSummary }) {
       <div className={cn("relative p-6 text-white sm:p-7", a.gradient)}>
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute -top-6 -right-6 size-40 bg-[repeating-linear-gradient(-45deg,rgb(255_255_255/0.13)_0_8px,transparent_8px_16px)]"
+          className="pointer-events-none absolute -top-6 -right-6 size-40 bg-[repeating-linear-gradient(-45deg,rgb(255_255_255/0.07)_0_8px,transparent_8px_16px)]"
         />
         <p className="relative font-bold font-heading text-sm uppercase tracking-widest opacity-90">
           Curs · {c.topic} · {c.level}

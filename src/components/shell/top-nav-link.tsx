@@ -25,7 +25,7 @@ export function TopNavLink({ item }: { item: NavItem }) {
     >
       {item.label}
       {item.badge ? (
-        <span className="grid h-5 min-w-5 place-items-center bg-cta px-1.5 font-bold text-[12px] text-cta-foreground tabular-nums">
+        <span className="grid h-5 min-w-5 place-items-center bg-cta px-1.5 font-bold text-xs text-cta-foreground tabular-nums">
           {item.badge}
         </span>
       ) : null}

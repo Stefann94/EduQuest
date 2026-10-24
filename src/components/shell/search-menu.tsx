@@ -113,7 +113,7 @@ export function SearchMenu({ items }: { items: SearchItem[] }) {
         <span className="hidden flex-1 text-left font-normal md:max-lg:inline">
           Caută…
         </span>
-        <kbd className="hidden rounded border bg-muted px-1.5 font-mono text-[11px] md:max-lg:inline">
+        <kbd className="hidden rounded border bg-muted px-1.5 font-mono text-xs md:max-lg:inline">
           Ctrl K
         </kbd>
       </PopoverTrigger>

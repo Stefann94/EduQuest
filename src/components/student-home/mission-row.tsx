@@ -97,7 +97,7 @@ export function MissionRow({
       <div className="min-w-0">
         <p
           className={cn(
-            "font-bold font-heading text-[13px] uppercase tracking-widest",
+            "font-bold font-heading text-xs uppercase tracking-widest",
             m.text,
           )}
         >

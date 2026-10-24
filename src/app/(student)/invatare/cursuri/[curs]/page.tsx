@@ -56,7 +56,7 @@ async function Content({ params }: { params: Props["params"] }) {
       >
         <span
           aria-hidden="true"
-          className="pointer-events-none absolute -top-8 -right-8 size-56 bg-[repeating-linear-gradient(-45deg,rgb(255_255_255/0.12)_0_10px,transparent_10px_20px)]"
+          className="pointer-events-none absolute -top-8 -right-8 size-56 bg-[repeating-linear-gradient(-45deg,rgb(255_255_255/0.07)_0_10px,transparent_10px_20px)]"
         />
         <p className="relative font-bold font-heading text-sm uppercase tracking-widest opacity-90">
           Curs · {course.topic} · {course.level}

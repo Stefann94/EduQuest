@@ -43,7 +43,7 @@ export function TeamCard({
     >
       <span
         className={cn(
-          "slant w-fit px-3 py-0.5 font-bold font-heading text-[13px] uppercase tracking-widest",
+          "slant w-fit px-3 py-0.5 font-bold font-heading text-xs uppercase tracking-widest",
           accent.badge,
         )}
       >

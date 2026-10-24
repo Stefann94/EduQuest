@@ -191,7 +191,7 @@ export function MaterialForm({
                         name="code"
                         defaultValue={draft.code}
                         spellCheck={false}
-                        className="min-h-32 font-mono text-[13px]"
+                        className="min-h-32 font-mono text-xs"
                         placeholder={'print("Salut!")'}
                       />
                     </Field>

@@ -49,7 +49,7 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        "slant inline-flex h-6 shrink-0 items-center gap-1 whitespace-nowrap px-3 font-bold font-heading text-[13px] uppercase tracking-wide",
+        "slant inline-flex h-6 shrink-0 items-center gap-1 whitespace-nowrap px-3 font-bold font-heading text-xs uppercase tracking-wide",
         TONES[tone],
         className,
       )}
@@ -150,7 +150,7 @@ const LEVELS = { 1: "Ușor", 2: "Mediu", 3: "Avansat" } as const;
 
 export function DifficultyBadge({ level }: { level: 1 | 2 | 3 }) {
   return (
-    <span className="slant inline-flex h-6 items-center gap-1.5 bg-secondary px-3 font-bold font-heading text-[13px] text-muted-foreground uppercase tracking-wide">
+    <span className="slant inline-flex h-6 items-center gap-1.5 bg-secondary px-3 font-bold font-heading text-xs text-muted-foreground uppercase tracking-wide">
       <span className="flex gap-0.5" aria-hidden="true">
         {[1, 2, 3].map((i) => (
           <span
@@ -178,7 +178,7 @@ export function XpBadge({
   return (
     <span
       className={cn(
-        "slant inline-flex h-6 shrink-0 items-center gap-1 whitespace-nowrap bg-xp-soft px-3 font-bold font-heading text-[13px] text-xp-foreground tabular-nums tracking-wide",
+        "slant inline-flex h-6 shrink-0 items-center gap-1 whitespace-nowrap bg-xp-soft px-3 font-bold font-heading text-xs text-xp-foreground tabular-nums tracking-wide",
         className,
       )}
     >

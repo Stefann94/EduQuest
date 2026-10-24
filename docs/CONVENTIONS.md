@@ -66,12 +66,12 @@ async function Content({ params }: { params: Props["params"] }) {
 
 ## Design
 
-Direcție (PROJECT.md §13): profesional, modern, prietenos, organizat. **Nu** jucăuș: fără emoji în interfață (excepție: avatarele elevilor), fără animații decorative, fără culori stridente.
+Direcție: stilul „Misiuni” (meniu de joc, plat) pe o paletă deschisă și caldă. Forme: colțuri tăiate (`cut`, `cut-sm`, `cut-xs`), paralelograme (`slant`), hexagoane (`hex`), titluri Saira Condensed cu majuscule. Fără 3D, fără emoji în interfață (excepție: avatarele elevilor).
 
-- **Culori** (`globals.css`): fundal neutru, `primary` = indigo, accent `xp` = chihlimbar (doar pentru XP/recompense). Stări: `success`, `warning`, `info`, `destructive`, fiecare cu varianta `-soft` pentru fundal.
+- **Culori** (`globals.css`, doar prin token-uri): fundal hârtie caldă, text cerneală verde-închis, `primary` = teracotă, `cyan` = verde de pădure (linkuri, accente), `cta` = muștar (acțiunea principală), `xp` = ocru (XP/recompense). Stări: `success`, `warning`, `info`, `destructive`, fiecare cu varianta `-soft`. Blocurile de cod rămân închise.
 - **Stările nu depind doar de culoare**: folosește `StatusBadge` (iconiță + text) și variantele gata făcute din `components/common/status.tsx`: `SubmissionStatusBadge`, `AssignmentTypeBadge`, `PublicationBadge`, `ApplicationStatusBadge`, `DifficultyBadge`, `XpBadge`.
 - **Iconițe**: doar `lucide-react`, `size-4` în text, `size-[18px]` în meniu.
-- **Carduri**: `rounded-xl border bg-card shadow-xs`. Pentru blocuri cu titlu folosește `Section` din `components/common/section.tsx`.
+- **Carduri**: `cut-sm bg-card` (fără chenar). Pentru blocuri cu titlu folosește `Section` din `components/common/section.tsx`.
 - **Antetul paginii**: `PageHeader` (titlu, descriere, acțiuni, link „înapoi”, meta).
 - **Liste goale**: `EmptyState` (iconiță, titlu, explicație, acțiune).
 - **Cod**: `CodeBlock` (Server Component, evidențiere cu Shiki).
@@ -80,6 +80,22 @@ Direcție (PROJECT.md §13): profesional, modern, prietenos, organizat. **Nu** j
 - Spațiere: pagini cu `grid gap-6`/`gap-8`; carduri cu `p-5`; liste cu `gap-2`/`gap-3`.
 - Butoane: `Button` / `buttonVariants` din `components/ui/button.tsx`. Linkurile care arată ca butoane: `<Link className={buttonVariants(...)}>`. Pentru triggerele Base UI: `render={<Button />}`.
 - Acțiunile distructive (ștergere, revocare cod, suspendare cont) cer confirmare într-un `Dialog`.
+
+## Lizibilitate și atenție (elevi de 10–19 ani)
+
+Reguli bazate pe cercetare, ca platforma să țină atenția pe conținut și să nu obosească ochii.
+
+| Regulă | De ce |
+| --- | --- |
+| Text de bază 17px (`html { font-size: 106.25% }`); cel mai mic text e `text-xs` (≈14px). Nu folosi mărimi în px (`text-[12px]`), ci clasele Tailwind, ca totul să crească odată cu setarea elevului. | Copiii de 9–11 ani citesc mai ușor 14 pt (Bernard ș.a., 2002); adolescenților nu le place textul mic sau dens (Nielsen, *Teenage Usability*). |
+| În lecții: text `text-lg` (≈19px), interlinie 1.7, rânduri de cel mult ~64 de caractere. | Lungimea confortabilă e 50–75 de caractere; interlinia de 1.5+ ajută cititorii cu dislexie (ghidurile BDA). |
+| Fundal crem, text închis (nu negru pe alb). Fără modele, dungi sau texturi în spatele textului. | Albul pur și modelele din spatele textului cresc disconfortul vizual (*pattern glare*); nuanțele calde se citesc mai bine. |
+| Fără animații continue (pulsare, clipire, bandă care rulează) lângă conținut. Mișcarea e doar la apariție sau la hover, și respectă `prefers-reduced-motion`. | Mișcarea, mai ales cea continuă sau bruscă, atrage privirea și întrerupe cititul (Bartram ș.a.; studii de eye-tracking pe pagini web). |
+| Decorul (hașuri, ilustrații fără rol) stă departe de text și e discret. Orice imagine dintr-o lecție trebuie să explice ceva. | Detaliile decorative scad învățarea (efectul „seductive details”, meta-analize: g ≈ −0.33). |
+| Majusculele doar pentru titluri și etichete scurte; niciodată pentru paragrafe. Pentru termeni folosește îngroșat, nu cursiv. | Majusculele încetinesc citirea textelor lungi; ghidurile pentru dislexie recomandă bold în loc de italic. |
+| Ținte tactile de minimum ~40px (butonul implicit `h-10`). | Adolescenții folosesc mult ecranul tactil; controalele mici sunt greu de nimerit (NN/g). |
+| Lecții în secțiuni scurte cu titluri, cuprins, rezumat („Ce ai învățat”) și exerciții cu soluția ascunsă. | Segmentarea (d ≈ 0.7) și semnalizarea (d ≈ 0.46) ajută înțelegerea (Mayer); exersarea prin testare are efect mediu-mare (Adesope ș.a., 2017: g ≈ 0.5–0.6). |
+| XP și misiunile susțin, nu domină: fără clasamente care umilesc, fără presiune de timp inutilă. | Gamificarea are efecte mici, pozitive (Sailer și Homner, 2020: g ≈ 0.25–0.49) și poate deveni presiune. |
 
 ## Accesibilitate
 

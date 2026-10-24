@@ -86,7 +86,7 @@ async function Content({ params }: { params: Props["params"] }) {
                       {r.student.displayName}
                     </span>
                     {mine ? (
-                      <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 font-semibold text-[11px] text-primary-foreground">
+                      <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 font-semibold text-xs text-primary-foreground">
                         Tu
                       </span>
                     ) : null}

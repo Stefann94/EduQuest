@@ -30,13 +30,13 @@ export default function AuthLayout({
         {/* Dungi oblice în colț, ca pe cardul arenei. */}
         <div
           aria-hidden="true"
-          className="pointer-events-none absolute -top-6 -right-6 size-64 bg-[repeating-linear-gradient(-45deg,rgb(255_255_255/0.12)_0_10px,transparent_10px_20px)]"
+          className="pointer-events-none absolute -top-6 -right-6 size-64 bg-[repeating-linear-gradient(-45deg,rgb(255_255_255/0.07)_0_10px,transparent_10px_20px)]"
         />
         <div className="relative flex h-full flex-col justify-between gap-10 overflow-y-auto p-10 xl:p-14">
           <Logo href="/autentificare" className="w-fit" />
 
           <div className="grid max-w-md gap-10">
-            <p className="text-balance font-extrabold font-heading text-4xl uppercase leading-[0.95] xl:text-5xl">
+            <p className="text-balance font-bold font-heading text-4xl leading-[1.05] xl:text-[2.75rem]">
               Învață programare în clase organizate de mentori, cu teme,
               quiz-uri și feedback personal.
             </p>
