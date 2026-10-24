@@ -9,8 +9,8 @@ import { db, isUuid } from "@/lib/db/core";
 import { notifyClassStudents } from "@/lib/db/notify";
 
 const startSchema = z.object({
-  quizId: z.uuid({ error: "Alege quiz-ul." }),
-  classId: z.uuid({ error: "Alege clasa." }),
+  quizId: z.string().refine(isUuid, { message: "Alege quiz-ul." }),
+  classId: z.string().refine(isUuid, { message: "Alege clasa." }),
   seconds: z.number().int().min(5).max(120),
 });
 

@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { ClassCard } from "@/components/classes/class-card";
 import { EmptyState } from "@/components/common/empty-state";
 import { PageHeader } from "@/components/common/page-header";
@@ -46,7 +47,25 @@ type AgendaItem = {
   extra?: string;
 };
 
-export default async function MentorDashboardPage() {
+export default function MentorDashboardPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="grid gap-6">
+          <PageHeader
+            title="Panou"
+            description="Lecțiile, temele de evaluat și prezența din clasele tale."
+          />
+          <div className="h-64 animate-pulse rounded-xl bg-card" />
+        </div>
+      }
+    >
+      <Content />
+    </Suspense>
+  );
+}
+
+async function Content() {
   const me = await requireUser("mentor");
   const today = now();
   const [queue, classes, sessions, notifications] = await Promise.all([

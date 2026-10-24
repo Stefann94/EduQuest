@@ -1,16 +1,36 @@
 import { Archive, Users } from "lucide-react";
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { ClassCard } from "@/components/classes/class-card";
 import { EmptyState } from "@/components/common/empty-state";
 import { PageHeader } from "@/components/common/page-header";
 import { CreateClassDialog } from "@/components/mentor-classes/create-class-dialog";
+import { SectionSkeleton } from "@/components/mentor-classes/skeletons";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { requireUser } from "@/lib/auth";
 import { getMentorClasses } from "@/lib/db/classes";
 
 export const metadata: Metadata = { title: "Clasele mele" };
 
-export default async function MentorClassesPage() {
+export default function MentorClassesPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="grid gap-6">
+          <PageHeader
+            title="Clasele mele"
+            description="Clasele pe care le predai. Deschide o clasă ca să gestionezi elevii, prezența, temele și clasamentul."
+          />
+          <SectionSkeleton rows={3} />
+        </div>
+      }
+    >
+      <Content />
+    </Suspense>
+  );
+}
+
+async function Content() {
   const me = await requireUser("mentor");
   const { active, archived } = await getMentorClasses(me.id);
 

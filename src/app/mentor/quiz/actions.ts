@@ -72,7 +72,7 @@ const quizSchema = z.object({
     .string()
     .trim()
     .max(300, "Descrierea are cel mult 300 de caractere."),
-  lessonIds: z.array(z.uuid()).max(30),
+  lessonIds: z.array(z.string().refine(isUuid)).max(30),
   xp: z
     .number()
     .int()
@@ -88,7 +88,7 @@ const quizSchema = z.object({
     .array(questionSchema)
     .min(1, "Adaugă cel puțin o întrebare.")
     .max(40, "Cel mult 40 de întrebări."),
-  classIds: z.array(z.uuid()).max(30),
+  classIds: z.array(z.string().refine(isUuid)).max(30),
 });
 
 export type QuizInput = z.input<typeof quizSchema>;

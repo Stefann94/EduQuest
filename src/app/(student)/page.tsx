@@ -1,12 +1,14 @@
 import { ArrowRight, PartyPopper } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { EmptyState } from "@/components/common/empty-state";
 import { ArenaCard } from "@/components/student-home/arena-card";
 import { LeaderboardCard } from "@/components/student-home/leaderboard-card";
 import { MissionRow } from "@/components/student-home/mission-row";
 import { PlayerCard } from "@/components/student-home/player-card";
 import { TeamCard } from "@/components/student-home/team-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { requireUser } from "@/lib/auth";
 import { getStudentAttendance } from "@/lib/db/attendance";
@@ -80,7 +82,34 @@ function MissionList({
   );
 }
 
-export default async function StudentHomePage() {
+function StudentHomeSkeleton() {
+  return (
+    <div className="grid gap-8" aria-hidden="true">
+      <Skeleton className="h-32 w-full rounded-xl" />
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="grid gap-4">
+          <Skeleton className="h-10 w-48" />
+          <Skeleton className="h-24 w-full rounded-xl" />
+          <Skeleton className="h-24 w-full rounded-xl" />
+        </div>
+        <div className="grid gap-4">
+          <Skeleton className="h-10 w-36" />
+          <Skeleton className="h-64 w-full rounded-xl" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function StudentHomePage() {
+  return (
+    <Suspense fallback={<StudentHomeSkeleton />}>
+      <StudentHomeContent />
+    </Suspense>
+  );
+}
+
+async function StudentHomeContent() {
   const me = await requireUser("student");
   const [homework, classes, sessions, totalXp, attendance] = await Promise.all([
     getStudentHomework(me.id),

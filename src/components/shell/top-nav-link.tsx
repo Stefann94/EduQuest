@@ -17,7 +17,7 @@ export function TopNavLink({ item }: { item: NavItem }) {
       href={item.href}
       aria-current={active ? "page" : undefined}
       className={cn(
-        "slant flex h-10 items-center gap-2 whitespace-nowrap px-5 font-bold font-heading text-base uppercase tracking-wide outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/70 focus-visible:ring-inset",
+        "slant flex h-9 xl:h-10 items-center gap-1.5 xl:gap-2 whitespace-nowrap px-2.5 xl:px-4 font-bold font-heading text-xs xl:text-sm uppercase tracking-wide outline-none transition-colors focus-visible:ring-3 focus-visible:ring-ring/70 focus-visible:ring-inset",
         active
           ? "bg-primary text-primary-foreground"
           : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -25,7 +25,7 @@ export function TopNavLink({ item }: { item: NavItem }) {
     >
       {item.label}
       {item.badge ? (
-        <span className="grid h-5 min-w-5 place-items-center bg-cta px-1.5 font-bold text-xs text-cta-foreground tabular-nums">
+        <span className="grid h-4.5 min-w-4.5 xl:h-5 xl:min-w-5 place-items-center bg-cta px-1 font-bold text-[11px] xl:text-xs text-cta-foreground tabular-nums">
           {item.badge}
         </span>
       ) : null}

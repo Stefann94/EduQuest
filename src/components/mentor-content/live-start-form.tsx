@@ -25,7 +25,9 @@ export function LiveStartForm({
   const [classId, setClassId] = useState(
     defaultClassId ?? classes[0]?.id ?? "",
   );
-  const [quizId, setQuizId] = useState("");
+  const [quizId, setQuizId] = useState(
+    () => quizzes.find((q) => q.questions > 0)?.id ?? "",
+  );
   const [seconds, setSeconds] = useState("20");
   const [pending, startTransition] = useTransition();
 

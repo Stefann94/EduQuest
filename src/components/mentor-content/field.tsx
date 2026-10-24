@@ -221,7 +221,15 @@ export function SelectField({
       name={name}
       items={items}
       value={value || null}
-      onValueChange={(v) => onValueChange(typeof v === "string" ? v : "")}
+      onValueChange={(v: unknown) => {
+        const next =
+          typeof v === "string"
+            ? v
+            : typeof v === "object" && v !== null && "value" in v
+              ? String((v as { value: unknown }).value)
+              : "";
+        onValueChange(next);
+      }}
     >
       <SelectTrigger
         {...describe(id, error, hint)}

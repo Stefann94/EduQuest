@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { EmptyState } from "@/components/common/empty-state";
 import { PageHeader } from "@/components/common/page-header";
 import { Section } from "@/components/common/section";
@@ -32,7 +33,25 @@ import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Prezentare generală" };
 
-export default async function AdminOverviewPage() {
+export default function AdminOverviewPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="grid gap-6">
+          <PageHeader
+            title="Prezentare generală"
+            description="Aplicațiile de mentor, utilizatorii și activitatea din platformă."
+          />
+          <div className="h-64 animate-pulse rounded-xl bg-card" />
+        </div>
+      }
+    >
+      <Content />
+    </Suspense>
+  );
+}
+
+async function Content() {
   await requireUser("admin");
   const [stats, applications] = await Promise.all([
     getAdminStats(),

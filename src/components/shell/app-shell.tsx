@@ -45,11 +45,11 @@ export function AppShell({
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="sticky top-0 z-[45] border-b-2 bg-background/90 backdrop-blur-sm">
-        <div className="mx-auto flex h-[68px] w-full max-w-6xl items-center gap-2 px-4 sm:px-6 xl:px-0">
+        <div className="mx-auto flex h-[68px] w-full max-w-6xl items-center gap-1.5 px-4 sm:px-6 xl:gap-2 xl:px-0">
           <div className="lg:hidden">
             <MobileNav groups={nav} home={home} />
           </div>
-          <Logo href={home} className="mr-4" />
+          <Logo href={home} className="mr-2 xl:mr-4" />
 
           <nav
             aria-label="Navigare principală"
@@ -60,7 +60,7 @@ export function AppShell({
             ))}
           </nav>
 
-          <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
+          <div className="ml-auto flex items-center gap-1 sm:gap-1.5 xl:gap-2">
             {status}
             <SearchMenu items={search} />
             {quickAction}
@@ -70,7 +70,7 @@ export function AppShell({
             />
             <span
               aria-hidden="true"
-              className="mx-1 hidden h-6 w-px bg-border sm:block"
+              className="mx-0.5 hidden h-6 w-px bg-border sm:block xl:mx-1"
             />
             <AccountMenu user={user} settingsHref={settingsHref} />
           </div>

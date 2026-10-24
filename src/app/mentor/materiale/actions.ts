@@ -306,7 +306,7 @@ export async function moveItem(
 /* ---------- Lecția în clase ---------- */
 
 const placementSchema = z.object({
-  classId: z.uuid(),
+  classId: z.string().refine(isUuid),
   number: z.coerce
     .number({ error: "Scrie numărul lecției." })
     .int("Numărul e întreg.")

@@ -3,9 +3,9 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getSessionProfile } from "@/lib/auth";
-import { db } from "@/lib/db/core";
+import { db, isUuid } from "@/lib/db/core";
 
-const ids = z.array(z.uuid()).max(200);
+const ids = z.array(z.string().refine(isUuid)).max(200);
 
 /** Marchează notificări ca citite (RLS: doar pe ale tale; fără id-uri = toate). */
 export async function markNotificationsRead(only?: string[]) {

@@ -30,7 +30,14 @@ const count = async (c: SupabaseClient, table: string) => {
 
 // Vizitator: nu vede nimic.
 const guest = createClient(url, anonKey, { auth: { persistSession: false } });
-for (const t of ["profiles", "classes", "homeworks", "lesson_items", "quiz_answer_keys", "live_answers"]) {
+for (const t of [
+  "profiles",
+  "classes",
+  "homeworks",
+  "lesson_items",
+  "quiz_answer_keys",
+  "live_answers",
+]) {
   const { data } = await guest.from(t).select("*");
   check(`vizitator nu vede ${t}`, (data?.length ?? 0) === 0);
 }
@@ -135,17 +142,30 @@ check(
   (items.data ?? []).every((i) => i.published),
   `${items.data?.length ?? 0} materiale`,
 );
-const javaLessons = await tudor.from("lessons").select("title").eq("title", "Constructori");
-check("elevul nu vede lecțiile altor clase", (javaLessons.data ?? []).length === 0);
+const javaLessons = await tudor
+  .from("lessons")
+  .select("title")
+  .eq("title", "Constructori");
+check(
+  "elevul nu vede lecțiile altor clase",
+  (javaLessons.data ?? []).length === 0,
+);
 const fakeSub = await tudor.from("problem_submissions").insert({
   assignment_id: "00000000-0000-0000-0000-000000000000",
   problem_id: "00000000-0000-0000-0000-000000000000",
   student_id: me,
 });
 check("elevul nu poate scrie trimiteri direct", fakeSub.error !== null);
-const { data: lobby } = await tudor.from("live_sessions").select("id").eq("status", "lobby").limit(1);
+const { data: lobby } = await tudor
+  .from("live_sessions")
+  .select("id")
+  .eq("status", "lobby")
+  .limit(1);
 if (lobby?.[0]) {
-  const ctrl = await tudor.rpc("live_control", { p_session: lobby[0].id, p_action: "start" });
+  const ctrl = await tudor.rpc("live_control", {
+    p_session: lobby[0].id,
+    p_action: "start",
+  });
   check("elevul nu poate porni jocul live", ctrl.error !== null);
 }
 const mihai = await login("mihai.dumitrescu@exemplu.ro");
@@ -154,7 +174,10 @@ const anaLesson = await mihai
   .update({ title: "Schimbat" })
   .eq("title", "Cum citești un mesaj de eroare")
   .select("id");
-check("mentorul nu poate edita lecția altui mentor", (anaLesson.data ?? []).length === 0);
+check(
+  "mentorul nu poate edita lecția altui mentor",
+  (anaLesson.data ?? []).length === 0,
+);
 
 // Administrator
 const admin = await login("admin@eduquest.ro");
