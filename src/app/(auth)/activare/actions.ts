@@ -44,5 +44,11 @@ export async function activateMentor(
       errors: {},
       values: {},
     };
-  redirect("/mentor");
+  // Un cont invitat poate fi de mentor sau (făcut de un admin) de administrator.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  redirect(profile?.role === "admin" ? "/admin" : "/mentor");
 }

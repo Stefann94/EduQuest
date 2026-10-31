@@ -38,6 +38,14 @@ export async function GET(request: NextRequest) {
 
   const target = request.nextUrl.clone();
   target.search = "";
+  if (!ok && !tokenHash && !code) {
+    // Invitațiile trimise de server (inviteUserByEmail) întorc sesiunea în fragmentul
+    // adresei (#access_token=…), pe care serverul nu-l vede. Browserul păstrează
+    // fragmentul la redirecționare, iar pagina de finalizare îl citește.
+    target.pathname = "/auth/finalizare";
+    target.searchParams.set("next", next);
+    return NextResponse.redirect(target);
+  }
   target.pathname = ok ? next : "/link-invalid";
   return NextResponse.redirect(target);
 }
