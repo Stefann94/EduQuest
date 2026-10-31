@@ -47,7 +47,7 @@ async function Assignments({ params }: { params: Props["params"] }) {
   const waiting = rows.reduce((s, r) => s + r.a.waiting, 0);
 
   const create = (
-    <Link href="/mentor/teme/nou" className={buttonVariants()}>
+    <Link href={`/mentor/clase/${c.id}/teme/nou`} className={buttonVariants()}>
       <Plus aria-hidden="true" /> Temă nouă
     </Link>
   );

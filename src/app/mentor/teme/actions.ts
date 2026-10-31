@@ -94,6 +94,8 @@ export type HomeworkInput = z.input<typeof homeworkSchema>;
 export async function saveHomework(
   id: string | null,
   input: HomeworkInput,
+  /** Tema nouă creată din tabul „Teme” al unei clase: se dă direct clasei, cu termenul ales. */
+  forClass?: { classId: string; deadline: string },
 ): Promise<ActionResult> {
   const me = await requireUser("mentor");
   const parsed = homeworkSchema.safeParse(input);
@@ -183,6 +185,20 @@ export async function saveHomework(
       return { ok: false, message: "Problemele nu s-au putut salva toate." };
   }
   refresh();
+  if (!existing && forClass) {
+    const r = await assignHomework(
+      homeworkId,
+      [forClass.classId],
+      forClass.deadline,
+    );
+    if (!r.ok)
+      return {
+        ok: false,
+        message: `Tema s-a creat, dar nu s-a putut da clasei: ${r.message}`,
+        errors: r.errors,
+      };
+    redirect(`/mentor/clase/${forClass.classId}/teme`);
+  }
   if (!existing) redirect(`/mentor/teme/${homeworkId}?nou=1`);
   return { ok: true, message: "Tema a fost salvată.", id: homeworkId };
 }

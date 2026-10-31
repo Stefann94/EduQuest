@@ -53,10 +53,14 @@ const emptyProblem = (key = newKey("p")): ProblemDraft => ({
 export function HomeworkForm({
   draft,
   onSaved,
+  forClass,
 }: {
   draft: HomeworkDraft;
   onSaved?: () => void;
+  /** Tema nouă dintr-o clasă: se dă direct clasei, cu termenul de aici. */
+  forClass?: { classId: string; className: string; defaultDeadline: string };
 }) {
+  const [deadline, setDeadline] = useState(forClass?.defaultDeadline ?? "");
   const [title, setTitle] = useState(draft.title);
   const [description, setDescription] = useState(draft.description);
   const [required, setRequired] = useState(
@@ -84,7 +88,11 @@ export function HomeworkForm({
     };
     startTransition(async () => {
       // O temă nouă duce, la reușită, direct la pagina ei (unde o dai claselor).
-      const r = await saveHomework(draft.id ?? null, input);
+      const r = await saveHomework(
+        draft.id ?? null,
+        input,
+        forClass ? { classId: forClass.classId, deadline } : undefined,
+      );
       if (!r.ok) {
         setErrors(r.errors ?? {});
         toast.error(r.message);
@@ -144,6 +152,23 @@ export function HomeworkForm({
             ]}
           />
         </FieldSet>
+        {forClass ? (
+          <Field
+            id="hw-deadline"
+            label={`Termen pentru ${forClass.className}`}
+            optional
+            error={errors.deadline}
+            hint="Gol = fără termen. Din secțiunea Teme o poți da apoi și altor clase."
+          >
+            <Input
+              id="hw-deadline"
+              type="datetime-local"
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+              className="w-fit"
+            />
+          </Field>
+        ) : null}
       </div>
 
       <section aria-labelledby="probleme" className="grid gap-3">
@@ -250,7 +275,13 @@ export function HomeworkForm({
         className="w-fit"
         disabled={pending}
       >
-        {pending ? "Se salvează…" : draft.id ? "Salvează tema" : "Creează tema"}
+        {pending
+          ? "Se salvează…"
+          : draft.id
+            ? "Salvează tema"
+            : forClass
+              ? `Creează tema pentru ${forClass.className}`
+              : "Creează tema"}
       </Button>
     </form>
   );

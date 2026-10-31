@@ -3,7 +3,7 @@
 import { Bell } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { buttonVariants } from "@/components/ui/button";
 import { Popover, PopoverTrigger } from "@/components/ui/popover";
@@ -13,6 +13,11 @@ import { formatDay, formatTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { HeaderPopoverContent } from "./header-popover";
 import { NotificationIcon } from "./notification-icon";
+
+// Notificările deja văzute în acest tab. În afara componentei: meniul se poate monta din
+// nou la reîmprospătarea datelor, iar atunci ar anunța din nou totul (sau nimic).
+const seen = new Set<string>();
+let primed = false;
 
 export function NotificationsMenu({
   initial,
@@ -26,15 +31,18 @@ export function NotificationsMenu({
   const [open, setOpen] = useState(false);
   const unread = items.filter((n) => !n.read).length;
   const router = useRouter();
-  const seen = useRef(new Set(initial.map((n) => n.id)));
 
   // Lista vine de pe server (cu preferințele de notificări aplicate); la fiecare
   // reîmprospătare o preluăm și anunțăm ce a apărut nou.
   useEffect(() => {
     setItems(initial);
+    // Prima încărcare din tab: doar le ținem minte, fără mesaje.
+    const first = !primed;
+    primed = true;
     for (const n of initial)
-      if (!seen.current.has(n.id)) {
-        seen.current.add(n.id);
+      if (!seen.has(n.id)) {
+        seen.add(n.id);
+        if (first) continue;
         if (!n.read)
           toast(n.title, {
             description: n.body || undefined,

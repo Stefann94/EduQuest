@@ -52,13 +52,27 @@ export function LiveRefresh() {
         { event: "*", schema: "public", table },
         refresh,
       );
-    channel.subscribe();
+    // Realtime aplică RLS după tokenul utilizatorului: îl dăm înainte de abonare (altfel
+    // evenimentele vin cu „401 Unauthorized”) și la fiecare reînnoire a sesiunii.
+    let cancelled = false;
+    void supabase.auth.getSession().then(async ({ data }) => {
+      if (cancelled) return;
+      await supabase.realtime.setAuth(data.session?.access_token ?? null);
+      channel.subscribe();
+    });
+    const { data: auth } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        void supabase.realtime.setAuth(session?.access_token ?? null);
+      },
+    );
     // La revenirea în tab: datele pot fi vechi dacă tabul a stat în fundal.
     const onVisible = () => {
       if (document.visibilityState === "visible") refresh();
     };
     document.addEventListener("visibilitychange", onVisible);
     return () => {
+      cancelled = true;
+      auth.subscription.unsubscribe();
       clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVisible);
       void supabase.removeChannel(channel);

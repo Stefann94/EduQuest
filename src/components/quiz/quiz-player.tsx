@@ -93,7 +93,10 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
   const answersRef = useRef(answers);
   const mounted = useRef(false);
 
-  const used = quiz.used + attemptsHere;
+  // Încercările: cele de pe server la deschidere + cele făcute aici. Pagina se poate
+  // reîmprospăta singură (date live) și aduce și ea numărul nou: nu le numărăm de două ori.
+  const [usedAtOpen] = useState(quiz.used);
+  const used = Math.max(quiz.used, usedAtOpen + attemptsHere);
   const anyMulti = quiz.questions.some((q) => q.multi);
   const outlook = xpOutlook(quiz.xp, used);
 
@@ -231,11 +234,13 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
               : `Rezolvat de ${used === 1 ? "o dată" : `${used} ori`}`}
           </IntroItem>
           <IntroItem icon={Star} label="XP">
-            {outlook.kind === "first"
-              ? `Până la +${quiz.xp} XP, după câte răspunsuri corecte ai`
-              : outlook.kind === "retake"
-                ? "+1 XP pentru prima repetare (doar o dată)"
-                : "Fără XP: l-ai repetat deja, acum e doar exersare"}
+            {quiz.archived
+              ? "Fără XP: quiz-ul a fost arhivat"
+              : outlook.kind === "first"
+                ? `Până la +${quiz.xp} XP, după câte răspunsuri corecte ai`
+                : outlook.kind === "retake"
+                  ? "+1 XP pentru prima repetare (doar o dată)"
+                  : "Fără XP: l-ai repetat deja, acum e doar exersare"}
           </IntroItem>
           {quiz.className ? (
             <IntroItem icon={Info} label="Clasa">
