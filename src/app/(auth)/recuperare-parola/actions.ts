@@ -1,6 +1,6 @@
 "use server";
 
-import { emailHtml, mailConfigured, sendMail } from "@/lib/mail";
+import { emailHtml, mailAllowed, mailConfigured, sendMail } from "@/lib/mail";
 import { siteOrigin, trustedOrigin } from "@/lib/site-url";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -43,6 +43,8 @@ export async function requestPasswordReset(
 async function sendResetEmail(email: string) {
   const admin = supabaseAdmin();
   if (!admin) return false;
+  // Cereri repetate pentru aceeași adresă: același răspuns, fără încă un email.
+  if (!mailAllowed(email)) return true;
   const { data, error } = await admin.auth.admin.generateLink({
     type: "recovery",
     email,

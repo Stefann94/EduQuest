@@ -168,7 +168,7 @@ export async function getAccountStatus(userId: string) {
   if (!admin || !isUuid(userId)) return undefined;
   const { data } = await admin
     .from("profiles")
-    .select("id, status")
+    .select("id, status, role, admin_access")
     .eq("id", userId)
     .maybeSingle();
   return data ?? undefined;

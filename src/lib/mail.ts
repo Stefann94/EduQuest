@@ -97,6 +97,22 @@ ${note ? `<p style="margin:18px 0 0;padding-top:16px;border-top:1px solid #e0d6c
 </table></td></tr></table></body></html>`;
 }
 
+const lastSent = new Map<string, number>();
+
+/**
+ * Cel mult un email de cont (resetare, confirmare) pe minut pentru aceeași adresă, ca
+ * formularele publice să nu poată fi folosite pentru a inunda pe cineva cu emailuri.
+ * Întoarce true dacă emailul poate pleca acum.
+ */
+export function mailAllowed(email: string, everyMs = 60_000) {
+  const key = email.toLowerCase();
+  const now = Date.now();
+  if (now - (lastSent.get(key) ?? 0) < everyMs) return false;
+  lastSent.set(key, now);
+  if (lastSent.size > 5000) lastSent.clear();
+  return true;
+}
+
 /** Parolă aleatorie, ușor de copiat (fără caractere care se confundă: 0/O, 1/l/I). */
 export function generatePassword(length = 14) {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";

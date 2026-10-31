@@ -45,12 +45,8 @@ export async function reviewApplication(
   _prev: ReviewState,
   formData: FormData,
 ): Promise<ReviewState> {
-  const viewer = await requireUser("admin");
-  if (viewer.role !== "admin")
-    return {
-      status: "error",
-      message: "Nu ai dreptul să faci această acțiune.",
-    };
+  // Administratorii și mentorii cu acces de admin (requireUser le verifică pe amândouă).
+  await requireUser("admin");
 
   const id = String(formData.get("id") ?? "");
   const raw = String(formData.get("decision") ?? "");

@@ -34,12 +34,8 @@ export async function changeAccountStatus(
   _prev: AccountState,
   formData: FormData,
 ): Promise<AccountState> {
+  // Administratorii și mentorii cu acces de admin (requireUser le verifică pe amândouă).
   const viewer = await requireUser("admin");
-  if (viewer.role !== "admin")
-    return {
-      status: "error",
-      message: "Nu ai dreptul să faci această acțiune.",
-    };
 
   const userId = String(formData.get("userId") ?? "");
   const raw = String(formData.get("action") ?? "");
@@ -55,6 +51,13 @@ export async function changeAccountStatus(
     return {
       status: "error",
       message: "Nu îți poți modifica propriul cont din această pagină.",
+    };
+  // Conturile de administrator le poate modifica doar un administrator „plin”, nu un
+  // mentor care are și acces de admin.
+  if ((user.role === "admin" || user.admin_access) && viewer.role !== "admin")
+    return {
+      status: "error",
+      message: "Doar un administrator poate modifica un cont de administrator.",
     };
 
   const current = user.status;
