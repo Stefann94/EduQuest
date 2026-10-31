@@ -17,6 +17,7 @@ import { UserAvatar } from "@/components/common/user-avatar";
 import { SectionSkeleton } from "@/components/student-class/skeletons";
 import { buttonVariants } from "@/components/ui/button";
 import { getLeaderboard } from "@/lib/db/xp";
+import { peerName } from "@/lib/names";
 import { cn } from "@/lib/utils";
 import { loadStudentClass } from "../load-class";
 
@@ -78,12 +79,12 @@ async function Content({ params }: { params: Props["params"] }) {
                     {r.rank}
                   </span>
                   <UserAvatar
-                    name={r.student.displayName}
+                    name={mine ? r.student.displayName : peerName(r.student)}
                     avatar={r.student.avatar}
                   />
                   <span className="flex min-w-0 flex-1 items-center gap-2">
                     <span className={cn("truncate", mine && "font-semibold")}>
-                      {r.student.displayName}
+                      {mine ? r.student.displayName : peerName(r.student)}
                     </span>
                     {mine ? (
                       <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 font-semibold text-xs text-primary-foreground">

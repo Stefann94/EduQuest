@@ -43,7 +43,12 @@ export async function getXpTotal(studentId: string, classId?: string) {
 }
 
 export type LeaderboardRow = {
-  student: { id: string; displayName: string; avatar: AvatarId };
+  student: {
+    id: string;
+    displayName: string;
+    username?: string;
+    avatar: AvatarId;
+  };
   xp: number;
   rank: number;
 };
@@ -62,6 +67,7 @@ export async function getLeaderboard(
     student: {
       id: r.student_id,
       displayName: r.display_name,
+      username: r.username ?? undefined,
       avatar: (r.avatar ?? "fox") as AvatarId,
     },
     xp: Number(r.xp),

@@ -43,7 +43,20 @@ function Register({ onRestart }: { onRestart: () => void }) {
           maxLength={40}
           defaultValue={values.displayName}
           error={errors.displayName}
-          hint="Numele și prenumele. Așa te vor vedea mentorul și colegii din clasele tale."
+          hint="Numele și prenumele. Îl vede mentorul la teme, prezență și în activitatea ta."
+        />
+        <TextField
+          id="username"
+          name="username"
+          label="Username"
+          autoComplete="username"
+          autoCapitalize="none"
+          spellCheck={false}
+          required
+          maxLength={20}
+          defaultValue={values.username}
+          error={errors.username}
+          hint="Îl văd colegii: în clasă, în clasamente și la quiz-uri. 3–20 caractere: litere mici, cifre, punct sau underscore. Ex.: maria.pop"
         />
         <TextField
           id="email"

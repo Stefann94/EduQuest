@@ -1279,6 +1279,7 @@ export type Database = {
           display_name: string;
           rank: number;
           student_id: string;
+          username: string;
           xp: number;
         }[];
       };

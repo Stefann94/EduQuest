@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { LeaderboardRow } from "@/lib/db/xp";
+import { peerName } from "@/lib/names";
 import { cn } from "@/lib/utils";
 
 /** Primii din clasament, plus elevul (dacă nu e printre ei). */
@@ -63,7 +64,7 @@ export function LeaderboardCard({
                 </span>
               )}
               <span className={cn("truncate", me && "font-bold")}>
-                {me ? "Tu" : r.student.displayName}
+                {me ? "Tu" : peerName(r.student)}
               </span>
               <span className="font-bold font-heading text-lg tabular-nums">
                 {r.xp} XP

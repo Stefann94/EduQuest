@@ -17,6 +17,7 @@ import { getClassLessons, lessonLabel } from "@/lib/db/lessons";
 import { getLiveSessions } from "@/lib/db/quizzes";
 import { getLeaderboard, getXpTotal } from "@/lib/db/xp";
 import { formatWeekday, now, plural } from "@/lib/format";
+import { peerName } from "@/lib/names";
 
 export const metadata: Metadata = { title: "Acasă" };
 
@@ -189,7 +190,7 @@ async function StudentHomeContent() {
             {live ? <> și un quiz live deschis chiar acum.</> : "."}{" "}
             {rival ? (
               <>
-                {rival.student.displayName.split(" ")[0]} e doar la{" "}
+                {peerName(rival.student)} e doar la{" "}
                 <b className="text-foreground">{rival.xp - best.xp} XP</b> în
                 fața ta.
               </>
@@ -274,7 +275,7 @@ async function StudentHomeContent() {
                 title={p.classRoom.name}
                 subtitle={`Mentor: ${p.classRoom.mentor.displayName}`}
                 members={p.classmates.map((u) => ({
-                  name: u.displayName,
+                  name: u.id === me.id ? u.displayName : peerName(u),
                   avatar: u.avatar,
                 }))}
                 memberCount={p.classRoom.studentIds.length}

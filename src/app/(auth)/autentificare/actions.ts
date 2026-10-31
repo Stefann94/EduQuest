@@ -41,7 +41,7 @@ export async function login(
   if (!identifier)
     errors.identifier =
       role === "student"
-        ? "Scrie adresa de email sau username-ul."
+        ? "Scrie username-ul sau adresa de email."
         : "Scrie adresa de email.";
   else if (role === "mentor" && !identifier.includes("@"))
     errors.identifier = "Mentorii se autentifică cu adresa de email.";
