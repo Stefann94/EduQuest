@@ -15,7 +15,8 @@ export type AvatarId =
   | "robot"
   | "rocket"
   | "octopus"
-  | "penguin";
+  | "penguin"
+  | "seal";
 
 export type User = {
   id: string;

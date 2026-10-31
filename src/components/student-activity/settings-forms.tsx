@@ -129,7 +129,7 @@ export function ProfileForm({
 
         <fieldset className="grid gap-2">
           <legend className="mb-2 font-medium text-sm">Personaj</legend>
-          <div className="grid grid-cols-4 gap-2 sm:grid-cols-8">
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-9">
             {(Object.keys(AVATARS) as AvatarId[]).map((id) => (
               <label
                 key={id}

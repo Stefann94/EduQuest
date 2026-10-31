@@ -12,6 +12,7 @@ export const AVATARS: Record<AvatarId, { emoji: string; label: string }> = {
   rocket: { emoji: "🚀", label: "Rachetă" },
   octopus: { emoji: "🐙", label: "Caracatiță" },
   penguin: { emoji: "🐧", label: "Pinguin" },
+  seal: { emoji: "🦭", label: "Focă" },
 };
 
 const SIZES = {

@@ -25,6 +25,7 @@ const AVATAR_IDS = [
   "rocket",
   "octopus",
   "penguin",
+  "seal",
 ] as const satisfies readonly AvatarId[];
 
 export type FormState<F extends string> =
