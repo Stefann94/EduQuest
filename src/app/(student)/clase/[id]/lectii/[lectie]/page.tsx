@@ -1,26 +1,27 @@
-import { ArrowLeft, ArrowRight, FolderOpen } from "lucide-react";
+import { ArrowLeft, ArrowRight, ChevronRight, FolderOpen } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/common/empty-state";
+import { FolderList } from "@/components/lessons/folder-list";
 import { LessonNumber, LessonTitle } from "@/components/lessons/lesson-card";
 import { LessonItemSection } from "@/components/lessons/lesson-item-view";
 import { DetailSkeleton } from "@/components/student-class/skeletons";
 import { buttonVariants } from "@/components/ui/button";
 import { placeholderParams } from "@/lib/db/core";
-import { getClassLessons, lessonLabel } from "@/lib/db/lessons";
+import { getClassFolder, lessonLabel } from "@/lib/db/lessons";
 import { loadStudentClass } from "../../load-class";
 
 type Props = PageProps<"/clase/[id]/lectii/[lectie]">;
 
-export const metadata: Metadata = { title: "Lecție" };
+export const metadata: Metadata = { title: "Materiale" };
 
 export function generateStaticParams() {
   return placeholderParams("lectie");
 }
 
-export default function ClassLessonPage({ params }: Props) {
+export default function ClassFolderPage({ params }: Props) {
   return (
     <Suspense fallback={<DetailSkeleton />}>
       <Content params={params} />
@@ -31,47 +32,117 @@ export default function ClassLessonPage({ params }: Props) {
 async function Content({ params }: { params: Props["params"] }) {
   const { lectie } = await params;
   const { classRoom: c } = await loadStudentClass(params);
-  const lessons = await getClassLessons(c.id);
-  const index = lessons.findIndex((l) => l.id === lectie);
-  if (index < 0) notFound();
-  const l = lessons[index];
-  const prev = lessons[index - 1];
-  const next = lessons[index + 1];
+  const data = await getClassFolder(c.id, lectie);
+  if (!data) notFound();
+  const { root, lessons, path, folder } = data;
   const base = `/clase/${c.id}/lectii`;
+  const index = lessons.findIndex((l) => l.id === root.id);
+  const prev = folder.isRoot ? lessons[index - 1] : undefined;
+  const next = folder.isRoot ? lessons[index + 1] : undefined;
+  const parent =
+    path.at(-1) ??
+    (folder.isRoot ? undefined : { id: root.id, title: lessonLabel(root) });
 
   return (
     <article className="grid gap-8">
+      {/* Calea până la folder: Materiale › Lecția 3 › Subfolder */}
+      <nav aria-label="Unde ești" className="text-sm">
+        <ol className="flex flex-wrap items-center gap-1 text-muted-foreground">
+          <li>
+            <Link href={base} className="hover:text-foreground hover:underline">
+              Materiale
+            </Link>
+          </li>
+          {!folder.isRoot ? (
+            <>
+              <li aria-hidden="true">
+                <ChevronRight className="size-3.5" />
+              </li>
+              <li>
+                <Link
+                  href={`${base}/${root.id}`}
+                  className="hover:text-foreground hover:underline"
+                >
+                  {lessonLabel(root)}
+                </Link>
+              </li>
+            </>
+          ) : null}
+          {path.map((p) => (
+            <li key={p.id} className="flex items-center gap-1">
+              <ChevronRight className="size-3.5" aria-hidden="true" />
+              <Link
+                href={`${base}/${p.id}`}
+                className="hover:text-foreground hover:underline"
+              >
+                {p.title}
+              </Link>
+            </li>
+          ))}
+        </ol>
+      </nav>
+
       <header className="flex items-start gap-4">
-        <LessonNumber lesson={l} className="size-16 text-2xl" />
+        {folder.isRoot ? (
+          <LessonNumber lesson={root} className="size-16 text-2xl" />
+        ) : (
+          <span
+            aria-hidden="true"
+            className="grid size-16 shrink-0 cut-sm place-items-center bg-xp-soft text-xp-foreground"
+          >
+            <FolderOpen className="size-7" />
+          </span>
+        )}
         <div className="min-w-0">
           <h1 className="text-3xl leading-tight sm:text-4xl">
-            <LessonTitle lesson={l} />
+            {folder.isRoot ? <LessonTitle lesson={root} /> : folder.title}
           </h1>
-          {l.summary ? (
-            <p className="mt-2 max-w-2xl text-muted-foreground">{l.summary}</p>
+          {folder.summary ? (
+            <p className="mt-2 max-w-2xl text-muted-foreground">
+              {folder.summary}
+            </p>
           ) : null}
         </div>
       </header>
 
-      {l.items.length > 0 ? (
+      {folder.subfolders.length > 0 ? (
+        <section aria-labelledby="subfoldere" className="grid gap-3">
+          <h2 id="subfoldere" className="text-xl">
+            Foldere
+          </h2>
+          <FolderList
+            folders={folder.subfolders}
+            href={(id) => `${base}/${id}`}
+          />
+        </section>
+      ) : null}
+
+      {folder.items.length > 0 ? (
         <div className="grid gap-10">
-          {l.items.map((item) => (
+          {folder.items.map((item) => (
             <LessonItemSection key={item.id} item={item} />
           ))}
         </div>
-      ) : (
+      ) : folder.subfolders.length === 0 ? (
         <EmptyState
           icon={FolderOpen}
-          title="Lecția nu are încă materiale"
-          description="Mentorul le adaugă în curând. Revino mai târziu."
+          title="Folderul e gol deocamdată"
+          description="Mentorul adaugă materialele în curând. Revino mai târziu."
         />
-      )}
+      ) : null}
 
       <nav
         aria-label="Alte lecții"
         className="flex flex-wrap justify-between gap-3 border-t pt-6"
       >
-        {prev ? (
+        {parent ? (
+          <Link
+            href={`${base}/${parent.id}`}
+            className={buttonVariants({ variant: "outline" })}
+          >
+            <ArrowLeft /> Înapoi la {parent.title}
+          </Link>
+        ) : prev ? (
           <Link
             href={`${base}/${prev.id}`}
             className={buttonVariants({ variant: "outline" })}
@@ -80,7 +151,7 @@ async function Content({ params }: { params: Props["params"] }) {
           </Link>
         ) : (
           <Link href={base} className={buttonVariants({ variant: "ghost" })}>
-            <ArrowLeft /> Toate lecțiile
+            <ArrowLeft /> Toate materialele
           </Link>
         )}
         {next ? (

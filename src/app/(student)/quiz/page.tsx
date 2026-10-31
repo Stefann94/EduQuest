@@ -8,11 +8,16 @@ import { Section } from "@/components/common/section";
 import {
   AssignedQuizRow,
   OpenSessionCard,
+  PracticeQuizRow,
 } from "@/components/student-class/quiz-rows";
 import { SectionSkeleton } from "@/components/student-class/skeletons";
 import { buttonVariants } from "@/components/ui/button";
 import { requireUser } from "@/lib/auth";
-import { getLiveSessions, getStudentQuizzes } from "@/lib/db/quizzes";
+import {
+  getLiveSessions,
+  getPracticeQuizzes,
+  getStudentQuizzes,
+} from "@/lib/db/quizzes";
 
 export const metadata: Metadata = { title: "Quiz-uri" };
 
@@ -21,7 +26,7 @@ export default function QuizzesPage() {
     <div className="grid gap-6">
       <PageHeader
         title="Quiz-uri"
-        description="Quiz-urile date claselor tale și sesiunile live. Prima rezolvare aduce XP după scor, o refacere încă 1 XP."
+        description="Quiz-urile date claselor tale, exersarea pe capitole și sesiunile live. Prima rezolvare aduce XP după scor, o repetare încă 1 XP."
         actions={
           <Link href="/live" className={buttonVariants()}>
             <Radio /> Intră într-un quiz live
@@ -37,10 +42,12 @@ export default function QuizzesPage() {
 
 async function Content() {
   const me = await requireUser("student");
-  const [quizzes, sessions] = await Promise.all([
+  const [quizzes, sessions, practice] = await Promise.all([
     getStudentQuizzes(me.id),
     getLiveSessions(),
+    getPracticeQuizzes(me.id),
   ]);
+  const practiceDone = practice.filter((q) => q.attempts.count > 0).length;
   const open = sessions.filter((s) => s.status !== "ended");
   const todo = quizzes.filter((q) => q.attempts.count === 0);
   const done = quizzes.filter((q) => q.attempts.count > 0);
@@ -90,6 +97,22 @@ async function Content() {
             {done.map((q) => (
               <li key={q.id}>
                 <AssignedQuizRow quiz={q} />
+              </li>
+            ))}
+          </ul>
+        </Section>
+      ) : null}
+
+      {practice.length > 0 ? (
+        <Section
+          title="Exersare: noțiuni de bază de Python"
+          description={`${practiceDone} din ${practice.length} rezolvate. Prima rezolvare aduce XP după scor, o repetare încă 1 XP, apoi doar exersare.`}
+          bodyClassName="p-3"
+        >
+          <ul className="stagger grid gap-2 md:grid-cols-2">
+            {practice.map((q, i) => (
+              <li key={q.id}>
+                <PracticeQuizRow quiz={q} index={i + 1} />
               </li>
             ))}
           </ul>

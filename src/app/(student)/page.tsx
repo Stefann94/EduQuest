@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/common/empty-state";
-import { ArenaCard } from "@/components/student-home/arena-card";
 import { LeaderboardCard } from "@/components/student-home/leaderboard-card";
 import { MissionRow } from "@/components/student-home/mission-row";
 import { PlayerCard } from "@/components/student-home/player-card";
@@ -187,7 +186,7 @@ async function StudentHomeContent() {
             ) : (
               "Ești la zi cu toate misiunile"
             )}
-            {live ? <> și o arenă live deschisă chiar acum.</> : "."}{" "}
+            {live ? <> și un quiz live deschis chiar acum.</> : "."}{" "}
             {rival ? (
               <>
                 {rival.student.displayName.split(" ")[0]} e doar la{" "}
@@ -247,20 +246,6 @@ async function StudentHomeContent() {
         </section>
 
         <div className="grid content-start gap-5">
-          <ArenaCard
-            session={
-              live
-                ? {
-                    title: live.title,
-                    className: live.className,
-                    players:
-                      classes.active.find((c) => c.id === live.classId)
-                        ?.studentIds.length ?? 0,
-                    running: live.status === "running",
-                  }
-                : undefined
-            }
-          />
           {best ? (
             <LeaderboardCard
               title="Clasament"

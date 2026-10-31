@@ -131,18 +131,80 @@ export async function updateLessonDetails(
 }
 
 /** Șterge lecția cu toate materialele ei (și fișierele PDF). */
+/** Toate subfolderele unui folder, pe toate nivelurile. */
+async function descendantsOf(lessonId: string) {
+  const supabase = await db();
+  const all: string[] = [];
+  let level = [lessonId];
+  for (let i = 0; i < 5 && level.length; i++) {
+    const { data } = await supabase
+      .from("lessons")
+      .select("id")
+      .in("parent_id", level);
+    level = (data ?? []).map((r) => r.id);
+    all.push(...level);
+  }
+  return all;
+}
+
+/** Șterge folderul cu tot ce are în el: subfoldere, materiale și fișierele PDF. */
 export async function deleteLesson(lessonId: string): Promise<ActionResult> {
   const owned = await ownLesson(lessonId);
   if (!owned) return NOT_FOUND;
   const supabase = await db();
-  const files = owned.lesson.items.flatMap((i) =>
-    i.kind === "pdf" ? [i.content.path] : [],
-  );
+  const ids = [lessonId, ...(await descendantsOf(lessonId))];
+  const { data: pdfs } = await supabase
+    .from("lesson_items")
+    .select("content")
+    .in("lesson_id", ids)
+    .eq("kind", "pdf");
+  const files = (pdfs ?? []).flatMap((r) => {
+    const path = (r.content as { path?: unknown })?.path;
+    return typeof path === "string" ? [path] : [];
+  });
   if (files.length) await supabase.storage.from("materials").remove(files);
   const { error } = await supabase.from("lessons").delete().eq("id", lessonId);
-  if (error) return { ok: false, message: "Lecția nu s-a putut șterge." };
+  if (error) return { ok: false, message: "Folderul nu s-a putut șterge." };
   refresh();
-  redirect("/mentor/materiale");
+  redirect(
+    owned.lesson.parentId
+      ? `/mentor/materiale/${owned.lesson.parentId}`
+      : "/mentor/materiale",
+  );
+}
+
+/** Un subfolder nou într-un folder (de exemplu „Probleme rezolvate” într-un capitol). */
+export async function createSubfolder(
+  parentId: string,
+  input: { title: string; summary: string },
+): Promise<ActionResult> {
+  const owned = await ownLesson(parentId);
+  if (!owned) return NOT_FOUND;
+  if (owned.lesson.path.length >= 2)
+    return { ok: false, message: "Cel mult trei niveluri de foldere." };
+  const parsed = detailsSchema.safeParse(input);
+  if (!parsed.success)
+    return {
+      ok: false,
+      message: "Verifică câmpurile marcate.",
+      errors: issues(parsed.error),
+    };
+  const supabase = await db();
+  const { data, error } = await supabase
+    .from("lessons")
+    .insert({
+      author_id: owned.me.id,
+      parent_id: parentId,
+      title: parsed.data.title,
+      summary: parsed.data.summary,
+      position: owned.lesson.subfolders.length,
+    })
+    .select("id")
+    .single();
+  if (error || !data)
+    return { ok: false, message: "Subfolderul nu s-a putut crea." };
+  refresh(parentId);
+  return { ok: true, message: "Subfolderul a fost creat.", id: data.id };
 }
 
 /* ---------- Materialele ---------- */

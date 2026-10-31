@@ -169,6 +169,7 @@ async function Content({
                   "css",
                   "javascript",
                   "java",
+                  "json",
                   "text",
                 ].includes(p.language)
                   ? p.language

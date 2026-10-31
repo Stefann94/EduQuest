@@ -178,9 +178,46 @@ check(
   "mentorul nu poate edita lecția altui mentor",
   (anaLesson.data ?? []).length === 0,
 );
+// Doar mentorul arhivează o clasă; elevul poate doar să iasă (și să revină cu codul).
+const { data: myClass } = await tudor
+  .from("classes")
+  .select("id, invite_code, invite_code_active")
+  .eq("status", "active")
+  .eq("invite_code_active", true)
+  .limit(1)
+  .single();
+if (myClass) {
+  const archived = await tudor
+    .from("classes")
+    .update({ status: "archived" })
+    .eq("id", myClass.id)
+    .select("id");
+  check("elevul nu poate arhiva clasa", (archived.data ?? []).length === 0);
+  const left = await tudor
+    .from("class_members")
+    .delete()
+    .eq("class_id", myClass.id)
+    .eq("student_id", me)
+    .select("class_id");
+  const back = await tudor.rpc("join_class", { p_code: myClass.invite_code });
+  check(
+    "elevul poate ieși din clasă și reveni cu codul",
+    (left.data ?? []).length === 1 && back.error === null,
+  );
+}
+
 // Cursul global îl văd toți elevii: un mentor nu poate băga conținut în el.
-const { data: course } = await mihai.from("courses").select("id").limit(1).single();
-const { data: mihaiLesson } = await mihai.from("lessons").select("id").is("course_id", null).limit(1).single();
+const { data: course } = await mihai
+  .from("courses")
+  .select("id")
+  .limit(1)
+  .single();
+const { data: mihaiLesson } = await mihai
+  .from("lessons")
+  .select("id")
+  .is("course_id", null)
+  .limit(1)
+  .single();
 if (course && mihaiLesson) {
   const moved = await mihai
     .from("lessons")

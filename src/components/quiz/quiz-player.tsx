@@ -22,7 +22,7 @@ import {
   type GradeResult,
   submitQuiz,
 } from "@/app/(student)/quiz/[id]/actions";
-import { XpBadge } from "@/components/common/status";
+import { StatusBadge, XpBadge } from "@/components/common/status";
 import { RichText } from "@/components/learning/rich-text";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -53,6 +53,8 @@ export type QuizPlayerData = {
   used: number;
   backHref: string;
   backLabel: string;
+  /** Cel mai bun rezultat de până acum (null dacă nu l-a rezolvat). */
+  best?: number | null;
 };
 
 type Phase = "intro" | "question" | "review" | "results";
@@ -188,6 +190,19 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
           {quiz.title}
         </h2>
         <p className="mt-1 text-muted-foreground">{quiz.description}</p>
+        {used > 0 ? (
+          <p className="mt-4 flex flex-wrap items-center gap-2 text-sm">
+            <StatusBadge icon={CheckCircle2} tone="success">
+              Rezolvat
+            </StatusBadge>
+            <span className="text-muted-foreground">
+              {quiz.best != null
+                ? `Cel mai bun rezultat: ${quiz.best} din ${total}.`
+                : null}{" "}
+              Îl poți repeta oricând.
+            </span>
+          </p>
+        ) : null}
 
         <dl className="mt-6 grid gap-3 bg-muted/60 p-4 text-sm sm:grid-cols-2">
           <IntroItem icon={ListChecks} label="Întrebări">
@@ -201,14 +216,14 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
           <IntroItem icon={RotateCcw} label="Încercări">
             {used === 0
               ? "Prima încercare"
-              : `Rezolvat de ${used === 1 ? "o dată" : `${used} ori`}; îl poți reface oricând`}
+              : `Rezolvat de ${used === 1 ? "o dată" : `${used} ori`}`}
           </IntroItem>
           <IntroItem icon={Star} label="XP">
             {outlook.kind === "first"
               ? `Până la +${quiz.xp} XP, după câte răspunsuri corecte ai`
               : outlook.kind === "retake"
-                ? "+1 XP pentru prima refacere"
-                : "Fără XP: acum e doar exersare"}
+                ? "+1 XP pentru prima repetare (doar o dată)"
+                : "Fără XP: l-ai repetat deja, acum e doar exersare"}
           </IntroItem>
           {quiz.className ? (
             <IntroItem icon={Info} label="Clasa">
@@ -219,7 +234,8 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
 
         <div className="mt-6 flex flex-wrap items-center gap-3">
           <Button size="lg" variant="cta" onClick={start}>
-            <Play /> {used === 0 ? "Începe quiz-ul" : "Reia quiz-ul"}
+            {used === 0 ? <Play /> : <RotateCcw />}
+            {used === 0 ? "Începe quiz-ul" : "Repetă quiz-ul"}
           </Button>
           <p className="text-muted-foreground text-xs">
             Poți naviga între întrebări și îți poți schimba răspunsurile până
@@ -275,19 +291,19 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
                 <XpBadge amount={result.xp} />
                 {used === 1
                   ? "pentru prima rezolvare"
-                  : "pentru refacerea quiz-ului"}
+                  : "pentru repetarea quiz-ului"}
               </>
             ) : (
               <span className="text-muted-foreground">
                 {used <= 1
-                  ? "Niciun răspuns corect, deci fără XP de data asta. Recitește lecția și reia quiz-ul: prima refacere aduce 1 XP."
-                  : "De acum încolo, refacerile sunt doar pentru exersare, fără XP."}
+                  ? "Prea puține răspunsuri corecte pentru XP de data asta. Recitește lecția și repetă quiz-ul: prima repetare aduce 1 XP."
+                  : "Ai repetat deja quiz-ul o dată, așa că de acum e doar exersare, fără XP."}
               </span>
             )}
           </div>
           <div className="mt-6 flex flex-wrap gap-3">
             <Button onClick={start}>
-              <RotateCcw /> Reia quiz-ul
+              <RotateCcw /> Repetă quiz-ul
             </Button>
             <Link
               href={quiz.backHref}
@@ -298,7 +314,7 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
           </div>
           <p className="mt-3 text-muted-foreground text-xs">
             Rezultatul a fost salvat.
-            {outlook.kind === "retake" ? " Prima refacere mai aduce 1 XP." : ""}
+            {outlook.kind === "retake" ? " Prima repetare mai aduce 1 XP." : ""}
           </p>
         </section>
 

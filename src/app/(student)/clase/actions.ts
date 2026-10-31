@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { getVisibleClasses } from "@/lib/db/classes";
 import { db } from "@/lib/db/core";
@@ -49,4 +50,26 @@ export async function joinClass(
     className: cls?.name ?? "clasă",
     mentorName: cls?.mentor?.display_name ?? "",
   };
+}
+
+/**
+ * Elevul iese singur dintr-o clasă (regula RLS îi permite să-și șteargă doar propria
+ * înscriere). XP-ul și lucrările trimise rămân; poate reveni cu codul de invitație.
+ */
+export async function leaveClass(classId: string) {
+  const me = await requireUser("student");
+  const supabase = await db();
+  const { data, error } = await supabase
+    .from("class_members")
+    .delete()
+    .eq("class_id", classId)
+    .eq("student_id", me.id)
+    .select("class_id");
+  if (error || !data?.length)
+    return {
+      ok: false,
+      message: "Nu am putut să te scot din clasă. Încearcă din nou.",
+    };
+  revalidatePath("/", "layout");
+  redirect("/clase");
 }

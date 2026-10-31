@@ -16,6 +16,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import type { AvatarId } from "@/lib/data/types";
+import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "./confirm-dialog";
 
 /** Doar ce are nevoie mentorul să vadă despre un elev (fără email). */
@@ -40,7 +41,10 @@ export function MembersTable({
   className,
   rows,
   canRemove,
+  ended = false,
 }: {
+  /** Clasa s-a încheiat (arhivată): arătăm cine a absolvit cursul. */
+  ended?: boolean;
   classId: string;
   className: string;
   rows: MemberRow[];
@@ -109,7 +113,18 @@ export function MembersTable({
                     <span className="block text-muted-foreground text-xs">
                       {r.attended} din {r.meetings} întâlniri
                     </span>
-                    {r.blocked ? (
+                    {ended ? (
+                      <span
+                        className={cn(
+                          "block font-medium text-xs",
+                          r.blocked ? "text-destructive" : "text-success",
+                        )}
+                      >
+                        {r.blocked
+                          ? `Neabsolvit · ${r.absent} absențe`
+                          : "Curs absolvit"}
+                      </span>
+                    ) : r.blocked ? (
                       <span className="block font-medium text-destructive text-xs">
                         {r.absent} absențe · nu poate termina cursul
                       </span>

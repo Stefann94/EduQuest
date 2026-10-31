@@ -9,7 +9,7 @@ import { loadStudentClass } from "../load-class";
 
 type Props = PageProps<"/clase/[id]/lectii">;
 
-export const metadata: Metadata = { title: "Lecțiile clasei" };
+export const metadata: Metadata = { title: "Materialele clasei" };
 
 export default function ClassLessonsPage({ params }: Props) {
   return (
@@ -27,8 +27,8 @@ async function Content({ params }: { params: Props["params"] }) {
     return (
       <EmptyState
         icon={BookOpen}
-        title="Nicio lecție încă"
-        description="Când mentorul publică o lecție pentru clasă, o găsești aici, cu toate materialele ei."
+        title="Niciun material încă"
+        description="Când mentorul publică un capitol pentru clasă (un folder cu PDF-uri, probleme rezolvate și subfoldere), îl găsești aici."
       />
     );
 

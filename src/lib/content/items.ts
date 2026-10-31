@@ -29,8 +29,46 @@ export const linkContent = z.object({
   note: z.string().max(500).optional(),
 });
 
-/** Problemă cu enunț, „încearcă singur” și rezolvarea ascunsă până o ceri. */
-export const problemContent = z.object({
+const EXTENSION: Record<string, string> = {
+  python: "py",
+  html: "html",
+  css: "css",
+  javascript: "js",
+  java: "java",
+  json: "json",
+  text: "txt",
+};
+
+/** Numele implicit al fișierului de rezolvare, după limbaj: „rezolvare.py”. */
+export const defaultFileName = (language: string) =>
+  `rezolvare.${EXTENSION[language] ?? "txt"}`;
+
+/** Un fișier al rezolvării. O problemă poate avea mai multe (ex. main.py și date.json). */
+export const solutionFile = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, "Dă un nume fișierului.")
+    .max(60, "Numele are cel mult 60 de caractere.")
+    .regex(
+      /^[\w.-]+$/,
+      "Doar litere fără diacritice, cifre, punct, „-” și „_” (ex. main.py).",
+    ),
+  language: z.string().default("python"),
+  code: z
+    .string()
+    .min(1, "Fișierul e gol.")
+    .max(50_000, "Fișierul e prea lung."),
+});
+
+export type SolutionFile = z.infer<typeof solutionFile>;
+
+/**
+ * Problemă cu enunț, „încearcă singur” și rezolvarea ascunsă până o ceri. Rezolvarea are
+ * unul sau mai multe fișiere (taburi); problemele vechi, cu un singur `solution`, devin
+ * automat un fișier.
+ */
+const problemFields = z.object({
   /** Enunțul: paragrafe separate prin rând gol; în text merg `cod` și **important**. */
   statement: z.string().min(1),
   examples: z
@@ -46,11 +84,36 @@ export const problemContent = z.object({
   hint: z.string().optional(),
   starter: z.string().optional(),
   language: z.string().default("python"),
-  solution: z.string().min(1),
+  solution: z.string().min(1).optional(),
+  files: z.array(solutionFile).max(8, "Cel mult 8 fișiere.").optional(),
   /** Ce afișează rezolvarea (opțional), arătat ca un terminal. */
   output: z.string().optional(),
   explanation: z.string().optional(),
 });
+
+export const problemContent = problemFields
+  .refine((p) => !!p.solution || (p.files?.length ?? 0) > 0, {
+    path: ["files"],
+    message: "Adaugă rezolvarea: cel puțin un fișier.",
+  })
+  .refine(
+    (p) =>
+      new Set((p.files ?? []).map((f) => f.name)).size ===
+      (p.files ?? []).length,
+    { path: ["files"], message: "Două fișiere nu pot avea același nume." },
+  )
+  .transform(({ solution, files, ...p }) => ({
+    ...p,
+    files: files?.length
+      ? files
+      : [
+          {
+            name: defaultFileName(p.language),
+            language: p.language,
+            code: solution ?? "",
+          },
+        ],
+  }));
 
 export const itemContentSchema = {
   article: articleContent,

@@ -22,11 +22,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import type { ItemKind, LessonItem } from "@/lib/content/items";
+import {
+  defaultFileName,
+  type ItemKind,
+  type LessonItem,
+  type SolutionFile,
+} from "@/lib/content/items";
 import type { ContentBlock } from "@/lib/content/schema";
 import { formatFileSize } from "@/lib/format";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 import { BlocksEditor, cleanBlocks } from "./blocks-editor";
+import { SolutionFilesEditor } from "./solution-files-editor";
 
 const MAX_PDF_BYTES = 20 * 1024 * 1024;
 
@@ -69,11 +75,15 @@ export function ItemEditor({
       hint: p?.hint ?? "",
       starter: p?.starter ?? "",
       language: p?.language ?? "python",
-      solution: p?.solution ?? "",
       output: p?.output ?? "",
       explanation: p?.explanation ?? "",
     };
   });
+  const [files, setFiles] = useState<SolutionFile[]>(() =>
+    item?.kind === "problem"
+      ? item.content.files
+      : [{ name: defaultFileName("python"), language: "python", code: "" }],
+  );
   const [examples, setExamples] = useState<Example[]>(() =>
     (item?.kind === "problem" ? item.content.examples : []).map((e, i) => ({
       key: `ex-${i}`,
@@ -147,7 +157,7 @@ export function ItemEditor({
           hint: problem.hint.trim() || undefined,
           starter: problem.starter || undefined,
           language: problem.language,
-          solution: problem.solution,
+          files: files.map((f) => ({ ...f, name: f.name.trim() })),
           output: problem.output || undefined,
           explanation: problem.explanation.trim() || undefined,
         };
@@ -440,20 +450,11 @@ export function ItemEditor({
               />
             </Field>
           </div>
-          <Field
-            id="p-solution"
-            label="Rezolvarea"
-            error={err("content.solution")}
-            hint="Ascunsă elevilor până apasă „Arată soluția”."
-          >
-            <Textarea
-              id="p-solution"
-              value={problem.solution}
-              spellCheck={false}
-              onChange={(e) => set({ solution: e.target.value })}
-              className="min-h-36 font-mono text-sm"
-            />
-          </Field>
+          <SolutionFilesEditor
+            files={files}
+            onChange={setFiles}
+            errors={errors}
+          />
           <Field id="p-output" label="Ce afișează rezolvarea" optional>
             <Textarea
               id="p-output"

@@ -118,3 +118,18 @@ export async function getClassAttendanceForStudent(
     summarizeAttendance([])
   );
 }
+
+export type CourseOutcome = "in_progress" | "completed" | "not_completed";
+
+/**
+ * Cum a încheiat elevul cursul: cât timp clasa e activă, cursul e în desfășurare; după ce
+ * mentorul o arhivează (cursul s-a terminat), elevul cu mai mult de MAX_ABSENCES absențe
+ * nerecuperate nu l-a absolvit.
+ */
+export function courseOutcome(
+  classStatus: "active" | "archived",
+  a: Pick<StudentAttendance, "absent">,
+): CourseOutcome {
+  if (classStatus === "active") return "in_progress";
+  return a.absent > MAX_ABSENCES ? "not_completed" : "completed";
+}

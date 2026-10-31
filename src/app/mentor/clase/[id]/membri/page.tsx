@@ -41,6 +41,7 @@ async function Members({ params }: { params: Props["params"] }) {
         classId={c.id}
         className={c.name}
         canRemove={c.status === "active"}
+        ended={c.status === "archived"}
         rows={members.map((m) => ({
           id: m.student.id,
           displayName: m.student.displayName,

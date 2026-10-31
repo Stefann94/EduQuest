@@ -10,6 +10,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { Section } from "@/components/common/section";
 import { UserAvatar } from "@/components/common/user-avatar";
+import { LeaveClassButton } from "@/components/student-class/leave-class-button";
 import { SectionSkeleton } from "@/components/student-class/skeletons";
 import { formatDate, plural } from "@/lib/format";
 import { loadStudentClass } from "../load-class";
@@ -84,17 +85,27 @@ async function Content({ params }: { params: Props["params"] }) {
         </dl>
       </Section>
 
-      <section className="h-fit rounded-xl border bg-card p-5 shadow-xs">
-        <div className="flex items-center gap-2">
-          <ShieldCheck className="size-4 text-success" aria-hidden="true" />
-          <h2 className="font-semibold">Confidențialitate</h2>
-        </div>
-        <p className="mt-2 text-muted-foreground text-sm leading-relaxed">
-          Informațiile clasei sunt vizibile doar membrilor ei. Colegii văd doar
-          numele afișat, avatarul și XP-ul tău din clasament, niciodată emailul
-          sau alte date de cont.
-        </p>
-      </section>
+      <div className="grid content-start gap-6">
+        <section className="cut bg-card p-5">
+          <div className="flex items-center gap-2">
+            <ShieldCheck className="size-4 text-success" aria-hidden="true" />
+            <h2 className="text-xl">Confidențialitate</h2>
+          </div>
+          <p className="mt-2 text-muted-foreground text-sm leading-relaxed">
+            Informațiile clasei sunt vizibile doar membrilor ei. Colegii văd
+            doar numele afișat, avatarul și XP-ul tău din clasament, niciodată
+            emailul sau alte date de cont.
+          </p>
+        </section>
+        <section className="grid gap-3 cut bg-card p-5">
+          <h2 className="text-xl">Ieși din clasă</h2>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            Dacă nu mai faci parte din această clasă, poți ieși singur. XP-ul
+            strâns rămâne al tău.
+          </p>
+          <LeaveClassButton classId={c.id} className={c.name} />
+        </section>
+      </div>
     </div>
   );
 }

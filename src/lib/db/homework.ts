@@ -528,7 +528,7 @@ export async function getReviewQueue(
          student:profiles!problem_submissions_student_id_fkey(${PERSON_FIELDS}),
          problem:homework_problems!problem_submissions_problem_id_fkey(title),
          assignment:homework_assignments!problem_submissions_assignment_id_fkey(class_id, homework_id,
-           homework:homeworks!homework_assignments_homework_id_fkey(title)),
+           homework:homeworks!homework_assignments_homework_id_fkey(title, archived)),
          problem_attempts(id)`,
       )
       .eq("status", "submitted")
@@ -541,7 +541,14 @@ export async function getReviewQueue(
     const className = s.assignment
       ? mine.get(s.assignment.class_id)
       : undefined;
-    if (!className || !s.assignment || !s.student) return [];
+    // O temă arhivată nu mai apare în panoul mentorului.
+    if (
+      !className ||
+      !s.assignment ||
+      !s.student ||
+      s.assignment.homework?.archived
+    )
+      return [];
     return [
       {
         submissionId: s.id,

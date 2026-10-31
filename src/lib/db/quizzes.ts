@@ -110,6 +110,47 @@ export async function getStudentQuizzes(
   return [...byQuiz.values()];
 }
 
+export type PracticeQuiz = {
+  id: string;
+  title: string;
+  description: string;
+  xp: number;
+  questionCount: number;
+  attempts: AttemptSummary;
+};
+
+/**
+ * Quiz-urile de exersare din cursurile globale (pagina Quiz-uri), pentru toți elevii,
+ * în ordinea capitolelor, cu încercările elevului.
+ */
+export async function getPracticeQuizzes(
+  studentId: string,
+): Promise<PracticeQuiz[]> {
+  const supabase = await db();
+  const [rows, attempts] = await Promise.all([
+    supabase
+      .from("quizzes")
+      .select("id, title, description, xp, created_at, quiz_questions(count)")
+      .eq("kind", "practice")
+      .not("course_id", "is", null)
+      .order("created_at")
+      .order("title"),
+    supabase
+      .from("quiz_attempts")
+      .select("quiz_id, correct, total, at")
+      .eq("student_id", studentId),
+  ]);
+  const mine = must("Încercările", attempts);
+  return must("Quiz-urile de exersare", rows).map((q) => ({
+    id: q.id,
+    title: q.title,
+    description: q.description,
+    xp: q.xp,
+    questionCount: q.quiz_questions[0]?.count ?? 0,
+    attempts: summarizeAttempts(mine.filter((a) => a.quiz_id === q.id)),
+  }));
+}
+
 /** Quiz-ul pentru player: întrebările fără răspunsuri și câte încercări a făcut elevul. */
 export async function getQuizForPlayer(studentId: string, id: string) {
   if (!isUuid(id)) return undefined;

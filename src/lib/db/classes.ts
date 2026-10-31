@@ -105,13 +105,13 @@ export async function getMentorClasses(mentorId: string) {
     supabase
       .from("problem_submissions")
       .select(
-        "assignment:homework_assignments!problem_submissions_assignment_id_fkey(class_id)",
+        "assignment:homework_assignments!problem_submissions_assignment_id_fkey(class_id, homework:homeworks!homework_assignments_homework_id_fkey(archived))",
       )
       .eq("status", "submitted"),
   ]);
   const counts = new Map<string, number>();
   for (const s of must("Trimiterile", waiting))
-    if (s.assignment)
+    if (s.assignment && !s.assignment.homework?.archived)
       counts.set(
         s.assignment.class_id,
         (counts.get(s.assignment.class_id) ?? 0) + 1,

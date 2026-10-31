@@ -372,6 +372,77 @@ for (const i of items) {
 }
 await must("Materiale", db.from("lesson_items").upsert(items));
 
+// Un subfolder în capitolul „Bucla for”, cu o problemă rezolvată în două fișiere
+// (programul și datele lui), ca să se vadă folderele și soluția pe taburi.
+const forFolder = lessonId("python-incepatori:Bucla for");
+const solvedFolder = uuid(
+  "lesson-v2",
+  "python-incepatori:Bucla for/probleme-rezolvate",
+);
+await must(
+  "Subfolder",
+  db.from("lessons").upsert({
+    id: solvedFolder,
+    author_id: user("u-ana"),
+    parent_id: forFolder,
+    title: "Probleme rezolvate",
+    summary: "Probleme cu bucla for, cu rezolvarea pas cu pas.",
+    position: 0,
+  }),
+);
+const multiFile = {
+  id: uuid("item", "media-din-json"),
+  lesson_id: solvedFolder,
+  kind: "problem",
+  title: "Media notelor dintr-un fișier JSON",
+  position: 0,
+  published: true,
+  content: {
+    statement:
+      "Fișierul `note.json` conține notele unui elev, pe materii. Scrie un program care citește fișierul și afișează media tuturor notelor, cu două zecimale.\n\nFolosește modulul `json` și o buclă `for` care trece prin materii.",
+    examples: [{ input: "(note.json de alături)", output: "Media: 8.83" }],
+    constraints: [],
+    hint: "`json.load(f)` îți dă un dicționar; `for materie, nota in note.items():` trece prin perechi.",
+    language: "python",
+    files: [
+      {
+        name: "main.py",
+        language: "python",
+        code: `import json
+
+with open("note.json", "r") as f:
+    note = json.load(f)
+
+suma = 0
+for materie, nota in note.items():
+    suma = suma + nota
+media = suma / len(note)
+print(f"Media: {media:.2f}")`,
+      },
+      {
+        name: "note.json",
+        language: "json",
+        code: `{
+  "matematică": 9,
+  "informatică": 10,
+  "română": 7.5
+}`,
+      },
+    ],
+    output: "Media: 8.83",
+    explanation:
+      "`json.load` transformă textul din fișier într-un dicționar Python. Bucla adună notele, iar `len(note)` spune câte materii sunt. `:.2f` afișează media cu două zecimale.",
+  },
+};
+{
+  const ok = itemContentSchema.problem.safeParse(multiFile.content);
+  if (!ok.success) throw new Error(`Problema demo: ${ok.error.message}`);
+}
+await must(
+  "Problemă cu mai multe fișiere",
+  db.from("lesson_items").upsert(multiFile),
+);
+
 /* ---------- Teme cu mai multe probleme (v2) ---------- */
 
 type DemoHomework = {

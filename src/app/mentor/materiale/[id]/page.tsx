@@ -37,9 +37,20 @@ async function Editor({ params }: { params: Props["params"] }) {
   return (
     <div className="grid gap-6">
       <PageHeader
-        back={{ href: "/mentor/materiale", label: "Lecții și materiale" }}
+        back={
+          lesson.path.length > 0
+            ? {
+                href: `/mentor/materiale/${lesson.path.at(-1)?.id}`,
+                label: lesson.path.map((p) => p.title).join(" › "),
+              }
+            : { href: "/mentor/materiale", label: "Lecții și materiale" }
+        }
         title={lesson.title}
-        description="Materialele lecției, ce văd elevii și în ce clase apare."
+        description={
+          lesson.parentId
+            ? "Subfolder: materialele și subfolderele lui."
+            : "Folderul capitolului: materialele, subfolderele, ce văd elevii și în ce clase apare."
+        }
       />
       <LessonEditor
         lesson={lesson}

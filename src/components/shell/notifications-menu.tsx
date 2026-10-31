@@ -62,39 +62,48 @@ export function NotificationsMenu({
             </button>
           ) : null}
         </div>
+        {/* Aici apar doar notificările necitite; toate sunt pe pagina Notificări. */}
+        {unread === 0 ? (
+          <p className="px-4 py-6 text-center text-muted-foreground text-sm">
+            Nicio notificare nouă.
+          </p>
+        ) : null}
         <ul className="stagger mr-1 max-h-96 overflow-y-auto p-1.5">
-          {items.slice(0, 6).map((n) => (
-            <li key={n.id}>
-              <Link
-                href={n.href}
-                onClick={() => {
-                  markRead(n.id);
-                  setOpen(false);
-                }}
-                className="flex gap-3 rounded-lg px-2.5 py-2.5 hover:bg-muted"
-              >
-                <NotificationIcon kind={n.kind} />
-                <span className="min-w-0 flex-1">
-                  <span
-                    className={cn(
-                      "block text-sm leading-snug",
-                      !n.read && "font-medium",
-                    )}
-                  >
-                    {n.title}
+          {items
+            .filter((n) => !n.read)
+            .slice(0, 8)
+            .map((n) => (
+              <li key={n.id}>
+                <Link
+                  href={n.href}
+                  onClick={() => {
+                    markRead(n.id);
+                    setOpen(false);
+                  }}
+                  className="flex gap-3 rounded-lg px-2.5 py-2.5 hover:bg-muted"
+                >
+                  <NotificationIcon kind={n.kind} />
+                  <span className="min-w-0 flex-1">
+                    <span
+                      className={cn(
+                        "block text-sm leading-snug",
+                        !n.read && "font-medium",
+                      )}
+                    >
+                      {n.title}
+                    </span>
+                    <span className="mt-0.5 block text-muted-foreground text-xs">
+                      {n.body} · {formatDay(n.at)}, {formatTime(n.at)}
+                    </span>
                   </span>
-                  <span className="mt-0.5 block text-muted-foreground text-xs">
-                    {n.body} · {formatDay(n.at)}, {formatTime(n.at)}
-                  </span>
-                </span>
-                {!n.read ? (
-                  <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary">
-                    <span className="sr-only">Necitită</span>
-                  </span>
-                ) : null}
-              </Link>
-            </li>
-          ))}
+                  {!n.read ? (
+                    <span className="mt-1.5 size-2 shrink-0 rounded-full bg-primary">
+                      <span className="sr-only">Necitită</span>
+                    </span>
+                  ) : null}
+                </Link>
+              </li>
+            ))}
         </ul>
         <div className="border-t p-1.5">
           <Link

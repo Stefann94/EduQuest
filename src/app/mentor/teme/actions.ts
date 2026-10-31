@@ -50,6 +50,7 @@ const LANGUAGES = [
   "css",
   "javascript",
   "java",
+  "json",
   "text",
 ] as const;
 

@@ -1,6 +1,7 @@
 import {
   FileCode2,
   FileText,
+  Folder,
   Link2,
   type LucideIcon,
   Newspaper,
@@ -9,8 +10,11 @@ import {
 import type { ItemKind } from "@/lib/content/items";
 import { cn } from "@/lib/utils";
 
+/** Tipurile de materiale, plus „folder” pentru subfolderele unei lecții. */
+export type MaterialKind = ItemKind | "folder";
+
 export const MATERIAL_KIND: Record<
-  ItemKind,
+  MaterialKind,
   { label: string; icon: LucideIcon; className: string }
 > = {
   article: {
@@ -33,6 +37,11 @@ export const MATERIAL_KIND: Record<
     icon: PlayCircle,
     className: "bg-success-soft text-success",
   },
+  folder: {
+    label: "Folder",
+    icon: Folder,
+    className: "bg-secondary text-foreground",
+  },
   problem: {
     label: "Problemă",
     icon: FileCode2,
@@ -44,7 +53,7 @@ export function MaterialKindIcon({
   kind,
   className,
 }: {
-  kind: ItemKind;
+  kind: MaterialKind;
   className?: string;
 }) {
   const { icon: Icon, className: tone } = MATERIAL_KIND[kind];

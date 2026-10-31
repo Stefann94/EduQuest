@@ -34,10 +34,16 @@ async function Content({ params }: { params: Props["params"] }) {
   const quiz = await getQuizForPlayer(me.id, id);
   if (!quiz) notFound();
 
-  const back = quiz.course
-    ? { href: "/invatare?tab=quiz", label: "Învățare" }
-    : { href: "/quiz", label: "Quiz-uri" };
-  const scope = quiz.kind === "recap" ? "Recapitulare" : "Quiz de lecție";
+  const back =
+    quiz.course && quiz.kind !== "practice"
+      ? { href: "/invatare?tab=quiz", label: "Învățare" }
+      : { href: "/quiz", label: "Quiz-uri" };
+  const scope =
+    quiz.kind === "practice"
+      ? "Exersare · noțiuni de bază de Python"
+      : quiz.kind === "recap"
+        ? "Recapitulare"
+        : "Quiz de lecție";
   // Doar datele sigure ajung în browser: întrebările vin deja fără răspunsuri.
   const data: QuizPlayerData = {
     id: quiz.id,
@@ -55,6 +61,7 @@ async function Content({ params }: { params: Props["params"] }) {
     })),
     xp: quiz.xp,
     used: quiz.attempts.count,
+    best: quiz.attempts.best,
     backHref: back.href,
     backLabel: `Înapoi la ${back.label}`,
   };

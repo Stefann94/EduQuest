@@ -11,7 +11,7 @@ import Link from "next/link";
 import { StatusBadge, XpBadge } from "@/components/common/status";
 import { buttonVariants } from "@/components/ui/button";
 import { xpOutlook } from "@/lib/db/quiz-rules";
-import type { LiveSession, StudentQuiz } from "@/lib/db/quizzes";
+import type { LiveSession, PracticeQuiz, StudentQuiz } from "@/lib/db/quizzes";
 import { formatDateTime, plural } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -150,5 +150,53 @@ export function PastSessionRow({
         </span>
       )}
     </div>
+  );
+}
+
+/**
+ * Un quiz de exersare: întrebările, cel mai bun rezultat și ce XP mai aduce. Dacă l-a
+ * rezolvat deja, elevul vede clar „Rezolvat”; îl poate repeta oricând.
+ */
+export function PracticeQuizRow({
+  quiz: q,
+  index,
+}: {
+  quiz: PracticeQuiz;
+  index: number;
+}) {
+  const outlook = xpOutlook(q.xp, q.attempts.count);
+  const solved = q.attempts.count > 0;
+  return (
+    <Link
+      href={`/quiz/${q.id}`}
+      className="group flex h-full cut-sm items-center gap-3 bg-card px-4 py-3 outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/70"
+    >
+      <span
+        aria-hidden="true"
+        className={cn(
+          "grid size-10 shrink-0 hex place-items-center font-extrabold font-heading tabular-nums",
+          solved ? "bg-success text-white" : "bg-secondary text-foreground",
+        )}
+      >
+        {solved ? <CheckCircle2 className="size-5" /> : index}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block truncate font-medium">
+          {q.title.replace(/^Exersare:\s*/, "")}
+        </span>
+        <span className="block text-muted-foreground text-sm">
+          {plural(q.questionCount, "întrebare", "întrebări")}
+          {solved
+            ? ` · cel mai bun: ${q.attempts.best}/${q.attempts.total}`
+            : ""}
+        </span>
+      </span>
+      {solved ? (
+        <StatusBadge icon={CheckCircle2} tone="success">
+          Rezolvat
+        </StatusBadge>
+      ) : null}
+      {outlook.max > 0 ? <XpBadge amount={outlook.max} /> : null}
+    </Link>
   );
 }

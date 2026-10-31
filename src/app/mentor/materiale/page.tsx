@@ -58,27 +58,46 @@ async function Library() {
     })),
   );
 
+  // Un subfolder ține de clasele folderului lui de pe primul nivel.
+  const byId = new Map(lessons.map((l) => [l.id, l]));
+  const chain = (id: string) => {
+    const out = [];
+    for (
+      let cur = byId.get(id);
+      cur && out.length < 5;
+      cur = cur.parentId ? byId.get(cur.parentId) : undefined
+    )
+      out.unshift(cur);
+    return out;
+  };
+
   return (
     <LessonLibrary
-      lessons={lessons.map((l) => ({
-        id: l.id,
-        title: l.title,
-        summary: l.summary,
-        items: l.items.map((i) => ({
-          id: i.id,
-          kind: i.kind,
-          title: i.title,
-          published: i.published,
-        })),
-        classes: l.classes
-          .map((c) => ({
-            classId: c.classId,
-            className: names.get(c.classId) ?? "Clasă",
-            number: c.number,
-            published: c.published,
-          }))
-          .sort((a, b) => a.className.localeCompare(b.className, "ro")),
-      }))}
+      lessons={lessons.map((l) => {
+        const path = chain(l.id);
+        const root = path[0] ?? l;
+        return {
+          id: l.id,
+          parentId: l.parentId,
+          path: path.map((x) => x.title).join(" › "),
+          title: l.title,
+          summary: l.summary,
+          items: l.items.map((i) => ({
+            id: i.id,
+            kind: i.kind,
+            title: i.title,
+            published: i.published,
+          })),
+          classes: root.classes
+            .map((c) => ({
+              classId: c.classId,
+              className: names.get(c.classId) ?? "Clasă",
+              number: c.number,
+              published: c.published,
+            }))
+            .sort((a, b) => a.className.localeCompare(b.className, "ro")),
+        };
+      })}
       classes={perClass}
     />
   );

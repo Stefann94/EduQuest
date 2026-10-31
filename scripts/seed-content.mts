@@ -5,16 +5,20 @@
 // Fiecare lecție devine: o lecție scrisă (blocurile, fără primele două exerciții), două
 // probleme (din primele două exerciții, cu „încearcă singur” și rezolvarea ascunsă) și un
 // quiz de recapitulare cu XP mic (2 la prima rezolvare, +1 la prima refacere).
+// Quiz-urile de exersare ale cursului (kind „practice”) nu sunt legate de nicio lecție.
 
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 import { course as python } from "../content/python-modulul-1";
+import { practiceQuizzes } from "../content/python-practice";
 import { quizzes as pythonQuizzes } from "../content/python-quizzes";
 import { itemContentSchema } from "../src/lib/content/items";
 import { type ContentBlock, courseSchema } from "../src/lib/content/schema";
 
-const COURSES = [{ source: python, quizzes: pythonQuizzes }];
+const COURSES = [
+  { source: python, quizzes: pythonQuizzes, practice: practiceQuizzes },
+];
 // Cursuri vechi, înlocuite (se șterg cu tot ce au).
 const RETIRED = ["python-modulul-1"];
 // Autorul cursurilor globale (mentorul care le poate edita din platformă).
@@ -58,7 +62,7 @@ if (!authorId)
 
 await must("Cursuri vechi", db.from("courses").delete().in("slug", RETIRED));
 
-for (const [index, { source, quizzes }] of COURSES.entries()) {
+for (const [index, { source, quizzes, practice }] of COURSES.entries()) {
   const c = courseSchema.parse(source);
   const courseId = uuid("course", c.slug);
 
@@ -220,7 +224,71 @@ for (const [index, { source, quizzes }] of COURSES.entries()) {
     questions += qs.length;
   }
 
+  // Quiz-urile de exersare: fără lecție; cele scoase din fișier se șterg.
+  const practiceId = (slug: string) =>
+    uuid("practice-quiz", `${c.slug}/${slug}`);
+  let practiceQuestions = 0;
+  for (const p of practice) {
+    const quizId = practiceId(p.slug);
+    await must(
+      `Exersare ${p.slug}`,
+      db.from("quizzes").upsert({
+        id: quizId,
+        author_id: authorId,
+        course_id: courseId,
+        title: p.title,
+        description: p.description,
+        kind: "practice",
+        xp: QUIZ_XP,
+      }),
+    );
+    await must(
+      `Întrebări exersare ${p.slug}`,
+      db.from("quiz_questions").delete().eq("quiz_id", quizId),
+    );
+    const inserted = await must(
+      `Întrebări exersare ${p.slug}`,
+      db
+        .from("quiz_questions")
+        .insert(
+          p.questions.map((q, i) => ({
+            quiz_id: quizId,
+            lesson_id: null,
+            position: i + 1,
+            prompt: q.prompt,
+            code: q.code ?? null,
+            options: q.options,
+          })),
+        )
+        .select("id, position"),
+    );
+    const byPos = new Map((inserted ?? []).map((r) => [r.position, r.id]));
+    await must(
+      `Răspunsuri exersare ${p.slug}`,
+      db.from("quiz_answer_keys").insert(
+        p.questions.map((q, i) => ({
+          question_id: byPos.get(i + 1) as string,
+          correct: q.correct,
+          explanation: q.explanation,
+        })),
+      ),
+    );
+    practiceQuestions += p.questions.length;
+  }
+  const keepPractice = practice.map((p) => practiceId(p.slug));
+  let cleanup = db
+    .from("quizzes")
+    .delete()
+    .eq("course_id", courseId)
+    .eq("kind", "practice");
+  if (keepPractice.length > 0)
+    cleanup = cleanup.not("id", "in", `(${keepPractice.join(",")})`);
+  await must(`Curățare exersare ${c.slug}`, cleanup);
+
   console.log(
     `✓ ${c.title}: ${c.lessons.length} lecții, ${problems} probleme, ${questions} întrebări de quiz.`,
+  );
+  console.log(
+    `✓ ${c.title}: ${practice.length} quiz-uri de exersare, ${practiceQuestions} întrebări.`,
   );
 }

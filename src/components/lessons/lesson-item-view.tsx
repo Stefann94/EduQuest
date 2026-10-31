@@ -21,6 +21,7 @@ import type {
 import type { LessonItemView } from "@/lib/db/lessons";
 import { formatFileSize } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { SolutionTabs } from "./solution-tabs";
 import { TryIt } from "./try-it";
 
 /** Un material întreg, pe pagina lecției. `id` = ancora din meniul cardului de lecție. */
@@ -219,11 +220,19 @@ export function ProblemBody({
 
       <SolutionToggle>
         <div className="grid gap-4">
-          <CodeBlock
-            code={p.solution}
-            language={p.language}
-            title="Rezolvare"
-            output={p.output}
+          <SolutionTabs
+            files={p.files.map((f, i) => ({
+              name: f.name,
+              node: (
+                <CodeBlock
+                  code={f.code}
+                  language={f.language}
+                  title={f.name}
+                  // Ce afișează programul îl arătăm sub primul fișier (cel care rulează).
+                  output={i === 0 ? p.output : undefined}
+                />
+              ),
+            }))}
           />
           {p.explanation ? (
             <div className="grid gap-2 leading-relaxed">

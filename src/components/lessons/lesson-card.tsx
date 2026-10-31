@@ -1,28 +1,47 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { VisibilityBadge } from "@/components/common/status";
-import type { ClassLesson, LessonItemView } from "@/lib/db/lessons";
+import type {
+  ClassLesson,
+  LessonItemView,
+  SubfolderSummary,
+} from "@/lib/db/lessons";
 import { cn } from "@/lib/utils";
 import { MaterialsMenu, type MenuItem } from "./materials-menu";
 
-/** Unde duce un material din meniu: PDF-ul și linkurile direct, restul la pagina lecției. */
+/**
+ * Ce apare în meniul unei lecții: întâi subfolderele, apoi materialele. PDF-ul și linkurile
+ * se deschid direct, restul duce la pagina folderului.
+ */
 export function menuItems(
   items: LessonItemView[],
   lessonHref: string,
+  subfolders: SubfolderSummary[] = [],
+  folderHref: (id: string) => string = (id) =>
+    `${lessonHref.split("/").slice(0, -1).join("/")}/${id}`,
 ): MenuItem[] {
-  return items.map((i) => {
-    const base = {
-      id: i.id,
-      kind: i.kind,
-      title: i.title,
-      hidden: !i.published,
-    };
-    if (i.kind === "pdf" && i.fileUrl)
-      return { ...base, href: i.fileUrl, external: true };
-    if (i.kind === "link" || i.kind === "video")
-      return { ...base, href: i.content.url, external: true };
-    return { ...base, href: `${lessonHref}#m-${i.id}` };
-  });
+  const folders: MenuItem[] = subfolders.map((f) => ({
+    id: f.id,
+    kind: "folder",
+    title: f.title,
+    href: folderHref(f.id),
+  }));
+  return [
+    ...folders,
+    ...items.map((i): MenuItem => {
+      const base = {
+        id: i.id,
+        kind: i.kind,
+        title: i.title,
+        hidden: !i.published,
+      };
+      if (i.kind === "pdf" && i.fileUrl)
+        return { ...base, href: i.fileUrl, external: true };
+      if (i.kind === "link" || i.kind === "video")
+        return { ...base, href: i.content.url, external: true };
+      return { ...base, href: `${lessonHref}#m-${i.id}` };
+    }),
+  ];
 }
 
 /** Numărul lecției într-un hexagon (sau „•” dacă mentorul arată doar titlul). */
@@ -90,7 +109,7 @@ export function LessonCard({
         {showVisibility ? <VisibilityBadge published={l.published} /> : null}
       </div>
       <div className="mt-auto grid gap-3">
-        <MaterialsMenu items={menuItems(l.items, href)} />
+        <MaterialsMenu items={menuItems(l.items, href, l.subfolders)} />
         <Link
           href={href}
           className="inline-flex items-center gap-1 justify-self-start font-bold font-heading text-primary text-sm uppercase tracking-wide hover:underline"

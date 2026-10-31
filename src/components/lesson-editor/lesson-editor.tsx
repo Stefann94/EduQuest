@@ -4,6 +4,7 @@ import {
   ArrowDown,
   ArrowUp,
   ExternalLink,
+  FolderPlus,
   Pencil,
   Plus,
   Trash2,
@@ -13,6 +14,7 @@ import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   addToClasses,
+  createSubfolder,
   deleteItem,
   deleteLesson,
   moveItem,
@@ -26,6 +28,7 @@ import {
   MATERIAL_KIND,
   MaterialKindIcon,
 } from "@/components/learning/material-kind";
+import { FolderList } from "@/components/lessons/folder-list";
 import { ConfirmDialog } from "@/components/mentor-content/confirm-dialog";
 import { Field, SelectField } from "@/components/mentor-content/field";
 import { Button } from "@/components/ui/button";
@@ -33,7 +36,11 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { ITEM_KINDS, type ItemKind } from "@/lib/content/items";
-import type { LessonDisplay, LibraryLesson } from "@/lib/db/lessons";
+import type {
+  EditorLesson,
+  LessonDisplay,
+  LibraryLesson,
+} from "@/lib/db/lessons";
 import { ItemEditor } from "./item-editor";
 
 const DISPLAY: { value: LessonDisplay; label: string }[] = [
@@ -48,7 +55,7 @@ export function LessonEditor({
   lesson,
   classes,
 }: {
-  lesson: LibraryLesson;
+  lesson: EditorLesson;
   classes: { id: string; name: string; archived: boolean }[];
 }) {
   const router = useRouter();
@@ -73,6 +80,8 @@ export function LessonEditor({
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
       <div className="grid min-w-0 gap-6">
         <DetailsForm lesson={lesson} />
+
+        <Subfolders lesson={lesson} />
 
         <section aria-labelledby="materiale" className="grid gap-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
@@ -216,31 +225,112 @@ export function LessonEditor({
       </div>
 
       <aside className="grid gap-6 lg:sticky lg:top-20">
-        <Placements
-          lesson={lesson}
-          classes={classes}
-          run={run}
-          pending={pending}
-        />
+        {lesson.parentId ? (
+          <section className="grid gap-2 cut bg-card p-5 text-sm">
+            <h2 className="text-xl">În clase</h2>
+            <p className="text-muted-foreground">
+              E un subfolder: îl văd elevii claselor în care e pus folderul de
+              pe primul nivel ({lesson.path[0]?.title}), dacă acolo e vizibil.
+            </p>
+          </section>
+        ) : (
+          <Placements
+            lesson={lesson}
+            classes={classes}
+            run={run}
+            pending={pending}
+          />
+        )}
         <section className="grid gap-3 cut bg-card p-5">
-          <h2 className="text-xl">Ștergerea lecției</h2>
+          <h2 className="text-xl">Ștergerea folderului</h2>
           <p className="text-muted-foreground text-sm">
-            Lecția și toate materialele ei dispar din toate clasele.
+            Folderul, subfolderele și toate materialele lor dispar
+            {lesson.parentId ? "." : " din toate clasele."}
           </p>
           <ConfirmDialog
-            title="Ștergi lecția?"
-            description={`„${lesson.title}” și cele ${lesson.items.length} materiale ale ei dispar definitiv.`}
-            confirmLabel="Șterge lecția"
+            title="Ștergi folderul?"
+            description={`„${lesson.title}”, cu ${lesson.items.length} materiale și ${lesson.subfolders.length} subfoldere, dispare definitiv.`}
+            confirmLabel="Șterge folderul"
             onConfirm={() => run(() => deleteLesson(lesson.id))}
             trigger={
               <Button variant="outline" className="w-fit text-destructive">
-                <Trash2 /> Șterge lecția
+                <Trash2 /> Șterge folderul
               </Button>
             }
           />
         </section>
       </aside>
     </div>
+  );
+}
+
+/** Subfolderele folderului (cel mult trei niveluri) și crearea unuia nou. */
+function Subfolders({ lesson }: { lesson: EditorLesson }) {
+  const router = useRouter();
+  const [title, setTitle] = useState("");
+  const [error, setError] = useState<string>();
+  const [pending, startTransition] = useTransition();
+  const canNest = lesson.path.length < 2;
+
+  return (
+    <section aria-labelledby="subfoldere" className="grid gap-3">
+      <h2 id="subfoldere" className="text-2xl">
+        Subfoldere ({lesson.subfolders.length})
+      </h2>
+      <FolderList
+        folders={lesson.subfolders}
+        href={(id) => `/mentor/materiale/${id}`}
+      />
+      {canNest ? (
+        <form
+          className="flex flex-wrap items-end gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            startTransition(async () => {
+              const r = await createSubfolder(lesson.id, {
+                title,
+                summary: "",
+              });
+              if (!r.ok) {
+                setError(r.errors?.title ?? r.message);
+                return;
+              }
+              setError(undefined);
+              setTitle("");
+              toast.success(r.message);
+              router.refresh();
+            });
+          }}
+        >
+          <Field
+            id="new-folder"
+            label="Subfolder nou"
+            error={error}
+            className="min-w-64 flex-1"
+          >
+            <Input
+              id="new-folder"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="ex. Probleme rezolvate"
+              maxLength={120}
+              aria-invalid={error ? true : undefined}
+            />
+          </Field>
+          <Button
+            type="submit"
+            variant="outline"
+            disabled={pending || title.trim().length < 2}
+          >
+            <FolderPlus /> Creează subfolderul
+          </Button>
+        </form>
+      ) : (
+        <p className="text-muted-foreground text-sm">
+          Ai ajuns la al treilea nivel: aici se pun doar materiale.
+        </p>
+      )}
+    </section>
   );
 }
 

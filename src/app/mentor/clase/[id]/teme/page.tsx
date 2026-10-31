@@ -37,6 +37,7 @@ export default function ClassAssignmentsPage({ params }: Props) {
 async function Assignments({ params }: { params: Props["params"] }) {
   const { me, classRoom: c } = await loadMentorClass(params);
   const rows = (await getMentorHomeworks(me.id))
+    .filter((h) => !h.archived)
     .flatMap((h) =>
       h.assignments.filter((a) => a.classId === c.id).map((a) => ({ h, a })),
     )

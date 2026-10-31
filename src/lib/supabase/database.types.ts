@@ -487,6 +487,7 @@ export type Database = {
           created_at: string;
           duration_min: number | null;
           id: string;
+          parent_id: string | null;
           position: number;
           slug: string | null;
           summary: string;
@@ -499,6 +500,7 @@ export type Database = {
           created_at?: string;
           duration_min?: number | null;
           id?: string;
+          parent_id?: string | null;
           position?: number;
           slug?: string | null;
           summary?: string;
@@ -510,6 +512,7 @@ export type Database = {
           created_at?: string;
           duration_min?: number | null;
           id?: string;
+          parent_id?: string | null;
           position?: number;
           slug?: string | null;
           summary?: string;
@@ -528,6 +531,13 @@ export type Database = {
             columns: ["course_id"];
             isOneToOne: false;
             referencedRelation: "courses";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "lessons_parent_id_fkey";
+            columns: ["parent_id"];
+            isOneToOne: false;
+            referencedRelation: "lessons";
             referencedColumns: ["id"];
           },
         ];

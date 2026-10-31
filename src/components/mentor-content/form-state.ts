@@ -84,6 +84,7 @@ export const CODE_LANGUAGES = [
   { value: "css", label: "CSS" },
   { value: "javascript", label: "JavaScript" },
   { value: "java", label: "Java" },
+  { value: "json", label: "JSON" },
   { value: "text", label: "Text simplu" },
 ] as const;
 

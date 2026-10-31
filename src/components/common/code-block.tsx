@@ -7,6 +7,7 @@ const LANGS: Record<string, string> = {
   css: "CSS",
   javascript: "JavaScript",
   java: "Java",
+  json: "JSON",
   text: "Text",
 };
 

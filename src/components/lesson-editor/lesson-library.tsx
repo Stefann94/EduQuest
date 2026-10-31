@@ -25,6 +25,10 @@ import { cn } from "@/lib/utils";
 
 export type LibraryEntry = {
   id: string;
+  /** null = folder de pe primul nivel; altfel subfolder (apare doar în folderul lui). */
+  parentId: string | null;
+  /** „Capitol › Subfolder”, pentru problemele din subfoldere. */
+  path: string;
   title: string;
   summary: string;
   items: { id: string; kind: ItemKind; title: string; published: boolean }[];
@@ -101,6 +105,7 @@ export function LessonLibrary({
     cls === "all" || l.classes.some((c) => c.classId === cls);
   const shown = lessons.filter(
     (l) =>
+      l.parentId === null &&
       matchClass(l) &&
       (!q ||
         normalize(
@@ -247,7 +252,7 @@ export function LessonLibrary({
                     <div className="min-w-0 flex-1 basis-56">
                       <p className="truncate font-medium">{p.title}</p>
                       <p className="truncate text-muted-foreground text-sm">
-                        Lecția: {p.lesson.title}
+                        Folder: {p.lesson.path}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-1.5">

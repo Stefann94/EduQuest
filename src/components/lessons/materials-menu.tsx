@@ -5,15 +5,15 @@ import Link from "next/link";
 import { useId, useState } from "react";
 import {
   MATERIAL_KIND,
+  type MaterialKind,
   MaterialKindIcon,
 } from "@/components/learning/material-kind";
-import type { ItemKind } from "@/lib/content/items";
 import { plural } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export type MenuItem = {
   id: string;
-  kind: ItemKind;
+  kind: MaterialKind;
   title: string;
   href: string;
   /** Linkurile externe și PDF-urile se deschid într-o filă nouă. */
