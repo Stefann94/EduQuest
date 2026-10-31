@@ -11,17 +11,15 @@ import { notifyClassStudents } from "@/lib/db/notify";
 const startSchema = z.object({
   quizId: z.string().refine(isUuid, { message: "Alege quiz-ul." }),
   classId: z.string().refine(isUuid, { message: "Alege clasa." }),
-  seconds: z.number().int().min(5).max(120),
 });
 
 /**
- * Deschide o sesiune live: baza de date generează un cod unic de 6 cifre
- * (create_live_session). Elevii clasei primesc o notificare.
+ * Deschide o sesiune dintr-un quiz live: baza de date generează un cod unic de 6 cifre
+ * (create_live_session). Timpul e pus pe fiecare întrebare. Elevii clasei primesc o notificare.
  */
 export async function startLiveSession(input: {
   quizId: string;
   classId: string;
-  seconds: number;
 }) {
   const me = await requireUser("mentor");
   const parsed = startSchema.safeParse(input);
@@ -39,11 +37,10 @@ export async function startLiveSession(input: {
     p_class: parsed.data.classId,
   });
   if (error || !id)
-    return { ok: false as const, message: "Sesiunea nu s-a putut deschide." };
-  await supabase
-    .from("live_sessions")
-    .update({ question_seconds: parsed.data.seconds })
-    .eq("id", id);
+    return {
+      ok: false as const,
+      message: error?.message ?? "Sesiunea nu s-a putut deschide.",
+    };
   await notifyClassStudents([parsed.data.classId], {
     kind: "live_quiz",
     title: "Quiz live deschis",
@@ -54,10 +51,10 @@ export async function startLiveSession(input: {
   redirect(`/mentor/live/${id}`);
 }
 
-/** Comenzile din panoul de control: start, dezvăluie, următoarea, încheie. */
+/** Comenzile din panoul de control: start, dezvăluie, clasament, următoarea, încheie. */
 export async function controlLive(
   sessionId: string,
-  action: "start" | "reveal" | "next" | "finish",
+  action: "start" | "reveal" | "board" | "next" | "finish",
 ) {
   await requireUser("mentor");
   if (!isUuid(sessionId)) return { ok: false, message: "Sesiunea nu există." };

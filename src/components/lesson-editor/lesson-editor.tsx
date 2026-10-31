@@ -4,11 +4,13 @@ import {
   ArrowDown,
   ArrowUp,
   ExternalLink,
+  Eye,
   FolderPlus,
   Pencil,
   Plus,
   Trash2,
 } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -152,6 +154,16 @@ export function LessonEditor({
                     >
                       <ArrowDown aria-hidden="true" />
                     </Button>
+                    {item.kind === "problem" ? (
+                      <Link
+                        href={`/mentor/materiale/${lesson.id}/probleme/${item.id}`}
+                        className="grid size-8 place-items-center text-muted-foreground hover:text-foreground"
+                        aria-label={`Previzualizează: ${item.title}`}
+                        title="Previzualizează ca elev"
+                      >
+                        <Eye className="size-4" aria-hidden="true" />
+                      </Link>
+                    ) : null}
                     {item.kind === "pdf" && item.fileUrl ? (
                       <a
                         href={item.fileUrl}

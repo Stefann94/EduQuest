@@ -7,8 +7,11 @@ const player = z.object({
   id: z.string(),
   name: z.string(),
   avatar: z.string().nullable(),
+  /** Punctele din quiz (nu XP): 500 + bonus de viteză pentru fiecare răspuns corect. */
   score: z.number(),
   rank: z.number(),
+  /** XP-ul primit pentru locul final; null până se încheie sesiunea. */
+  xp: z.number().nullable().optional(),
 });
 
 export const liveStateSchema = z.object({
@@ -17,10 +20,13 @@ export const liveStateSchema = z.object({
   code: z.string().nullable(),
   current: z.number(),
   total: z.number(),
+  /** Timpul întrebării curente (fiecare întrebare are timpul ei). */
   seconds: z.number(),
   startedAt: z.string().nullable(),
   now: z.string(),
   reveal: z.boolean(),
+  /** După dezvăluire, mentorul arată clasamentul de până acum. */
+  showBoard: z.boolean().default(false),
   question: z
     .object({
       prompt: z.string(),
@@ -28,6 +34,8 @@ export const liveStateSchema = z.object({
       options: z.array(z.string()),
       correct: z.number().optional(),
       explanation: z.string().nullable().optional(),
+      /** După dezvăluire: câți elevi au ales fiecare variantă (în ordinea variantelor). */
+      counts: z.array(z.number()).optional(),
     })
     .nullable(),
   mine: z
@@ -46,9 +54,25 @@ export const liveStateSchema = z.object({
 export type LiveState = z.infer<typeof liveStateSchema>;
 export type LivePlayer = z.infer<typeof player>;
 
+/**
+ * Etapa jocului: sala de așteptare → întrebare → răspunsul corect (cu câți au ales
+ * fiecare variantă) → clasamentul de până acum → … → final.
+ */
+export type LivePhase = "lobby" | "question" | "reveal" | "board" | "ended";
+
+export function livePhase(state: LiveState): LivePhase {
+  if (state.status === "ended") return "ended";
+  if (state.status !== "running" || !state.question) return "lobby";
+  if (!state.reveal) return "question";
+  return state.showBoard ? "board" : "reveal";
+}
+
 /** XP după locul final (la fel ca în baza de date). */
 export const liveXpForRank = (rank: number) =>
   rank === 1 ? 5 : rank === 2 ? 4 : rank === 3 ? 3 : rank === 4 ? 2 : 1;
+
+/** XP-ul primit de un jucător: cel din baza de date, altfel cel al locului lui. */
+export const playerXp = (p: LivePlayer) => p.xp ?? liveXpForRank(p.rank);
 
 /** Secundele rămase din întrebarea curentă, după ceasul serverului (fără diferența de ceas). */
 export function secondsLeft(state: LiveState, clockSkewMs: number) {

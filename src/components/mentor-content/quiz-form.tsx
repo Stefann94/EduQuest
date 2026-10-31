@@ -1,6 +1,6 @@
 "use client";
 
-import { Code2 } from "lucide-react";
+import { Code2, Lock, Radio, Timer, Users } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
@@ -8,6 +8,7 @@ import { type QuizInput, saveQuiz } from "@/app/mentor/quiz/actions";
 import { Section } from "@/components/common/section";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { Field, FieldError, FieldSet, SelectField } from "./field";
@@ -22,10 +23,13 @@ type QuestionDraft = {
   correct: number | null;
   explanation: string;
   lessonId: string | null;
+  timeSec: number;
 };
 
 export type QuizDraft = {
   id?: string;
+  /** Live (jucat în sesiuni cu cod) sau pentru clase. Se alege doar la creare. */
+  live: boolean;
   title: string;
   description: string;
   lessonIds: string[];
@@ -35,6 +39,11 @@ export type QuizDraft = {
   questions: Omit<QuestionDraft, "key">[];
 };
 
+/** Câte variante are o întrebare nouă și câte poate avea cel mult. */
+const DEFAULT_OPTIONS = 4;
+const MAX_OPTIONS = 6;
+const DEFAULT_TIME_SEC = 20;
+
 const emptyQuestion = (
   lessonId: string | null,
   key = newKey("q"),
@@ -42,16 +51,18 @@ const emptyQuestion = (
   key,
   prompt: "",
   code: "",
-  options: ["", "", "", ""],
+  options: Array.from({ length: DEFAULT_OPTIONS }, () => ""),
   correct: null,
   explanation: "",
   lessonId,
+  timeSec: DEFAULT_TIME_SEC,
 });
 
 /**
- * Un quiz: întrebări cu 2–4 variante (una corectă), fiecare etichetată pe lecția pe care
- * o verifică; lecțiile acoperite (una = quiz de lecție, mai multe = recapitulare), XP-ul
- * și clasele cărora le e dat (disponibil imediat, fără programare).
+ * Un quiz: întrebări cu 2–6 variante (una corectă), fiecare etichetată pe lecția pe care
+ * o verifică; lecțiile acoperite (una = quiz de lecție, mai multe = recapitulare).
+ * Live: timp pe fiecare întrebare, jucat în sesiuni cu cod. Pentru clase: XP, limită de
+ * timp și clasele cărora le e dat (disponibil imediat).
  */
 export function QuizForm({
   draft,
@@ -62,6 +73,7 @@ export function QuizForm({
   lessons: { id: string; title: string }[];
   classes: { id: string; name: string }[];
 }) {
+  const [live, setLive] = useState(draft.live);
   const [title, setTitle] = useState(draft.title);
   const [description, setDescription] = useState(draft.description);
   const [lessonIds, setLessonIds] = useState(draft.lessonIds);
@@ -107,12 +119,14 @@ export function QuizForm({
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const input: QuizInput = {
+      live,
       title,
       description,
       lessonIds,
-      xp,
-      timeLimitSec: minutes.trim() ? Math.round(Number(minutes) * 60) : null,
-      classIds,
+      xp: live ? 0 : xp,
+      timeLimitSec:
+        !live && minutes.trim() ? Math.round(Number(minutes) * 60) : null,
+      classIds: live ? [] : classIds,
       questions: questions.map((q) => ({
         prompt: q.prompt,
         code: withCode.includes(q.key) ? q.code : "",
@@ -121,6 +135,7 @@ export function QuizForm({
         explanation: q.explanation,
         lessonId:
           q.lessonId && lessonIds.includes(q.lessonId) ? q.lessonId : null,
+        timeSec: q.timeSec,
       })),
     };
     startTransition(async () => {
@@ -135,10 +150,14 @@ export function QuizForm({
     });
   }
 
+  const backHref = live ? "/mentor/quiz/live/quiz-uri" : "/mentor/quiz/clase";
+
   return (
     <form onSubmit={submit} noValidate>
       <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-start">
         <div className="grid min-w-0 gap-6">
+          <ModePicker value={live} onChange={setLive} locked={!!draft.id} />
+
           <Section title="Detalii">
             <div className="grid gap-5">
               <Field id="title" label="Titlu" error={errors.title}>
@@ -170,7 +189,11 @@ export function QuizForm({
 
           <Section
             title={`Întrebări (${questions.length})`}
-            description="Fiecare întrebare are 2–4 variante, una corectă, și e etichetată pe o lecție."
+            description={
+              live
+                ? "Fiecare întrebare are 2–6 variante, una corectă, și timpul ei de răspuns."
+                : "Fiecare întrebare are 2–6 variante, una corectă, și e etichetată pe o lecție."
+            }
           >
             <div className="grid gap-4">
               {errors.questions ? (
@@ -186,6 +209,51 @@ export function QuizForm({
                         <p className="font-bold font-heading text-sm uppercase tracking-wide">
                           Întrebarea {i + 1}
                         </p>
+                        {live ? (
+                          <div className="ml-auto flex items-center gap-2">
+                            <Label
+                              htmlFor={`${p}.timeSec`}
+                              className="flex items-center gap-1.5 text-muted-foreground"
+                            >
+                              <Timer className="size-4" aria-hidden="true" />
+                              Timp
+                            </Label>
+                            <div className="flex items-center gap-1">
+                              <Input
+                                id={`${p}.timeSec`}
+                                type="number"
+                                inputMode="numeric"
+                                min={5}
+                                max={120}
+                                step={5}
+                                value={Number.isNaN(q.timeSec) ? "" : q.timeSec}
+                                onChange={(e) =>
+                                  update(i, {
+                                    timeSec:
+                                      e.target.value === ""
+                                        ? Number.NaN
+                                        : Number(e.target.value),
+                                  })
+                                }
+                                aria-invalid={
+                                  errors[`${p}.timeSec`] ? true : undefined
+                                }
+                                aria-describedby={`${p}.timeSec-hint`}
+                                className="h-8 w-16 text-right tabular-nums"
+                              />
+                              <span
+                                id={`${p}.timeSec-hint`}
+                                className="text-muted-foreground text-sm"
+                              >
+                                s
+                                <span className="sr-only">
+                                  {" "}
+                                  (între 5 și 120 de secunde)
+                                </span>
+                              </span>
+                            </div>
+                          </div>
+                        ) : null}
                         <ItemControls
                           label={`întrebarea ${i + 1}`}
                           index={i}
@@ -216,6 +284,12 @@ export function QuizForm({
                           }
                         />
                       </Field>
+
+                      {errors[`${p}.timeSec`] ? (
+                        <FieldError className="-mt-2">
+                          {errors[`${p}.timeSec`]}
+                        </FieldError>
+                      ) : null}
 
                       {codeOpen ? (
                         <Field id={`${p}.code`} label="Cod" optional>
@@ -326,13 +400,17 @@ export function QuizForm({
                           <FieldError>{errors[`${p}.correct`]}</FieldError>
                         ) : null}
                         <AddButton
-                          disabled={q.options.length >= 4}
+                          disabled={q.options.length >= MAX_OPTIONS}
                           onClick={() =>
                             update(i, { options: [...q.options, ""] })
                           }
                         >
                           Adaugă o variantă
                         </AddButton>
+                        <p className="text-muted-foreground text-xs">
+                          {q.options.length} din cel mult {MAX_OPTIONS}{" "}
+                          variante.
+                        </p>
                       </fieldset>
 
                       <div className="grid gap-4 sm:grid-cols-2">
@@ -367,7 +445,11 @@ export function QuizForm({
                           id={`${p}.explanation`}
                           label="Explicație"
                           optional
-                          hint="Elevii o văd după ce trimit."
+                          hint={
+                            live
+                              ? "Apare după ce dezvălui răspunsul."
+                              : "Elevii o văd după ce trimit."
+                          }
                           error={errors[`${p}.explanation`]}
                         >
                           <Textarea
@@ -389,7 +471,13 @@ export function QuizForm({
                 onClick={() =>
                   setQuestions((l) => [
                     ...l,
-                    emptyQuestion(l.at(-1)?.lessonId ?? lessonIds[0] ?? null),
+                    {
+                      ...emptyQuestion(
+                        l.at(-1)?.lessonId ?? lessonIds[0] ?? null,
+                      ),
+                      // O întrebare nouă pornește cu timpul celei de dinainte.
+                      timeSec: l.at(-1)?.timeSec || DEFAULT_TIME_SEC,
+                    },
                   ])
                 }
               >
@@ -439,75 +527,97 @@ export function QuizForm({
             )}
           </Section>
 
-          <Section title="XP și timp">
-            <div className="grid gap-4">
-              <Field
-                id="xp"
-                label="XP la prima rezolvare"
-                error={errors.xp}
-                hint="Între 0 și 5, după scor. O refacere aduce o singură dată +1."
-              >
-                <Input
-                  id="xp"
-                  type="number"
-                  min={0}
-                  max={5}
-                  value={xp}
-                  onChange={(e) => setXp(Number(e.target.value))}
-                  className="w-24"
-                />
-              </Field>
-              <Field
-                id="time"
-                label="Limită de timp (minute)"
-                optional
-                error={errors.timeLimitSec}
-              >
-                <Input
-                  id="time"
-                  type="number"
-                  min={1}
-                  max={120}
-                  value={minutes}
-                  onChange={(e) => setMinutes(e.target.value)}
-                  placeholder="Fără limită"
-                  className="w-32"
-                />
-              </Field>
-            </div>
-          </Section>
+          {live ? (
+            <Section title="Cum se joacă">
+              <ul className="grid list-disc gap-2 pl-4 text-muted-foreground text-sm">
+                <li>
+                  Deschizi o sesiune pentru o clasă și primești un cod de 6
+                  cifre.
+                </li>
+                <li>
+                  Elevii răspund de pe dispozitivele lor; un răspuns corect și
+                  rapid aduce mai multe puncte.
+                </li>
+                <li>XP-ul vine din clasamentul de la final.</li>
+              </ul>
+            </Section>
+          ) : null}
 
-          <Section title="Dat claselor">
-            {classes.length > 0 ? (
-              <FieldSet
-                legend="Clasele care îl primesc"
-                hint="Elevii îl văd imediat și primesc o notificare."
-              >
-                <div className="grid gap-1">
-                  {classes.map((c) => (
-                    <label
-                      key={c.id}
-                      className="flex items-center gap-2 px-1 py-1 text-sm"
-                    >
-                      <input
-                        type="checkbox"
-                        className="size-4 accent-primary"
-                        checked={classIds.includes(c.id)}
-                        onChange={(e) =>
-                          setClassIds(toggle(classIds, c.id, e.target.checked))
-                        }
-                      />
-                      {c.name}
-                    </label>
-                  ))}
-                </div>
-              </FieldSet>
-            ) : (
-              <p className="text-muted-foreground text-sm">
-                Nu ai clase active.
-              </p>
-            )}
-          </Section>
+          {live ? null : (
+            <Section title="XP și timp">
+              <div className="grid gap-4">
+                <Field
+                  id="xp"
+                  label="XP la prima rezolvare"
+                  error={errors.xp}
+                  hint="Între 0 și 5, după scor. O refacere aduce o singură dată +1."
+                >
+                  <Input
+                    id="xp"
+                    type="number"
+                    min={0}
+                    max={5}
+                    value={xp}
+                    onChange={(e) => setXp(Number(e.target.value))}
+                    className="w-24"
+                  />
+                </Field>
+                <Field
+                  id="time"
+                  label="Limită de timp (minute)"
+                  optional
+                  error={errors.timeLimitSec}
+                >
+                  <Input
+                    id="time"
+                    type="number"
+                    min={1}
+                    max={120}
+                    value={minutes}
+                    onChange={(e) => setMinutes(e.target.value)}
+                    placeholder="Fără limită"
+                    className="w-32"
+                  />
+                </Field>
+              </div>
+            </Section>
+          )}
+
+          {live ? null : (
+            <Section title="Dat claselor">
+              {classes.length > 0 ? (
+                <FieldSet
+                  legend="Clasele care îl primesc"
+                  hint="Elevii îl văd imediat și primesc o notificare."
+                >
+                  <div className="grid gap-1">
+                    {classes.map((c) => (
+                      <label
+                        key={c.id}
+                        className="flex items-center gap-2 px-1 py-1 text-sm"
+                      >
+                        <input
+                          type="checkbox"
+                          className="size-4 accent-primary"
+                          checked={classIds.includes(c.id)}
+                          onChange={(e) =>
+                            setClassIds(
+                              toggle(classIds, c.id, e.target.checked),
+                            )
+                          }
+                        />
+                        {c.name}
+                      </label>
+                    ))}
+                  </div>
+                </FieldSet>
+              ) : (
+                <p className="text-muted-foreground text-sm">
+                  Nu ai clase active.
+                </p>
+              )}
+            </Section>
+          )}
 
           <div className="grid gap-2">
             <Button type="submit" variant="cta" size="lg" disabled={pending}>
@@ -518,7 +628,7 @@ export function QuizForm({
                   : "Creează quiz-ul"}
             </Button>
             <Link
-              href="/mentor/quiz"
+              href={backHref}
               className={buttonVariants({ variant: "ghost" })}
             >
               Înapoi la quiz-uri
@@ -527,5 +637,105 @@ export function QuizForm({
         </div>
       </div>
     </form>
+  );
+}
+
+const MODES = [
+  {
+    live: true,
+    label: "Live",
+    icon: Radio,
+    description:
+      "Jucat împreună în timpul orei, cu un cod de 6 cifre și timp pe fiecare întrebare.",
+    tone: "bg-quiz-red text-white",
+  },
+  {
+    live: false,
+    label: "Pentru clase",
+    icon: Users,
+    description:
+      "Dat claselor; elevii îl rezolvă când vor și primesc XP după scor.",
+    tone: "bg-cyan text-cyan-foreground",
+  },
+] as const;
+
+/** Tipul quiz-ului: ales la creare, apoi doar afișat (nu se mai schimbă). */
+function ModePicker({
+  value,
+  onChange,
+  locked,
+}: {
+  value: boolean;
+  onChange: (live: boolean) => void;
+  locked: boolean;
+}) {
+  if (locked) {
+    const m = MODES.find((x) => x.live === value) ?? MODES[1];
+    return (
+      <div className="flex cut-sm flex-wrap items-center gap-3 bg-card px-4 py-3">
+        <span
+          aria-hidden="true"
+          className={cn(
+            "grid size-10 shrink-0 cut-xs place-items-center",
+            m.tone,
+          )}
+        >
+          <m.icon className="size-[18px]" />
+        </span>
+        <div className="min-w-0 flex-1 basis-56">
+          <p className="font-bold font-heading text-sm uppercase tracking-wide">
+            {m.live ? "Quiz live" : "Quiz pentru clase"}
+          </p>
+          <p className="text-muted-foreground text-sm">{m.description}</p>
+        </div>
+        <span className="inline-flex shrink-0 items-center gap-1 text-muted-foreground text-xs">
+          <Lock className="size-3.5" aria-hidden="true" />
+          Tipul nu se mai schimbă
+        </span>
+      </div>
+    );
+  }
+  return (
+    <fieldset className="grid gap-2">
+      <legend className="mb-2 font-bold font-heading text-sm uppercase tracking-wide">
+        Ce fel de quiz?
+      </legend>
+      <div className="grid gap-2 sm:grid-cols-2">
+        {MODES.map((m) => (
+          <label
+            key={m.label}
+            className="group flex cut-sm cursor-pointer items-start gap-3 border-2 border-transparent bg-card p-4 transition-colors hover:bg-muted/60 has-checked:border-foreground has-focus-visible:ring-3 has-focus-visible:ring-ring/50"
+          >
+            <input
+              type="radio"
+              name="quiz-mode"
+              checked={value === m.live}
+              onChange={() => onChange(m.live)}
+              className="sr-only"
+            />
+            <span
+              aria-hidden="true"
+              className={cn(
+                "grid size-11 shrink-0 cut-xs place-items-center opacity-50 grayscale transition group-has-checked:opacity-100 group-has-checked:grayscale-0",
+                m.tone,
+              )}
+            >
+              <m.icon className="size-5" />
+            </span>
+            <span className="grid gap-0.5">
+              <span className="font-extrabold font-heading text-lg uppercase leading-tight tracking-wide">
+                {m.label}
+              </span>
+              <span className="text-muted-foreground text-sm">
+                {m.description}
+              </span>
+            </span>
+          </label>
+        ))}
+      </div>
+      <p className="text-muted-foreground text-xs">
+        După creare, tipul nu se mai poate schimba.
+      </p>
+    </fieldset>
   );
 }

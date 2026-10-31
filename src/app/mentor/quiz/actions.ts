@@ -12,7 +12,8 @@ import { getQuizForEditor } from "@/lib/db/quizzes";
 
 // Quiz-urile mentorului: pe o lecție sau pe mai multe (recapitulare), cu fiecare întrebare
 // etichetată pe lecția pe care o verifică (de aici vine tabelul „elevi × lecții”).
-// Nu există quiz-uri programate: un quiz dat clasei e disponibil imediat.
+// Un quiz e fie live (jucat în sesiuni cu cod, cu timp pe fiecare întrebare), fie pentru
+// clase (dat claselor, disponibil imediat). Tipul se alege la creare și nu se mai schimbă.
 
 export type ActionResult =
   | { ok: true; message: string; id?: string }
@@ -49,13 +50,18 @@ const questionSchema = z
           .max(200, "Varianta are cel mult 200 de caractere."),
       )
       .min(2, "Cel puțin 2 variante.")
-      .max(4, "Cel mult 4 variante."),
+      .max(6, "Cel mult 6 variante."),
     correct: z.number({ error: "Alege varianta corectă." }).int().min(0),
     explanation: z
       .string()
       .trim()
       .max(600, "Explicația are cel mult 600 de caractere."),
     lessonId: z.string().nullable(),
+    timeSec: z
+      .number({ error: "Alege timpul de răspuns." })
+      .int("Timpul e un număr întreg de secunde.")
+      .min(5, "Cel puțin 5 secunde.")
+      .max(120, "Cel mult 120 de secunde."),
   })
   .refine((q) => q.correct < q.options.length, {
     path: ["correct"],
@@ -63,6 +69,7 @@ const questionSchema = z
   });
 
 const quizSchema = z.object({
+  live: z.boolean(),
   title: z
     .string()
     .trim()
@@ -111,12 +118,15 @@ export async function saveQuiz(
     id && isUuid(id) ? await getQuizForEditor(me.id, id) : undefined;
   if (id && !existing)
     return { ok: false, message: "Quiz-ul nu mai există sau nu e al tău." };
+  // Tipul (live / pentru clase) se alege la creare; la editare rămâne cel salvat.
+  const live = existing ? existing.live : q.live;
 
   // Doar lecțiile proprii și doar clasele în care predă.
   const myLessons = new Set((await getMentorLessons(me.id)).map((l) => l.id));
   const lessonIds = q.lessonIds.filter((l) => myLessons.has(l));
   const myClasses = await mentorClassIds(me.id);
-  const classIds = q.classIds.filter((c) => myClasses.includes(c));
+  // Un quiz live nu se dă claselor: se joacă doar în sesiuni.
+  const classIds = live ? [] : q.classIds.filter((c) => myClasses.includes(c));
   const lessonOf = (l: string | null) =>
     l && lessonIds.includes(l) ? l : null;
 
@@ -125,8 +135,9 @@ export async function saveQuiz(
     title: q.title,
     description: q.description,
     kind: (lessonIds.length > 1 ? "recap" : "lesson") as "recap" | "lesson",
-    xp: q.xp,
-    time_limit_sec: q.timeLimitSec,
+    // În quiz-ul live XP-ul vine din clasamentul sesiunii, iar timpul e pe întrebare.
+    xp: live ? 0 : q.xp,
+    time_limit_sec: live ? null : q.timeLimitSec,
   };
   let quizId = existing?.id;
   if (existing) {
@@ -138,7 +149,7 @@ export async function saveQuiz(
   } else {
     const { data, error } = await supabase
       .from("quizzes")
-      .insert({ ...row, author_id: me.id })
+      .insert({ ...row, live, author_id: me.id })
       .select("id")
       .single();
     if (error || !data)
@@ -159,6 +170,7 @@ export async function saveQuiz(
         code: x.code.trim() ? x.code : null,
         options: x.options,
         lesson_id: lessonOf(x.lessonId),
+        time_sec: live ? x.timeSec : 20,
       })),
     )
     .select("id, position");
@@ -221,5 +233,5 @@ export async function deleteQuiz(id: string): Promise<ActionResult> {
   const { error } = await supabase.from("quizzes").delete().eq("id", id);
   if (error) return { ok: false, message: "Quiz-ul nu s-a putut șterge." };
   refresh();
-  redirect("/mentor/quiz");
+  redirect(quiz.live ? "/mentor/quiz/live/quiz-uri" : "/mentor/quiz/clase");
 }

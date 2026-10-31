@@ -103,7 +103,7 @@ async function Content({
               </TabsList>
 
               <TabsContent value="materiale" className="mt-4">
-                <ol className="stagger grid gap-2 md:grid-cols-2">
+                <ol className="stagger grid gap-2">
                   {course.lessons.map((l) => (
                     <li key={l.id}>
                       <Link
@@ -140,7 +140,7 @@ async function Content({
               </TabsContent>
 
               <TabsContent value="probleme" className="mt-4">
-                <ul className="stagger grid gap-2 md:grid-cols-2">
+                <ul className="stagger grid gap-2">
                   {problems.map((p) => (
                     <li key={p.id}>
                       <Link
@@ -177,7 +177,7 @@ async function Content({
                   după scor, iar o refacere încă 1 XP; după aceea îl poți relua
                   oricând, doar pentru exersare.
                 </p>
-                <ul className="stagger grid gap-2 md:grid-cols-2">
+                <ul className="stagger grid gap-2">
                   {course.lessons.flatMap((l) => {
                     if (!l.quiz) return [];
                     const quiz = l.quiz;

@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/common/page-header";
+import { LiveQuizStart } from "@/components/mentor-content/live-quiz-start";
 import { QuizDeleteButton } from "@/components/mentor-content/quiz-delete-button";
 import { QuizForm } from "@/components/mentor-content/quiz-form";
 import { FormSkeleton } from "@/components/mentor-content/skeletons";
@@ -42,20 +43,39 @@ async function Content({ params }: { params: Props["params"] }) {
   return (
     <div className="grid gap-6">
       <PageHeader
-        back={{ href: "/mentor/quiz", label: "Quiz-uri" }}
+        back={
+          quiz.live
+            ? { href: "/mentor/quiz/live/quiz-uri", label: "Quiz-uri live" }
+            : { href: "/mentor/quiz/clase", label: "Quiz-uri pentru clase" }
+        }
         title={quiz.title}
-        description={`${quiz.kind === "recap" ? "Recapitulare" : "Quiz de lecție"} · ${plural(quiz.questions.length, "întrebare", "întrebări")}`}
+        description={`${quiz.live ? "Quiz live" : quiz.kind === "recap" ? "Recapitulare" : "Quiz de lecție"} · ${plural(quiz.questions.length, "întrebare", "întrebări")}`}
         actions={
-          <QuizDeleteButton
-            quizId={quiz.id}
-            title={quiz.title}
-            icon={<Trash2 />}
-          />
+          <>
+            <QuizDeleteButton
+              quizId={quiz.id}
+              title={quiz.title}
+              icon={<Trash2 />}
+            />
+            {quiz.live ? (
+              <LiveQuizStart
+                quizId={quiz.id}
+                questionCount={quiz.questions.length}
+                classes={classes.active.map((c) => ({
+                  id: c.id,
+                  name: c.name,
+                }))}
+                size="lg"
+                label="Deschide o sesiune live"
+              />
+            ) : null}
+          </>
         }
       />
       <QuizForm
         draft={{
           id: quiz.id,
+          live: quiz.live,
           title: quiz.title,
           description: quiz.description,
           lessonIds: quiz.lessonIds,
@@ -69,6 +89,7 @@ async function Content({ params }: { params: Props["params"] }) {
             correct: q.correct,
             explanation: q.explanation,
             lessonId: q.lessonId,
+            timeSec: q.timeSec,
           })),
         }}
         lessons={lessons.map((l) => ({ id: l.id, title: l.title }))}

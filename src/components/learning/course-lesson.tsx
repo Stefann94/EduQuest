@@ -12,7 +12,7 @@ import {
   ContentBlocks,
   tableOfContents,
 } from "@/components/learning/content-blocks";
-import { LessonItemSection } from "@/components/lessons/lesson-item-view";
+import { ProblemCard } from "@/components/lessons/problem-card";
 import { buttonVariants } from "@/components/ui/button";
 import { getLesson } from "@/lib/data/course-queries";
 import { formatDuration } from "@/lib/format";
@@ -109,9 +109,19 @@ export async function CourseLesson({
               <h2 id="probleme-lectie" className="text-3xl">
                 {mentor ? "Probleme (fără rezolvări)" : "Probleme de exersat"}
               </h2>
-              {problems.map((p) => (
-                <LessonItemSection key={p.id} item={p} hideSolutions={mentor} />
-              ))}
+              <ul className="grid gap-3">
+                {problems.map((p) =>
+                  p.kind === "problem" ? (
+                    <li key={p.id}>
+                      <ProblemCard
+                        title={p.title}
+                        problem={p.content}
+                        href={`${courseHref}/${lesson.slug}/probleme/${p.id}`}
+                      />
+                    </li>
+                  ) : null,
+                )}
+              </ul>
             </section>
           ) : null}
 

@@ -115,7 +115,9 @@ async function MentorShell({ children }: { children: React.ReactNode }) {
     })),
     ...quizzes.map((q) => ({
       label: q.title,
-      hint: `Quiz · ${q.classes.map((c) => c.name).join(", ") || "neatribuit"}`,
+      hint: q.live
+        ? "Quiz live"
+        : `Quiz · ${q.classes.map((c) => c.name).join(", ") || "neatribuit"}`,
       href: `/mentor/quiz/${q.id}`,
       kind: "quiz" as const,
     })),

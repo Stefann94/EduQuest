@@ -220,6 +220,8 @@ export type MentorQuiz = {
   title: string;
   description: string;
   kind: QuizKind;
+  /** Quiz live (jucat doar în sesiuni cu cod) sau pentru clase (rezolvat oricând). */
+  live: boolean;
   xp: number;
   createdAt: string;
   questionCount: number;
@@ -228,7 +230,7 @@ export type MentorQuiz = {
   attempts: number;
 };
 
-const MENTOR_QUIZ_FIELDS = `id, title, description, kind, xp, created_at,
+const MENTOR_QUIZ_FIELDS = `id, title, description, kind, live, xp, created_at,
   quiz_questions(count),
   quiz_lessons(lesson:lessons!quiz_lessons_lesson_id_fkey(id, title)),
   quiz_assignments(class_id, assigned_at),
@@ -254,6 +256,7 @@ export async function getMentorQuizzes(
     title: q.title,
     description: q.description,
     kind: q.kind,
+    live: q.live,
     xp: q.xp,
     createdAt: q.created_at,
     questionCount: q.quiz_questions[0]?.count ?? 0,
@@ -278,6 +281,8 @@ export type EditorQuestion = {
   correct: number;
   explanation: string;
   lessonId: string | null;
+  /** Timpul de răspuns, în secunde (doar în quiz-urile live). */
+  timeSec: number;
 };
 
 /** Un quiz pentru editor, cu răspunsurile corecte (doar autorul are acces la ele). */
@@ -287,8 +292,8 @@ export async function getQuizForEditor(mentorId: string, id: string) {
   const { data: q } = await supabase
     .from("quizzes")
     .select(
-      `id, title, description, kind, xp, time_limit_sec,
-       quiz_questions(id, position, prompt, code, options, lesson_id,
+      `id, title, description, kind, live, xp, time_limit_sec,
+       quiz_questions(id, position, prompt, code, options, lesson_id, time_sec,
          quiz_answer_keys(correct, explanation)),
        quiz_lessons(lesson_id),
        quiz_assignments(class_id, assigned_at)`,
@@ -313,6 +318,7 @@ export async function getQuizForEditor(mentorId: string, id: string) {
         correct: key?.correct ?? 0,
         explanation: key?.explanation ?? "",
         lessonId: x.lesson_id,
+        timeSec: x.time_sec,
       };
     });
   return {
@@ -320,6 +326,7 @@ export async function getQuizForEditor(mentorId: string, id: string) {
     title: q.title,
     description: q.description,
     kind: q.kind,
+    live: q.live,
     xp: q.xp,
     timeLimitSec: q.time_limit_sec,
     questions,

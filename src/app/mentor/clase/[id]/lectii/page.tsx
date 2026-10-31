@@ -45,8 +45,8 @@ async function Lessons({ params }: { params: Props["params"] }) {
           <h2 className="text-2xl">Lecții</h2>
           <p className="text-muted-foreground text-sm">
             Așa le văd elevii, în ordinea numerelor. Lecțiile ascunse le vezi
-            doar tu. Numărul, afișarea și materialele le schimbi din editorul
-            lecției.
+            doar tu. Deschide un folder ca să-l vezi ca elevul; numărul,
+            afișarea și materialele le schimbi din „Editează folderul”.
           </p>
         </div>
         {add}
@@ -57,12 +57,9 @@ async function Lessons({ params }: { params: Props["params"] }) {
             <li key={l.id}>
               <LessonCard
                 lesson={l}
-                href={
-                  l.authorId === me.id
-                    ? `/mentor/materiale/${l.id}`
-                    : `/clase/${c.id}/lectii/${l.id}`
-                }
+                href={`/mentor/clase/${c.id}/lectii/${l.id}`}
                 showVisibility
+                problemPages
               />
             </li>
           ))}

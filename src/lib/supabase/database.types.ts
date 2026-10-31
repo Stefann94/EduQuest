@@ -675,6 +675,7 @@ export type Database = {
           question_started_at: string | null;
           quiz_id: string;
           reveal: boolean;
+          show_board: boolean;
           status: Database["public"]["Enums"]["live_status"];
           title: string;
         };
@@ -691,6 +692,7 @@ export type Database = {
           question_started_at?: string | null;
           quiz_id: string;
           reveal?: boolean;
+          show_board?: boolean;
           status?: Database["public"]["Enums"]["live_status"];
           title: string;
         };
@@ -706,6 +708,7 @@ export type Database = {
           question_started_at?: string | null;
           quiz_id?: string;
           reveal?: boolean;
+          show_board?: boolean;
           status?: Database["public"]["Enums"]["live_status"];
           title?: string;
         };
@@ -1088,6 +1091,7 @@ export type Database = {
           position: number;
           prompt: string;
           quiz_id: string;
+          time_sec: number;
         };
         ComputedFields: never;
         Insert: {
@@ -1098,6 +1102,7 @@ export type Database = {
           position: number;
           prompt: string;
           quiz_id: string;
+          time_sec?: number;
         };
         Update: {
           code?: string | null;
@@ -1107,6 +1112,7 @@ export type Database = {
           position?: number;
           prompt?: string;
           quiz_id?: string;
+          time_sec?: number;
         };
         Relationships: [
           {
@@ -1133,6 +1139,7 @@ export type Database = {
           description: string;
           id: string;
           kind: Database["public"]["Enums"]["quiz_kind"];
+          live: boolean;
           time_limit_sec: number | null;
           title: string;
           xp: number;
@@ -1145,6 +1152,7 @@ export type Database = {
           description?: string;
           id?: string;
           kind?: Database["public"]["Enums"]["quiz_kind"];
+          live?: boolean;
           time_limit_sec?: number | null;
           title: string;
           xp?: number;
@@ -1156,6 +1164,7 @@ export type Database = {
           description?: string;
           id?: string;
           kind?: Database["public"]["Enums"]["quiz_kind"];
+          live?: boolean;
           time_limit_sec?: number | null;
           title?: string;
           xp?: number;

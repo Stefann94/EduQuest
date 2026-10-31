@@ -41,8 +41,8 @@ async function Quizzes({ params }: { params: Props["params"] }) {
     getLiveSessions(),
     getClassMastery(c.id),
   ]);
-  const quizzes = allQuizzes.filter((q) =>
-    q.classes.some((x) => x.id === c.id),
+  const quizzes = allQuizzes.filter(
+    (q) => !q.live && q.classes.some((x) => x.id === c.id),
   );
   const sessions = allSessions.filter((s) => s.classId === c.id);
 
@@ -52,13 +52,13 @@ async function Quizzes({ params }: { params: Props["params"] }) {
         <div>
           <h2 className="text-2xl">Quiz-uri</h2>
           <p className="text-muted-foreground text-sm">
-            Sesiunile live, quiz-urile date clasei și ce au înțeles elevii din
-            fiecare lecție.
+            Sesiunile live ale clasei, quiz-urile date ei și ce au înțeles
+            elevii din fiecare lecție.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href="/mentor/quiz/nou"
+            href={`/mentor/quiz/nou?mod=clase&clasa=${c.id}`}
             className={buttonVariants({ variant: "outline" })}
           >
             <Plus aria-hidden="true" /> Quiz nou

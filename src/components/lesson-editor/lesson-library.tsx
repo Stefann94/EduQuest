@@ -16,6 +16,10 @@ import {
   MATERIAL_KIND,
   MaterialKindIcon,
 } from "@/components/learning/material-kind";
+import {
+  MaterialsMenu,
+  type MenuItem,
+} from "@/components/lessons/materials-menu";
 import { FilterSelect } from "@/components/mentor-content/filter-select";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -163,58 +167,61 @@ export function LessonLibrary({
 
         <TabsContent value="materials" className="mt-4">
           {shown.length > 0 ? (
-            <ul className="grid gap-3 lg:grid-cols-2">
-              {shown.map((l) => (
-                <li key={l.id}>
-                  <Link
-                    href={`/mentor/materiale/${l.id}`}
-                    className="group grid h-full cut gap-3 bg-card p-5 outline-none transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/70"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <h3 className="text-xl leading-tight">{l.title}</h3>
-                      <ChevronRight
-                        className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5"
-                        aria-hidden="true"
-                      />
-                    </div>
-                    {l.summary ? (
-                      <p className="line-clamp-2 text-muted-foreground text-sm">
-                        {l.summary}
-                      </p>
-                    ) : null}
-                    <div className="flex flex-wrap gap-1.5">
-                      <ClassTags classes={l.classes} />
-                    </div>
-                    {l.items.length > 0 ? (
-                      <ul className="grid gap-1 border-t pt-3">
-                        {l.items.map((i) => (
-                          <li
-                            key={i.id}
-                            className="flex items-center gap-2 text-sm"
+            <ul className="grid gap-3">
+              {shown.map((l) => {
+                const href = `/mentor/materiale/${l.id}`;
+                const menu: MenuItem[] = [
+                  ...lessons
+                    .filter((x) => x.parentId === l.id)
+                    .map((f) => ({
+                      id: f.id,
+                      kind: "folder" as const,
+                      title: f.title,
+                      href: `/mentor/materiale/${f.id}`,
+                    })),
+                  ...l.items.map((i) => ({
+                    id: i.id,
+                    kind: i.kind,
+                    title: i.title,
+                    href,
+                    hidden: !i.published,
+                  })),
+                ];
+                return (
+                  <li key={l.id}>
+                    <article className="flex cut flex-col gap-4 bg-card p-5 md:flex-row md:items-center md:gap-6">
+                      <div className="grid min-w-0 flex-1 gap-2">
+                        <h3 className="text-xl leading-tight">
+                          <Link
+                            href={href}
+                            className="outline-none hover:text-primary focus-visible:underline"
                           >
-                            <MaterialKindIcon
-                              kind={i.kind}
-                              className="size-7 [&_svg]:size-3.5"
-                            />
-                            <span className="min-w-0 flex-1 truncate">
-                              {i.title}
-                            </span>
-                            {i.published ? null : (
-                              <span className="text-muted-foreground text-xs">
-                                ascuns
-                              </span>
-                            )}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className="border-t pt-3 text-muted-foreground text-sm">
-                        Niciun material încă.
-                      </p>
-                    )}
-                  </Link>
-                </li>
-              ))}
+                            {l.title}
+                          </Link>
+                        </h3>
+                        {l.summary ? (
+                          <p className="line-clamp-2 text-muted-foreground text-sm">
+                            {l.summary}
+                          </p>
+                        ) : null}
+                        <div className="flex flex-wrap gap-1.5">
+                          <ClassTags classes={l.classes} />
+                        </div>
+                      </div>
+                      <div className="grid gap-3 md:w-80 md:shrink-0">
+                        <MaterialsMenu items={menu} />
+                        <Link
+                          href={href}
+                          className="inline-flex items-center gap-1 justify-self-start font-bold font-heading text-primary text-sm uppercase tracking-wide hover:underline"
+                        >
+                          Deschide folderul{" "}
+                          <ChevronRight className="size-4" aria-hidden="true" />
+                        </Link>
+                      </div>
+                    </article>
+                  </li>
+                );
+              })}
             </ul>
           ) : (
             <EmptyState
@@ -278,7 +285,7 @@ export function LessonLibrary({
 
         <TabsContent value="classes" className="mt-4">
           {classList.length > 0 ? (
-            <ul className="grid gap-4 lg:grid-cols-2">
+            <ul className="grid gap-4">
               {classList.map((c) => (
                 <li
                   key={c.id}

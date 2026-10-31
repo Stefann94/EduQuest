@@ -9,36 +9,42 @@ import { getMentorLessons } from "@/lib/db/lessons";
 
 export const metadata: Metadata = { title: "Quiz nou" };
 
-export default function NewQuizPage() {
+type Props = PageProps<"/mentor/quiz/nou">;
+
+/** `?mod=live|clase` alege tipul dinainte; `?clasa=<id>` bifează clasa (quiz pentru clase). */
+export default function NewQuizPage({ searchParams }: Props) {
   return (
     <div className="grid gap-6">
       <PageHeader
         back={{ href: "/mentor/quiz", label: "Quiz-uri" }}
         title="Quiz nou"
-        description="Întrebări cu variante, fiecare etichetată pe lecția pe care o verifică."
+        description="Live, jucat împreună cu un cod, sau pentru clase, rezolvat oricând."
       />
       <Suspense fallback={<FormSkeleton />}>
-        <Form />
+        <Form searchParams={searchParams} />
       </Suspense>
     </div>
   );
 }
 
-async function Form() {
+async function Form({ searchParams }: { searchParams: Props["searchParams"] }) {
+  const { mod, clasa } = await searchParams;
   const me = await requireUser("mentor");
   const [lessons, classes] = await Promise.all([
     getMentorLessons(me.id),
     getMentorClasses(me.id),
   ]);
+  const preselected = classes.active.find((c) => c.id === clasa);
   return (
     <QuizForm
       draft={{
+        live: mod === "live",
         title: "",
         description: "",
         lessonIds: [],
         xp: 3,
         timeLimitSec: null,
-        classIds: [],
+        classIds: preselected ? [preselected.id] : [],
         questions: [],
       }}
       lessons={lessons.map((l) => ({ id: l.id, title: l.title }))}
