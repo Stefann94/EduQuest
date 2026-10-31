@@ -102,6 +102,7 @@ async function Content({ params }: { params: Props["params"] }) {
           xp: quiz.xp,
           timeLimitSec: quiz.timeLimitSec,
           classIds: quiz.classIds,
+          required: quiz.required,
           questions: quiz.questions.map((q) => ({
             prompt: q.prompt,
             code: q.code,

@@ -4,7 +4,10 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/common/empty-state";
 import { LeaderboardCard } from "@/components/student-home/leaderboard-card";
-import { MissionRow } from "@/components/student-home/mission-row";
+import {
+  MissionRow,
+  QuizMissionRow,
+} from "@/components/student-home/mission-row";
 import { PlayerCard } from "@/components/student-home/player-card";
 import { TeamCard } from "@/components/student-home/team-card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +17,11 @@ import { getStudentAttendance } from "@/lib/db/attendance";
 import { getStudentClasses } from "@/lib/db/classes";
 import { getStudentHomework, type StudentHomework } from "@/lib/db/homework";
 import { getClassLessons, lessonLabel } from "@/lib/db/lessons";
-import { getLiveSessions } from "@/lib/db/quizzes";
+import {
+  getLiveSessions,
+  getStudentQuizzes,
+  type StudentQuiz,
+} from "@/lib/db/quizzes";
 import { getLeaderboard, getXpTotal } from "@/lib/db/xp";
 import { formatWeekday, now, plural } from "@/lib/format";
 import { peerName } from "@/lib/names";
@@ -58,12 +65,15 @@ function SectionLink({
 
 function MissionList({
   items,
+  quizzes = [],
   empty,
 }: {
   items: StudentHomework[];
+  /** Quiz-urile obligatorii, afișate ca misiuni principale (înaintea temelor). */
+  quizzes?: StudentQuiz[];
   empty: string;
 }) {
-  if (items.length === 0)
+  if (items.length === 0 && quizzes.length === 0)
     return (
       <EmptyState
         icon={PartyPopper}
@@ -73,6 +83,11 @@ function MissionList({
     );
   return (
     <ul className="stagger grid gap-2.5">
+      {quizzes.map((q) => (
+        <li key={q.id}>
+          <QuizMissionRow quiz={q} />
+        </li>
+      ))}
       {items.map((h) => (
         <li key={h.id}>
           <MissionRow homework={h} />
@@ -111,13 +126,19 @@ export default function StudentHomePage() {
 
 async function StudentHomeContent() {
   const me = await requireUser("student");
-  const [homework, classes, sessions, totalXp, attendance] = await Promise.all([
-    getStudentHomework(me.id),
-    getStudentClasses(me.id),
-    getLiveSessions(),
-    getXpTotal(me.id),
-    getStudentAttendance(me.id),
-  ]);
+  const [homework, classes, sessions, totalXp, attendance, quizzes] =
+    await Promise.all([
+      getStudentHomework(me.id),
+      getStudentClasses(me.id),
+      getLiveSessions(),
+      getXpTotal(me.id),
+      getStudentAttendance(me.id),
+      getStudentQuizzes(me.id),
+    ]);
+  // Quiz-urile obligatorii sunt misiuni: de rezolvat (active) sau rezolvate (trimise).
+  const requiredQuizzes = quizzes.filter((q) => q.required && !q.archived);
+  const activeQuizzes = requiredQuizzes.filter((q) => q.attempts.count === 0);
+  const solvedQuizzes = requiredQuizzes.filter((q) => q.attempts.count > 0);
 
   const needsChanges = (h: StudentHomework) =>
     h.problems.some((p) => p.state === "needs_changes");
@@ -177,11 +198,15 @@ async function StudentHomeContent() {
             Bună, <span className="text-primary">{firstName}</span>
           </h1>
           <p className="mt-3 max-w-xl text-lg text-muted-foreground">
-            {active.length > 0 ? (
+            {active.length + activeQuizzes.length > 0 ? (
               <>
                 Ai{" "}
                 <b className="text-foreground">
-                  {plural(active.length, "misiune activă", "misiuni active")}
+                  {plural(
+                    active.length + activeQuizzes.length,
+                    "misiune activă",
+                    "misiuni active",
+                  )}
                 </b>
               </>
             ) : (
@@ -228,17 +253,27 @@ async function StudentHomeContent() {
           </SectionTitle>
           <Tabs defaultValue="active">
             <TabsList className="mb-1">
-              <TabsTrigger value="active">Active · {active.length}</TabsTrigger>
+              <TabsTrigger value="active">
+                Active · {active.length + activeQuizzes.length}
+              </TabsTrigger>
               <TabsTrigger value="submitted">
-                Trimise · {submitted.length}
+                Trimise · {submitted.length + solvedQuizzes.length}
               </TabsTrigger>
               <TabsTrigger value="done">Acceptate · {done.length}</TabsTrigger>
             </TabsList>
             <TabsContent value="active">
-              <MissionList items={active} empty="Nicio misiune activă" />
+              <MissionList
+                items={active}
+                quizzes={activeQuizzes}
+                empty="Nicio misiune activă"
+              />
             </TabsContent>
             <TabsContent value="submitted">
-              <MissionList items={submitted} empty="Nimic trimis încă" />
+              <MissionList
+                items={submitted}
+                quizzes={solvedQuizzes}
+                empty="Nimic trimis încă"
+              />
             </TabsContent>
             <TabsContent value="done">
               <MissionList items={done} empty="Nicio temă acceptată încă" />

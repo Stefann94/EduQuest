@@ -64,6 +64,15 @@ export function AssignedQuizRow({ quiz: q }: { quiz: StudentQuiz }) {
           {q.title}
         </p>
         <p className="mt-0.5 flex flex-wrap items-center gap-x-2 text-muted-foreground text-sm">
+          <span
+            className={cn(
+              "font-bold font-heading text-xs uppercase tracking-wide",
+              q.required ? "text-xp-foreground" : "text-cyan",
+            )}
+          >
+            {q.required ? "Obligatoriu" : "Opțional"}
+          </span>
+          <span aria-hidden="true">·</span>
           <span>
             {q.kind === "recap" ? "Recapitulare" : "Lecție"}
             {q.lessons.length > 0 ? `: ${q.lessons.join(", ")}` : ""}

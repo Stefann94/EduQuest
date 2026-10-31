@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { StudentHomework } from "@/lib/db/homework";
+import type { StudentQuiz } from "@/lib/db/quizzes";
 import { daysUntil, formatWeekday, plural } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
@@ -113,6 +114,50 @@ export function MissionRow({ homework: h }: { homework: StudentHomework }) {
       </div>
       <div className="text-right">
         <Remaining h={h} />
+      </div>
+    </Link>
+  );
+}
+
+/** Un quiz obligatoriu ca „misiune principală”: de rezolvat, apoi rezultatul. */
+export function QuizMissionRow({ quiz: q }: { quiz: StudentQuiz }) {
+  const done = q.attempts.count > 0;
+  return (
+    <Link
+      href={`/quiz/${q.id}`}
+      className="group relative grid cut-sm grid-cols-[minmax(0,1fr)_auto] items-center gap-4 bg-card py-4 pr-5 pl-7 outline-none transition-[translate,background-color] duration-300 ease-out hover:translate-x-1.5 hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/70 focus-visible:ring-inset"
+    >
+      <span
+        aria-hidden="true"
+        className="absolute inset-y-0 left-0 w-1.5 bg-xp transition-[width] group-hover:w-2.5"
+      />
+      <div className="min-w-0">
+        <p className="font-bold font-heading text-xp-foreground text-xs uppercase tracking-widest">
+          Misiune principală · Quiz · {q.classNames.join(", ")}
+        </p>
+        <p className="font-bold font-heading text-[22px] uppercase leading-tight tracking-wide">
+          {q.title}
+        </p>
+        <p className="line-clamp-1 text-muted-foreground text-sm">
+          {plural(q.questionCount, "întrebare", "întrebări")}
+          {q.lessons.length > 0 ? ` · ${q.lessons.join(", ")}` : ""}
+        </p>
+      </div>
+      <div className="text-right">
+        {done ? (
+          <>
+            <b className="block font-extrabold font-heading text-3xl text-success leading-none">
+              Rezolvat
+            </b>
+            <span className="text-muted-foreground text-xs">
+              {q.attempts.best}/{q.attempts.total} corecte
+            </span>
+          </>
+        ) : (
+          <b className="block font-extrabold font-heading text-3xl leading-none">
+            De rezolvat
+          </b>
+        )}
       </div>
     </Link>
   );

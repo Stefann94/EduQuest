@@ -46,6 +46,8 @@ export type QuizDraft = {
   xp: number;
   timeLimitSec: number | null;
   classIds: string[];
+  /** Obligatoriu (ca o temă) sau opțional; doar la quiz-urile pentru clase. */
+  required: boolean;
   questions: QuizDraftQuestion[];
 };
 
@@ -89,6 +91,7 @@ export function QuizForm({
   const [description, setDescription] = useState(draft.description);
   const [lessonIds, setLessonIds] = useState(draft.lessonIds);
   const [classIds, setClassIds] = useState(draft.classIds);
+  const [required, setRequired] = useState(draft.required);
   const [xp, setXp] = useState(draft.xp);
   const [minutes, setMinutes] = useState(
     draft.timeLimitSec ? String(Math.round(draft.timeLimitSec / 60)) : "",
@@ -158,6 +161,7 @@ export function QuizForm({
       timeLimitSec:
         !live && minutes.trim() ? Math.round(Number(minutes) * 60) : null,
       classIds: live ? [] : classIds,
+      required: live ? false : required,
       questions: questions.map((q) => ({
         prompt: q.prompt,
         code: withCode.includes(q.key) ? q.code : "",
@@ -632,6 +636,31 @@ export function QuizForm({
 
           {live ? null : (
             <Section title="Dat claselor">
+              <FieldSet
+                legend="Tipul quiz-ului"
+                hint="Obligatoriu: elevii îl văd la Misiuni, ca pe o temă. Opțional: doar pentru exersare."
+              >
+                <div className="grid gap-1">
+                  {[
+                    { value: true, label: "Obligatoriu (ca o temă)" },
+                    { value: false, label: "Opțional" },
+                  ].map((o) => (
+                    <label
+                      key={o.label}
+                      className="flex items-center gap-2 px-1 py-1 text-sm"
+                    >
+                      <input
+                        type="radio"
+                        name="quiz-required"
+                        className="size-4 accent-primary"
+                        checked={required === o.value}
+                        onChange={() => setRequired(o.value)}
+                      />
+                      {o.label}
+                    </label>
+                  ))}
+                </div>
+              </FieldSet>
               {classes.length > 0 ? (
                 <FieldSet
                   legend="Clasele care îl primesc"

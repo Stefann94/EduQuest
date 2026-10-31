@@ -1147,6 +1147,7 @@ export type Database = {
           id: string;
           kind: Database["public"]["Enums"]["quiz_kind"];
           live: boolean;
+          required: boolean;
           time_limit_sec: number | null;
           title: string;
           xp: number;
@@ -1161,6 +1162,7 @@ export type Database = {
           id?: string;
           kind?: Database["public"]["Enums"]["quiz_kind"];
           live?: boolean;
+          required?: boolean;
           time_limit_sec?: number | null;
           title: string;
           xp?: number;
@@ -1174,6 +1176,7 @@ export type Database = {
           id?: string;
           kind?: Database["public"]["Enums"]["quiz_kind"];
           live?: boolean;
+          required?: boolean;
           time_limit_sec?: number | null;
           title?: string;
           xp?: number;
@@ -1290,6 +1293,8 @@ export type Database = {
           display_name: string;
           lesson_id: string;
           lesson_title: string;
+          quiz_id: string;
+          quiz_title: string;
           student_id: string;
           total: number;
         }[];

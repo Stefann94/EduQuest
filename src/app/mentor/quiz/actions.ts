@@ -109,6 +109,8 @@ const quizSchema = z.object({
     .min(1, "Adaugă cel puțin o întrebare.")
     .max(40, "Cel mult 40 de întrebări."),
   classIds: z.array(z.string().refine(isUuid)).max(30),
+  /** Obligatoriu (ca o temă) sau opțional; doar la quiz-urile pentru clase. */
+  required: z.boolean().default(false),
 });
 
 export type QuizInput = z.input<typeof quizSchema>;
@@ -151,6 +153,7 @@ export async function saveQuiz(
     // În quiz-ul live XP-ul vine din clasamentul sesiunii, iar timpul e pe întrebare.
     xp: live ? 0 : q.xp,
     time_limit_sec: live ? null : q.timeLimitSec,
+    required: live ? false : q.required,
   };
   let quizId = existing?.id;
   if (existing) {
@@ -228,11 +231,20 @@ export async function saveQuiz(
       );
     await notifyClassStudents(added, {
       kind: "assignment_new",
-      title: `Quiz nou: ${q.title}`,
+      title: `${row.required ? "Quiz obligatoriu" : "Quiz nou (opțional)"}: ${q.title}`,
       body: `${q.questions.length} întrebări${q.xp > 0 ? ` · până la ${q.xp} XP` : ""}`,
       href: `/quiz/${quizId}`,
     });
   }
+  // Devenit obligatoriu: și clasele care îl aveau deja află.
+  const kept = classIds.filter((c) => before.has(c));
+  if (existing && !existing.required && row.required && kept.length)
+    await notifyClassStudents(kept, {
+      kind: "assignment_new",
+      title: `Quiz obligatoriu: ${q.title}`,
+      body: "Mentorul l-a făcut obligatoriu, ca pe o temă.",
+      href: `/quiz/${quizId}`,
+    });
 
   refresh();
   if (!existing) redirect(`/mentor/quiz/${quizId}`);

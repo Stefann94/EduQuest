@@ -53,9 +53,11 @@ export type StudentQuiz = {
   attempts: AttemptSummary;
   /** Arhivat de mentor: nu mai poate fi rezolvat; rezultatele de până acum rămân. */
   archived: boolean;
+  /** Obligatoriu (ca o temă, apare la Misiuni) sau opțional. */
+  required: boolean;
 };
 
-const QUIZ_CARD_FIELDS = `id, title, description, kind, xp, time_limit_sec, course_id, archived,
+const QUIZ_CARD_FIELDS = `id, title, description, kind, xp, time_limit_sec, course_id, archived, required,
   quiz_questions(count),
   quiz_lessons(lesson:lessons!quiz_lessons_lesson_id_fkey(title))`;
 
@@ -110,6 +112,7 @@ export async function getStudentQuizzes(
         attemptRows.filter((t) => t.quiz_id === a.quiz?.id),
       ),
       archived: a.quiz.archived,
+      required: a.quiz.required,
     });
   }
   return [...byQuiz.values()];
@@ -231,6 +234,8 @@ export type MentorQuiz = {
   live: boolean;
   /** Arhivat: în afara listelor active; nu se mai rezolvă și nu se mai joacă live. */
   archived: boolean;
+  /** Obligatoriu (ca o temă) sau opțional. */
+  required: boolean;
   xp: number;
   createdAt: string;
   questionCount: number;
@@ -239,7 +244,7 @@ export type MentorQuiz = {
   attempts: number;
 };
 
-const MENTOR_QUIZ_FIELDS = `id, title, description, kind, live, archived, xp, created_at,
+const MENTOR_QUIZ_FIELDS = `id, title, description, kind, live, archived, required, xp, created_at,
   quiz_questions(count),
   quiz_lessons(lesson:lessons!quiz_lessons_lesson_id_fkey(id, title)),
   quiz_assignments(class_id, assigned_at),
@@ -267,6 +272,7 @@ export async function getMentorQuizzes(
     kind: q.kind,
     live: q.live,
     archived: q.archived,
+    required: q.required,
     xp: q.xp,
     createdAt: q.created_at,
     questionCount: q.quiz_questions[0]?.count ?? 0,
@@ -304,7 +310,7 @@ export async function getQuizForEditor(mentorId: string, id: string) {
   const { data: q } = await supabase
     .from("quizzes")
     .select(
-      `id, title, description, kind, live, archived, xp, time_limit_sec,
+      `id, title, description, kind, live, archived, required, xp, time_limit_sec,
        quiz_questions(id, position, prompt, code, options, multi, lesson_id, time_sec,
          quiz_answer_keys(correct, explanation)),
        quiz_lessons(lesson_id),
@@ -341,6 +347,7 @@ export async function getQuizForEditor(mentorId: string, id: string) {
     kind: q.kind,
     live: q.live,
     archived: q.archived,
+    required: q.required,
     xp: q.xp,
     timeLimitSec: q.time_limit_sec,
     questions,
@@ -353,41 +360,75 @@ export type EditorQuiz = NonNullable<
   Awaited<ReturnType<typeof getQuizForEditor>>
 >;
 
-/** Tabelul „elevi × lecții”: cât a răspuns corect fiecare elev la întrebările fiecărei lecții. */
-export async function getClassMastery(classId: string) {
-  if (!isUuid(classId)) return { lessons: [], students: [] };
+type MasteryCell = { correct: number; total: number };
+export type MasteryView = {
+  lessons: { id: string; title: string }[];
+  students: { id: string; name: string; cells: Map<string, MasteryCell> }[];
+};
+
+/** Coloana întrebărilor care nu sunt etichetate pe nicio lecție. */
+const NO_LESSON = "fara-lectie";
+
+/**
+ * Înțelegerea la o clasă: tabelul „elevi × lecții” per total (toate quiz-urile date
+ * clasei) și separat pentru fiecare quiz. Din ultima încercare a fiecărui elev.
+ */
+export async function getClassMastery(classId: string): Promise<{
+  overall: MasteryView;
+  quizzes: ({ id: string; title: string } & MasteryView)[];
+}> {
+  if (!isUuid(classId))
+    return { overall: { lessons: [], students: [] }, quizzes: [] };
   const supabase = await db();
   const rows = must(
     "Analiza quiz-urilor",
     await supabase.rpc("class_quiz_mastery", { p_class: classId }),
   );
-  const lessons = new Map<string, string>();
-  const students = new Map<
-    string,
-    {
-      id: string;
-      name: string;
-      cells: Map<string, { correct: number; total: number }>;
-    }
-  >();
-  for (const r of rows) {
-    lessons.set(r.lesson_id, r.lesson_title);
-    const s = students.get(r.student_id) ?? {
+  type Acc = {
+    lessons: Map<string, string>;
+    students: Map<
+      string,
+      { id: string; name: string; cells: Map<string, MasteryCell> }
+    >;
+  };
+  const empty = (): Acc => ({ lessons: new Map(), students: new Map() });
+  const add = (acc: Acc, r: (typeof rows)[number]) => {
+    const lessonId = r.lesson_id ?? NO_LESSON;
+    acc.lessons.set(lessonId, r.lesson_title ?? "Fără lecție");
+    const s = acc.students.get(r.student_id) ?? {
       id: r.student_id,
       name: r.display_name,
       cells: new Map(),
     };
-    s.cells.set(r.lesson_id, {
-      correct: Number(r.correct),
-      total: Number(r.total),
+    const c = s.cells.get(lessonId) ?? { correct: 0, total: 0 };
+    s.cells.set(lessonId, {
+      correct: c.correct + Number(r.correct),
+      total: c.total + Number(r.total),
     });
-    students.set(r.student_id, s);
-  }
-  return {
-    lessons: [...lessons].map(([id, title]) => ({ id, title })),
-    students: [...students.values()].sort((a, b) =>
+    acc.students.set(r.student_id, s);
+  };
+  const view = (acc: Acc): MasteryView => ({
+    lessons: [...acc.lessons]
+      .map(([id, title]) => ({ id, title }))
+      // „Fără lecție” la final.
+      .sort((a, b) => Number(a.id === NO_LESSON) - Number(b.id === NO_LESSON)),
+    students: [...acc.students.values()].sort((a, b) =>
       a.name.localeCompare(b.name, "ro"),
     ),
+  });
+  const overall = empty();
+  const perQuiz = new Map<string, { title: string; acc: Acc }>();
+  for (const r of rows) {
+    add(overall, r);
+    const q = perQuiz.get(r.quiz_id) ?? { title: r.quiz_title, acc: empty() };
+    add(q.acc, r);
+    perQuiz.set(r.quiz_id, q);
+  }
+  return {
+    overall: view(overall),
+    quizzes: [...perQuiz]
+      .map(([id, q]) => ({ id, title: q.title, ...view(q.acc) }))
+      .sort((a, b) => a.title.localeCompare(b.title, "ro")),
   };
 }
 

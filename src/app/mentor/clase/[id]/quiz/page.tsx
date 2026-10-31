@@ -80,7 +80,7 @@ async function Quizzes({ params }: { params: Props["params"] }) {
           <TabsTrigger value="quizzes">
             Quiz-uri date clasei ({quizzes.length})
           </TabsTrigger>
-          <TabsTrigger value="mastery">Înțelegere pe lecții</TabsTrigger>
+          <TabsTrigger value="mastery">Înțelegere</TabsTrigger>
         </TabsList>
 
         <TabsContent value="live" className="mt-4">
@@ -105,6 +105,7 @@ async function Quizzes({ params }: { params: Props["params"] }) {
                     <div className="min-w-0 flex-1 basis-48">
                       <p className="truncate font-medium">{q.title}</p>
                       <p className="truncate text-muted-foreground text-sm">
+                        {q.required ? "Obligatoriu · " : "Opțional · "}
                         {q.kind === "recap" ? "Recapitulare" : "Lecție"}
                         {q.lessons.length
                           ? `: ${q.lessons.map((l) => l.title).join(", ")}`
@@ -131,18 +132,34 @@ async function Quizzes({ params }: { params: Props["params"] }) {
         </TabsContent>
 
         <TabsContent value="mastery" className="mt-4">
-          {mastery.students.length > 0 ? (
-            <div className="grid cut gap-3 bg-card p-4">
+          {mastery.overall.students.length > 0 ? (
+            <Tabs defaultValue="overall" className="grid cut gap-3 bg-card p-4">
               <p className="text-muted-foreground text-sm">
-                Din ultima încercare a fiecărui elev la quiz-urile date clasei.
+                Din ultima încercare a fiecărui elev. „Per total” adună toate
+                quiz-urile date clasei; alege un quiz ca să-l vezi separat.
                 Întrebările sunt etichetate pe lecții, așa că vezi exact ce
                 trebuie reluat.
               </p>
-              <MasteryTable
-                lessons={mastery.lessons}
-                students={mastery.students}
-              />
-            </div>
+              <TabsList>
+                <TabsTrigger value="overall">Per total</TabsTrigger>
+                {mastery.quizzes.map((q) => (
+                  <TabsTrigger key={q.id} value={q.id}>
+                    {q.title}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              <TabsContent value="overall">
+                <MasteryTable
+                  lessons={mastery.overall.lessons}
+                  students={mastery.overall.students}
+                />
+              </TabsContent>
+              {mastery.quizzes.map((q) => (
+                <TabsContent key={q.id} value={q.id}>
+                  <MasteryTable lessons={q.lessons} students={q.students} />
+                </TabsContent>
+              ))}
+            </Tabs>
           ) : (
             <EmptyState
               icon={BarChart3}

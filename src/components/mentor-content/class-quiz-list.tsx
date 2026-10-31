@@ -83,6 +83,7 @@ function Rows({
               </p>
               <p className="truncate text-muted-foreground text-sm">
                 {plural(q.questionCount, "întrebare", "întrebări")} ·{" "}
+                {q.required ? "Obligatoriu · " : "Opțional · "}
                 {q.kind === "recap" ? "Recapitulare" : "Lecție"}
                 {q.lessons.length
                   ? `: ${q.lessons.map((l) => l.title).join(", ")}`

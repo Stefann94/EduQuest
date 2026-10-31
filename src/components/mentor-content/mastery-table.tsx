@@ -54,6 +54,12 @@ export function MasteryTable({
                 {l.title}
               </th>
             ))}
+            <th
+              scope="col"
+              className="px-2 py-2 text-left align-bottom font-bold font-heading uppercase tracking-wide"
+            >
+              Total
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -93,6 +99,7 @@ export function MasteryTable({
                   </td>
                 );
               })}
+              <TotalCell cells={[...s.cells.values()]} />
             </tr>
           ))}
         </tbody>
@@ -115,9 +122,33 @@ export function MasteryTable({
                 {pct === null ? "–" : `${pct}%`}
               </td>
             ))}
+            <TotalCell cells={students.flatMap((s) => [...s.cells.values()])} />
           </tr>
         </tfoot>
       </table>
     </div>
+  );
+}
+
+/** Totalul unui rând (elev) sau al clasei: toate întrebările, din toate lecțiile. */
+function TotalCell({ cells }: { cells: Cell[] }) {
+  const correct = cells.reduce((s, c) => s + c.correct, 0);
+  const total = cells.reduce((s, c) => s + c.total, 0);
+  if (total === 0)
+    return <td className="px-2 py-1.5 text-center text-muted-foreground">–</td>;
+  const pct = Math.round((correct / total) * 100);
+  return (
+    <td
+      className={cn(
+        "px-2 py-1.5 text-center font-bold tabular-nums ring-2 ring-foreground/10 ring-inset",
+        tone(pct),
+      )}
+      title={`${correct} din ${total} corecte`}
+    >
+      {pct}%
+      <span className="block font-normal text-[0.7rem] opacity-80">
+        {correct}/{total}
+      </span>
+    </td>
   );
 }
