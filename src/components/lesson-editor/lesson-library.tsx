@@ -1,6 +1,8 @@
 "use client";
 
 import {
+  ArrowDown,
+  ArrowUp,
   BookOpen,
   ChevronRight,
   FileCode2,
@@ -9,7 +11,9 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { toast } from "sonner";
+import { moveLesson } from "@/app/mentor/materiale/actions";
 import { EmptyState } from "@/components/common/empty-state";
 import { VisibilityBadge } from "@/components/common/status";
 import {
@@ -21,7 +25,7 @@ import {
   type MenuItem,
 } from "@/components/lessons/materials-menu";
 import { FilterSelect } from "@/components/mentor-content/filter-select";
-import { buttonVariants } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ItemKind } from "@/lib/content/items";
@@ -125,6 +129,14 @@ export function LessonLibrary({
     )
     .filter((p) => !q || normalize(`${p.title} ${p.lesson.title}`).includes(q));
   const classList = classes.filter((c) => cls === "all" || c.id === cls);
+  // Ordinea se schimbă doar pe lista întreagă (fără căutare sau filtru de clasă).
+  const canReorder = !q && cls === "all";
+  const [pending, startMove] = useTransition();
+  const move = (id: string, by: -1 | 1) =>
+    startMove(async () => {
+      const res = await moveLesson(id, by);
+      if (!res.ok) toast.error(res.message);
+    });
 
   return (
     <div className="grid gap-4">
@@ -168,7 +180,7 @@ export function LessonLibrary({
         <TabsContent value="materials" className="mt-4">
           {shown.length > 0 ? (
             <ul className="grid gap-3">
-              {shown.map((l) => {
+              {shown.map((l, index) => {
                 const href = `/mentor/materiale/${l.id}`;
                 const menu: MenuItem[] = [
                   ...lessons
@@ -190,6 +202,28 @@ export function LessonLibrary({
                 return (
                   <li key={l.id}>
                     <article className="flex cut flex-col gap-4 bg-card p-5 md:flex-row md:items-center md:gap-6">
+                      {canReorder && shown.length > 1 ? (
+                        <div className="flex gap-1 md:flex-col">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            disabled={pending || index === 0}
+                            onClick={() => move(l.id, -1)}
+                            aria-label={`Mută mai sus: ${l.title}`}
+                          >
+                            <ArrowUp aria-hidden="true" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            disabled={pending || index === shown.length - 1}
+                            onClick={() => move(l.id, 1)}
+                            aria-label={`Mută mai jos: ${l.title}`}
+                          >
+                            <ArrowDown aria-hidden="true" />
+                          </Button>
+                        </div>
+                      ) : null}
                       <div className="grid min-w-0 flex-1 gap-2">
                         <h3 className="text-xl leading-tight">
                           <Link
@@ -208,7 +242,7 @@ export function LessonLibrary({
                           <ClassTags classes={l.classes} />
                         </div>
                       </div>
-                      <div className="grid gap-3 md:w-80 md:shrink-0">
+                      <div className="grid gap-3 md:w-96 md:shrink-0">
                         <MaterialsMenu items={menu} />
                         <Link
                           href={href}

@@ -226,7 +226,7 @@ async function toLibrary(r: LibraryRow): Promise<LibraryLesson> {
   };
 }
 
-/** Lecțiile scrise de mentor (fără cele din cursurile globale), cele mai noi primele. */
+/** Lecțiile scrise de mentor (fără cele din cursurile globale), în ordinea aleasă de el. */
 export async function getMentorLessons(
   mentorId: string,
 ): Promise<LibraryLesson[]> {
@@ -238,7 +238,8 @@ export async function getMentorLessons(
       .select(LIBRARY_FIELDS)
       .eq("author_id", mentorId)
       .is("course_id", null)
-      .order("created_at", { ascending: false }),
+      .order("position")
+      .order("created_at"),
   ) as LibraryRow[];
   return Promise.all(rows.map(toLibrary));
 }

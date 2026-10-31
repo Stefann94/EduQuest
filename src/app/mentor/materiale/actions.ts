@@ -107,6 +107,8 @@ export async function createLesson(input: {
       author_id: me.id,
       title: parsed.data.title,
       summary: parsed.data.summary,
+      // Lecțiile noi apar la finalul listei din Materiale.
+      position: (await rootLessons(me.id)).length,
     })
     .select("id")
     .single();
@@ -385,6 +387,51 @@ export async function moveEntry(
         ? supabase.from("lessons").update({ position }).eq("id", e.id)
         : supabase.from("lesson_items").update({ position }).eq("id", e.id));
   refresh(folderId);
+  return { ok: true, message: "" };
+}
+
+/** Lecțiile de prim nivel ale mentorului, în ordinea din Materiale. */
+async function rootLessons(mentorId: string) {
+  const supabase = await db();
+  const { data } = await supabase
+    .from("lessons")
+    .select("id, position")
+    .eq("author_id", mentorId)
+    .is("parent_id", null)
+    .is("course_id", null)
+    .order("position")
+    .order("created_at");
+  return data ?? [];
+}
+
+/** Mută o lecție mai sus sau mai jos în lista din Materiale. */
+export async function moveLesson(
+  lessonId: string,
+  by: -1 | 1,
+): Promise<ActionResult> {
+  const me = await requireUser("mentor");
+  const list = await rootLessons(me.id);
+  const i = list.findIndex((l) => l.id === lessonId);
+  const j = i + by;
+  if (i < 0) return NOT_FOUND;
+  if (j < 0 || j >= list.length) return { ok: true, message: "" };
+  const order = [...list];
+  [order[i], order[j]] = [order[j], order[i]];
+  const supabase = await db();
+  const changed = order.flatMap((l, position) =>
+    l.position === position ? [] : [{ id: l.id, position }],
+  );
+  const results = await Promise.all(
+    changed.map((l) =>
+      supabase.from("lessons").update({ position: l.position }).eq("id", l.id),
+    ),
+  );
+  if (results.some((r) => r.error))
+    return {
+      ok: false,
+      message: "Ordinea nu s-a putut salva. Încearcă din nou.",
+    };
+  refresh();
   return { ok: true, message: "" };
 }
 
