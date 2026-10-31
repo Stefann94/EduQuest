@@ -2,6 +2,7 @@ import {
   Bell,
   BookOpen,
   ClipboardList,
+  GraduationCap,
   LayoutDashboard,
   ListChecks,
   Radio,
@@ -64,6 +65,11 @@ async function MentorShell({ children }: { children: React.ReactNode }) {
           badge: queue.length,
         },
         { label: "Quiz-uri", href: "/mentor/quiz", icon: <ListChecks /> },
+        {
+          label: "Învățare",
+          href: "/mentor/invatare",
+          icon: <GraduationCap />,
+        },
       ],
     },
     {

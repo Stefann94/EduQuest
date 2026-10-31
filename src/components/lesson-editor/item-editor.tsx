@@ -54,7 +54,7 @@ export function ItemEditor({
   const [pending, startTransition] = useTransition();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [title, setTitle] = useState(item?.title ?? "");
-  const [published, setPublished] = useState(item?.published ?? false);
+  const [published, setPublished] = useState(item?.published ?? true);
 
   // Conținutul, pe tipuri (doar cel al tipului ales se trimite).
   const c = item?.content as Record<string, unknown> | undefined;

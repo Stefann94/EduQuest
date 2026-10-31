@@ -49,7 +49,11 @@ export function NewLessonForm({
         });
       }}
     >
-      <Field id="title" label="Titlul lecției" error={errors.title}>
+      <Field
+        id="title"
+        label="Numele folderului (capitolului)"
+        error={errors.title}
+      >
         <Input
           id="title"
           value={title}
@@ -144,7 +148,7 @@ export function NewLessonForm({
         className="w-fit"
         disabled={pending}
       >
-        {pending ? "Se creează…" : "Creează lecția și adaugă materiale"}
+        {pending ? "Se creează…" : "Creează folderul și adaugă materiale"}
       </Button>
     </form>
   );

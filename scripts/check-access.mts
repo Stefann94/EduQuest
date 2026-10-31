@@ -237,6 +237,65 @@ const newCourse = await mihai.from("courses").insert({
 });
 check("mentorul nu poate crea un curs global", newCourse.error !== null);
 
+// Mentorul creează (ca în aplicație: insert + select pe rândul nou), apoi ștergem.
+{
+  const me = (await ana.auth.getUser()).data.user?.id ?? "";
+  const cls = await ana
+    .from("classes")
+    .insert({
+      name: "Clasă de test",
+      description: "",
+      schedule: "Luni 10:00",
+      mentor_id: me,
+    })
+    .select("id, invite_code")
+    .single();
+  check(
+    "mentorul creează o clasă",
+    !cls.error && !!cls.data?.invite_code,
+    cls.error?.message,
+  );
+  const folder = await ana
+    .from("lessons")
+    .insert({ author_id: me, title: "Folder de test", summary: "" })
+    .select("id")
+    .single();
+  check("mentorul creează un folder", !folder.error, folder.error?.message);
+  const sub = folder.data
+    ? await ana
+        .from("lessons")
+        .insert({
+          author_id: me,
+          parent_id: folder.data.id,
+          title: "Subfolder de test",
+          summary: "",
+        })
+        .select("id")
+        .single()
+    : null;
+  check(
+    "mentorul creează un subfolder",
+    !!sub && !sub.error,
+    sub?.error?.message,
+  );
+  const hw = await ana
+    .from("homeworks")
+    .insert({ author_id: me, title: "Temă de test", description: "" })
+    .select("id")
+    .single();
+  check("mentorul creează o temă", !hw.error, hw.error?.message);
+  const qz = await ana
+    .from("quizzes")
+    .insert({ author_id: me, title: "Quiz de test", description: "" })
+    .select("id")
+    .single();
+  check("mentorul creează un quiz", !qz.error, qz.error?.message);
+  if (cls.data) await ana.from("classes").delete().eq("id", cls.data.id);
+  if (folder.data) await ana.from("lessons").delete().eq("id", folder.data.id);
+  if (hw.data) await ana.from("homeworks").delete().eq("id", hw.data.id);
+  if (qz.data) await ana.from("quizzes").delete().eq("id", qz.data.id);
+}
+
 // Administrator
 const admin = await login("admin@eduquest.ro");
 check(

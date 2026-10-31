@@ -356,7 +356,7 @@ function DetailsForm({ lesson }: { lesson: LibraryLesson }) {
         });
       }}
     >
-      <Field id="lesson-title" label="Titlul lecției" error={errors.title}>
+      <Field id="lesson-title" label="Numele folderului" error={errors.title}>
         <Input
           id="lesson-title"
           value={title}
@@ -370,7 +370,7 @@ function DetailsForm({ lesson }: { lesson: LibraryLesson }) {
         label="Rezumat"
         optional
         error={errors.summary}
-        hint="Apare pe cardul lecției."
+        hint="Apare pe cardul folderului."
       >
         <Textarea
           id="lesson-summary"
@@ -531,7 +531,7 @@ function PlacementRow({
           Scoate
         </Button>
       </div>
-      <div className="grid grid-cols-[5rem_1fr] items-end gap-2">
+      <div className="grid grid-cols-[4.5rem_minmax(0,1fr)] items-end gap-2">
         <Field id={`n-${p.classId}`} label="Nr.">
           <Input
             id={`n-${p.classId}`}
@@ -552,6 +552,7 @@ function PlacementRow({
           value={p.display}
           onValueChange={(v) => save({ display: v as LessonDisplay })}
           items={DISPLAY}
+          className="min-w-0 *:data-[slot=select-value]:truncate"
         />
       </div>
       <div className="flex items-center gap-2 text-sm">

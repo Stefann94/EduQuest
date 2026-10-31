@@ -36,7 +36,11 @@ async function Content({ params }: { params: Props["params"] }) {
     <ul className="stagger grid gap-4">
       {lessons.map((l) => (
         <li key={l.id}>
-          <LessonCard lesson={l} href={`/clase/${c.id}/lectii/${l.id}`} />
+          <LessonCard
+            lesson={l}
+            href={`/clase/${c.id}/lectii/${l.id}`}
+            problemPages
+          />
         </li>
       ))}
     </ul>

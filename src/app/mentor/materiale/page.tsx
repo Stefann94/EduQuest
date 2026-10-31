@@ -10,13 +10,13 @@ import { requireUser } from "@/lib/auth";
 import { getMentorClasses } from "@/lib/db/classes";
 import { getClassLessons, getMentorLessons } from "@/lib/db/lessons";
 
-export const metadata: Metadata = { title: "Lecții și materiale" };
+export const metadata: Metadata = { title: "Foldere și materiale" };
 
 export default function MentorMaterialsPage() {
   return (
     <div className="grid gap-6">
       <PageHeader
-        title="Lecții și materiale"
+        title="Foldere și materiale"
         description="Biblioteca ta: fiecare lecție are materiale (lecție scrisă, PDF, link, video, probleme) și poate fi folosită în mai multe clase."
         actions={
           <Link

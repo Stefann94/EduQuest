@@ -19,6 +19,8 @@ export function menuItems(
   subfolders: SubfolderSummary[] = [],
   folderHref: (id: string) => string = (id) =>
     `${lessonHref.split("/").slice(0, -1).join("/")}/${id}`,
+  /** Pagina proprie a unei probleme (la elev); altfel ancora din pagina folderului. */
+  problemHref?: (id: string) => string,
 ): MenuItem[] {
   const folders: MenuItem[] = subfolders.map((f) => ({
     id: f.id,
@@ -39,6 +41,8 @@ export function menuItems(
         return { ...base, href: i.fileUrl, external: true };
       if (i.kind === "link" || i.kind === "video")
         return { ...base, href: i.content.url, external: true };
+      if (i.kind === "problem" && problemHref)
+        return { ...base, href: problemHref(i.id) };
       return { ...base, href: `${lessonHref}#m-${i.id}` };
     }),
   ];
@@ -82,10 +86,13 @@ export function LessonCard({
   lesson: l,
   href,
   showVisibility,
+  problemPages,
 }: {
   lesson: ClassLesson;
   href: string;
   showVisibility?: boolean;
+  /** Problemele se deschid pe pagina lor (`{href}/probleme/{id}`). */
+  problemPages?: boolean;
 }) {
   return (
     <article className="flex cut flex-col gap-4 bg-card p-5 md:flex-row md:items-center md:gap-6">
@@ -109,7 +116,15 @@ export function LessonCard({
         {showVisibility ? <VisibilityBadge published={l.published} /> : null}
       </div>
       <div className="grid gap-3 md:w-80 md:shrink-0">
-        <MaterialsMenu items={menuItems(l.items, href, l.subfolders)} />
+        <MaterialsMenu
+          items={menuItems(
+            l.items,
+            href,
+            l.subfolders,
+            undefined,
+            problemPages ? (id) => `${href}/probleme/${id}` : undefined,
+          )}
+        />
         <Link
           href={href}
           className="inline-flex items-center gap-1 justify-self-start font-bold font-heading text-primary text-sm uppercase tracking-wide hover:underline"

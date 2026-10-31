@@ -15,7 +15,7 @@ export default function NewLessonPage({
   return (
     <div className="grid gap-6">
       <PageHeader
-        back={{ href: "/mentor/materiale", label: "Lecții și materiale" }}
+        back={{ href: "/mentor/materiale", label: "Foldere și materiale" }}
         title="Lecție nouă"
         description="Pornești cu titlul; materialele (lecție scrisă, PDF, link, video, probleme) le adaugi în pasul următor."
       />

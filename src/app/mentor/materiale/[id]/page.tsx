@@ -43,7 +43,7 @@ async function Editor({ params }: { params: Props["params"] }) {
                 href: `/mentor/materiale/${lesson.path.at(-1)?.id}`,
                 label: lesson.path.map((p) => p.title).join(" › "),
               }
-            : { href: "/mentor/materiale", label: "Lecții și materiale" }
+            : { href: "/mentor/materiale", label: "Foldere și materiale" }
         }
         title={lesson.title}
         description={

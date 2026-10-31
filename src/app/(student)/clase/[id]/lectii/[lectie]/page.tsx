@@ -7,6 +7,7 @@ import { EmptyState } from "@/components/common/empty-state";
 import { FolderList } from "@/components/lessons/folder-list";
 import { LessonNumber, LessonTitle } from "@/components/lessons/lesson-card";
 import { LessonItemSection } from "@/components/lessons/lesson-item-view";
+import { ProblemCard } from "@/components/lessons/problem-card";
 import { DetailSkeleton } from "@/components/student-class/skeletons";
 import { buttonVariants } from "@/components/ui/button";
 import { placeholderParams } from "@/lib/db/core";
@@ -36,6 +37,8 @@ async function Content({ params }: { params: Props["params"] }) {
   if (!data) notFound();
   const { root, lessons, path, folder } = data;
   const base = `/clase/${c.id}/lectii`;
+  const problems = folder.items.filter((i) => i.kind === "problem");
+  const others = folder.items.filter((i) => i.kind !== "problem");
   const index = lessons.findIndex((l) => l.id === root.id);
   const prev = folder.isRoot ? lessons[index - 1] : undefined;
   const next = folder.isRoot ? lessons[index + 1] : undefined;
@@ -117,13 +120,36 @@ async function Content({ params }: { params: Props["params"] }) {
         </section>
       ) : null}
 
-      {folder.items.length > 0 ? (
+      {problems.length > 0 ? (
+        <section aria-labelledby="probleme" className="grid gap-3">
+          <h2 id="probleme" className="text-xl">
+            Probleme rezolvate
+          </h2>
+          <ul className="grid gap-3">
+            {problems.map((item) =>
+              item.kind === "problem" ? (
+                <li key={item.id}>
+                  <ProblemCard
+                    title={item.title}
+                    problem={item.content}
+                    href={`${base}/${folder.id}/probleme/${item.id}`}
+                  />
+                </li>
+              ) : null,
+            )}
+          </ul>
+        </section>
+      ) : null}
+
+      {others.length > 0 ? (
         <div className="grid gap-10">
-          {folder.items.map((item) => (
+          {others.map((item) => (
             <LessonItemSection key={item.id} item={item} />
           ))}
         </div>
-      ) : folder.subfolders.length === 0 ? (
+      ) : null}
+
+      {folder.items.length === 0 && folder.subfolders.length === 0 ? (
         <EmptyState
           icon={FolderOpen}
           title="Folderul e gol deocamdată"

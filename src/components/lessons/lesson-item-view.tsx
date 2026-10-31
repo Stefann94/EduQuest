@@ -25,7 +25,13 @@ import { SolutionTabs } from "./solution-tabs";
 import { TryIt } from "./try-it";
 
 /** Un material întreg, pe pagina lecției. `id` = ancora din meniul cardului de lecție. */
-export function LessonItemSection({ item }: { item: LessonItemView }) {
+export function LessonItemSection({
+  item,
+  hideSolutions,
+}: {
+  item: LessonItemView;
+  hideSolutions?: boolean;
+}) {
   return (
     <section id={`m-${item.id}`} className="scroll-mt-24 grid gap-4">
       <header className="flex items-center gap-3">
@@ -37,17 +43,26 @@ export function LessonItemSection({ item }: { item: LessonItemView }) {
           <h2 className="text-2xl leading-tight">{item.title}</h2>
         </div>
       </header>
-      <ItemBody item={item} />
+      <ItemBody item={item} hideSolutions={hideSolutions} />
     </section>
   );
 }
 
-function ItemBody({ item }: { item: LessonItemView }) {
+function ItemBody({
+  item,
+  hideSolutions,
+}: {
+  item: LessonItemView;
+  hideSolutions?: boolean;
+}) {
   switch (item.kind) {
     case "article":
       return (
         <div className="grid max-w-3xl gap-4">
-          <ContentBlocks blocks={item.content.blocks} />
+          <ContentBlocks
+            blocks={item.content.blocks}
+            hideSolutions={hideSolutions}
+          />
         </div>
       );
     case "pdf":
@@ -56,7 +71,13 @@ function ItemBody({ item }: { item: LessonItemView }) {
     case "video":
       return <ExternalCard kind={item.kind} content={item.content} />;
     case "problem":
-      return <ProblemBody itemId={item.id} problem={item.content} />;
+      return (
+        <ProblemBody
+          itemId={item.id}
+          problem={item.content}
+          hideSolution={hideSolutions}
+        />
+      );
   }
 }
 
@@ -146,9 +167,11 @@ function ExternalCard({
 export function ProblemBody({
   itemId,
   problem: p,
+  hideSolution,
 }: {
   itemId: string;
   problem: ProblemContent;
+  hideSolution?: boolean;
 }) {
   return (
     <div className="grid max-w-3xl gap-5">
@@ -218,36 +241,38 @@ export function ProblemBody({
         <TryIt itemId={itemId} starter={p.starter} language={p.language} />
       </div>
 
-      <SolutionToggle>
-        <div className="grid gap-4">
-          <SolutionTabs
-            files={p.files.map((f, i) => ({
-              name: f.name,
-              node: (
-                <CodeBlock
-                  code={f.code}
-                  language={f.language}
-                  title={f.name}
-                  // Ce afișează programul îl arătăm sub primul fișier (cel care rulează).
-                  output={i === 0 ? p.output : undefined}
-                />
-              ),
-            }))}
-          />
-          {p.explanation ? (
-            <div className="grid gap-2 leading-relaxed">
-              <h3 className="font-bold font-heading text-sm uppercase tracking-wide">
-                Cum funcționează
-              </h3>
-              {p.explanation.split(/\n{2,}/).map((para) => (
-                <p key={para}>
-                  <RichText text={para} />
-                </p>
-              ))}
-            </div>
-          ) : null}
-        </div>
-      </SolutionToggle>
+      {hideSolution ? null : (
+        <SolutionToggle label="rezolvarea mentorului">
+          <div className="grid gap-4">
+            <SolutionTabs
+              files={p.files.map((f, i) => ({
+                name: f.name,
+                node: (
+                  <CodeBlock
+                    code={f.code}
+                    language={f.language}
+                    title={f.name}
+                    // Ce afișează programul îl arătăm sub primul fișier (cel care rulează).
+                    output={i === 0 ? p.output : undefined}
+                  />
+                ),
+              }))}
+            />
+            {p.explanation ? (
+              <div className="grid gap-2 leading-relaxed">
+                <h3 className="font-bold font-heading text-sm uppercase tracking-wide">
+                  Cum funcționează
+                </h3>
+                {p.explanation.split(/\n{2,}/).map((para) => (
+                  <p key={para}>
+                    <RichText text={para} />
+                  </p>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        </SolutionToggle>
+      )}
     </div>
   );
 }

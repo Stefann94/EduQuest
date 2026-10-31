@@ -432,7 +432,10 @@ function Steps({ items }: { items: { title: string; text: string }[] }) {
   );
 }
 
-function Exercise(b: Extract<ContentBlock, { type: "exercise" }>) {
+function Exercise({
+  hideSolution,
+  ...b
+}: Extract<ContentBlock, { type: "exercise" }> & { hideSolution?: boolean }) {
   return (
     <section className="cut relative grid gap-4 bg-card p-5 sm:p-6">
       <span
@@ -466,27 +469,36 @@ function Exercise(b: Extract<ContentBlock, { type: "exercise" }>) {
           </p>
         </details>
       ) : null}
-      <SolutionToggle>
-        <div className="grid gap-3">
-          <CodeBlock
-            code={b.solution.code}
-            language={b.solution.language}
-            title="O soluție posibilă"
-            output={b.output}
-          />
-          {b.explanation ? (
-            <p className="leading-relaxed text-muted-foreground">
-              <RichText text={b.explanation} />
-            </p>
-          ) : null}
-        </div>
-      </SolutionToggle>
+      {hideSolution ? null : (
+        <SolutionToggle>
+          <div className="grid gap-3">
+            <CodeBlock
+              code={b.solution.code}
+              language={b.solution.language}
+              title="O soluție posibilă"
+              output={b.output}
+            />
+            {b.explanation ? (
+              <p className="leading-relaxed text-muted-foreground">
+                <RichText text={b.explanation} />
+              </p>
+            ) : null}
+          </div>
+        </SolutionToggle>
+      )}
     </section>
   );
 }
 
 /** Conținutul unei lecții sau al unui material, bloc cu bloc. */
-export function ContentBlocks({ blocks }: { blocks: ContentBlock[] }) {
+export function ContentBlocks({
+  blocks,
+  hideSolutions,
+}: {
+  blocks: ContentBlock[];
+  /** Fără soluțiile exercițiilor (ex. mentorul care doar citește cursul). */
+  hideSolutions?: boolean;
+}) {
   return (
     <div className="grid gap-6 text-foreground/90 text-lg leading-[1.7] [&>p]:max-w-[64ch] [&>ul]:max-w-[64ch] [&>ol]:max-w-[64ch]">
       {blocks.map((b, i) => {
@@ -612,7 +624,7 @@ export function ContentBlocks({ blocks }: { blocks: ContentBlock[] }) {
           case "steps":
             return <Steps key={key} items={b.items} />;
           case "exercise":
-            return <Exercise key={key} {...b} />;
+            return <Exercise key={key} {...b} hideSolution={hideSolutions} />;
           case "keypoints":
             return (
               <section
