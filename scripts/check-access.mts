@@ -178,6 +178,27 @@ check(
   "mentorul nu poate edita lecția altui mentor",
   (anaLesson.data ?? []).length === 0,
 );
+// Cursul global îl văd toți elevii: un mentor nu poate băga conținut în el.
+const { data: course } = await mihai.from("courses").select("id").limit(1).single();
+const { data: mihaiLesson } = await mihai.from("lessons").select("id").is("course_id", null).limit(1).single();
+if (course && mihaiLesson) {
+  const moved = await mihai
+    .from("lessons")
+    .update({ course_id: course.id })
+    .eq("id", mihaiLesson.id)
+    .select("id");
+  check(
+    "mentorul nu-și poate muta lecția în cursul global",
+    moved.error !== null || (moved.data ?? []).length === 0,
+  );
+}
+const newCourse = await mihai.from("courses").insert({
+  slug: "curs-neautorizat",
+  title: "Curs neautorizat",
+  author_id: (await mihai.auth.getUser()).data.user?.id ?? "",
+  status: "published",
+});
+check("mentorul nu poate crea un curs global", newCourse.error !== null);
 
 // Administrator
 const admin = await login("admin@eduquest.ro");
