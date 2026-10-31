@@ -13,7 +13,7 @@ export function FolderList({
 }) {
   if (folders.length === 0) return null;
   return (
-    <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+    <ul className="grid gap-2">
       {folders.map((f) => {
         const parts = [
           f.folderCount > 0

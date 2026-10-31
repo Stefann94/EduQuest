@@ -88,8 +88,8 @@ export function LessonCard({
   showVisibility?: boolean;
 }) {
   return (
-    <article className="flex h-full cut flex-col gap-4 bg-card p-5">
-      <div className="flex items-start gap-4">
+    <article className="flex cut flex-col gap-4 bg-card p-5 md:flex-row md:items-center md:gap-6">
+      <div className="flex min-w-0 flex-1 items-start gap-4">
         <LessonNumber lesson={l} />
         <div className="min-w-0 flex-1">
           <h3 className="text-xl leading-tight">
@@ -108,13 +108,13 @@ export function LessonCard({
         </div>
         {showVisibility ? <VisibilityBadge published={l.published} /> : null}
       </div>
-      <div className="mt-auto grid gap-3">
+      <div className="grid gap-3 md:w-80 md:shrink-0">
         <MaterialsMenu items={menuItems(l.items, href, l.subfolders)} />
         <Link
           href={href}
           className="inline-flex items-center gap-1 justify-self-start font-bold font-heading text-primary text-sm uppercase tracking-wide hover:underline"
         >
-          Deschide lecția <ArrowRight className="size-4" aria-hidden="true" />
+          Deschide folderul <ArrowRight className="size-4" aria-hidden="true" />
         </Link>
       </div>
     </article>

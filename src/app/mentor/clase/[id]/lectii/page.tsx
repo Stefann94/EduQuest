@@ -52,7 +52,7 @@ async function Lessons({ params }: { params: Props["params"] }) {
         {add}
       </div>
       {lessons.length > 0 ? (
-        <ul className="stagger grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <ul className="stagger grid gap-4">
           {lessons.map((l) => (
             <li key={l.id}>
               <LessonCard
