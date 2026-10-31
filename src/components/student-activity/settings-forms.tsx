@@ -15,6 +15,7 @@ import { AVATARS } from "@/components/common/user-avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Switch } from "@/components/ui/switch";
 import type { AvatarId } from "@/lib/data/types";
 import { cn } from "@/lib/utils";
@@ -129,12 +130,12 @@ export function ProfileForm({
 
         <fieldset className="grid gap-2">
           <legend className="mb-2 font-medium text-sm">Personaj</legend>
-          <div className="grid grid-cols-3 gap-2 sm:grid-cols-9">
+          <div className="grid grid-cols-5 gap-2 sm:grid-cols-9">
             {(Object.keys(AVATARS) as AvatarId[]).map((id) => (
               <label
                 key={id}
                 className={cn(
-                  "grid place-items-center gap-1 rounded-lg border p-2 text-center transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
+                  "grid aspect-square place-items-center rounded-lg border p-2 text-center transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
                   chosen === id
                     ? "border-primary bg-primary-soft"
                     : "hover:bg-muted",
@@ -151,9 +152,8 @@ export function ProfileForm({
                 <span className="text-2xl" aria-hidden="true">
                   {AVATARS[id].emoji}
                 </span>
-                <span className="text-xs text-muted-foreground">
-                  {AVATARS[id].label}
-                </span>
+                {/* Doar emoji pe ecran; numele rămâne pentru cititoarele de ecran. */}
+                <span className="sr-only">{AVATARS[id].label}</span>
               </label>
             ))}
           </div>
@@ -257,10 +257,9 @@ function PasswordFields({ onDone }: { onDone: () => void }) {
     return (
       <div className="grid gap-2">
         <Label htmlFor={`pw-${key}`}>{label}</Label>
-        <Input
+        <PasswordInput
           id={`pw-${key}`}
           name={key}
-          type="password"
           value={values[key]}
           onChange={(e) => setValues({ ...values, [key]: e.target.value })}
           autoComplete={autoComplete}

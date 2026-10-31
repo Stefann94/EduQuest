@@ -10,6 +10,8 @@ const player = z.object({
   /** Punctele din quiz (nu XP): 500 + bonus de viteză pentru fiecare răspuns corect. */
   score: z.number(),
   rank: z.number(),
+  /** Punctele luate la ultima întrebare dezvăluită (afișate ca „+x” în clasament). */
+  gained: z.number().optional(),
   /** XP-ul primit pentru locul final; null până se încheie sesiunea. */
   xp: z.number().nullable().optional(),
 });
@@ -73,6 +75,9 @@ export function livePhase(state: LiveState): LivePhase {
   if (!state.reveal) return "question";
   return state.showBoard ? "board" : "reveal";
 }
+
+/** În ultimele secunde ale unei întrebări apare avertismentul „mai sunt 15 secunde”. */
+export const LAST_SECONDS = 15;
 
 /** XP după locul final (la fel ca în baza de date). */
 export const liveXpForRank = (rank: number) =>

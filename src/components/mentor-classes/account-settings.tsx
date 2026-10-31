@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/ui/password-input";
 import { Switch } from "@/components/ui/switch";
 import type { AvatarId } from "@/lib/data/types";
 import { FieldError } from "./class-details-fields";
@@ -77,6 +78,7 @@ function Field({
   label,
   error,
   hint,
+  type,
   ...input
 }: {
   id: string;
@@ -88,12 +90,22 @@ function Field({
   return (
     <div className="grid gap-2">
       <Label htmlFor={id}>{label}</Label>
-      <Input
-        id={id}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy}
-        {...input}
-      />
+      {type === "password" ? (
+        <PasswordInput
+          id={id}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          {...input}
+        />
+      ) : (
+        <Input
+          id={id}
+          type={type}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
+          {...input}
+        />
+      )}
       {error ? (
         <FieldError id={`${id}-error`} message={error} />
       ) : hint ? (

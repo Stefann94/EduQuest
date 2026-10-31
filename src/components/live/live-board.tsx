@@ -18,12 +18,15 @@ export function LiveBoard({
   board,
   meId,
   showXp = false,
+  showGain = false,
   limit,
   large = false,
 }: {
   board: LivePlayer[];
   meId?: string;
   showXp?: boolean;
+  /** După o rundă: câte puncte a luat fiecare la ultima întrebare („+x”). */
+  showGain?: boolean;
   limit?: number;
   large?: boolean;
 }) {
@@ -41,6 +44,7 @@ export function LiveBoard({
             p={p}
             me={p.id === meId}
             showXp={showXp}
+            showGain={showGain}
             large={large}
           />
         ))}
@@ -54,7 +58,7 @@ export function LiveBoard({
       ) : null}
       {meHidden && me ? (
         <ol>
-          <Row p={me} me showXp={showXp} large={large} />
+          <Row p={me} me showXp={showXp} showGain={showGain} large={large} />
         </ol>
       ) : null}
     </div>
@@ -65,11 +69,13 @@ function Row({
   p,
   me,
   showXp,
+  showGain,
   large,
 }: {
   p: LivePlayer;
   me: boolean;
   showXp: boolean;
+  showGain: boolean;
   large: boolean;
 }) {
   return (
@@ -100,6 +106,19 @@ function Row({
         {p.name}
         {me ? <span className="text-muted-foreground"> (tu)</span> : null}
       </span>
+      {showGain ? (
+        <span
+          className={cn(
+            "pop-in shrink-0 px-2 py-0.5 font-bold font-heading text-sm tabular-nums",
+            p.gained
+              ? "bg-success-soft text-success"
+              : "bg-muted text-muted-foreground",
+          )}
+        >
+          +{p.gained ?? 0}
+          <span className="sr-only"> puncte la ultima întrebare</span>
+        </span>
+      ) : null}
       <span className="font-bold font-heading tabular-nums">
         {p.score}
         <span aria-hidden="true" className="text-muted-foreground text-sm">
@@ -110,5 +129,80 @@ function Row({
       </span>
       {showXp ? <XpBadge amount={playerXp(p)} /> : null}
     </li>
+  );
+}
+
+const PODIUM = [
+  {
+    place: 2,
+    height: "h-24",
+    color: "bg-secondary-foreground text-background",
+    delay: "150ms",
+  },
+  { place: 1, height: "h-36", color: "bg-xp text-white", delay: "0ms" },
+  {
+    place: 3,
+    height: "h-16",
+    color: "bg-primary text-primary-foreground",
+    delay: "300ms",
+  },
+];
+
+/** Podiumul de la finalul quiz-ului live: primii trei, cu personajele lor. */
+export function LivePodium({
+  board,
+  meId,
+}: {
+  board: LivePlayer[];
+  meId?: string;
+}) {
+  if (board.length === 0) return null;
+  return (
+    <ol
+      aria-label="Podium"
+      className="mx-auto grid w-full max-w-xl grid-cols-3 items-end gap-2 sm:gap-4"
+    >
+      {PODIUM.map(({ place, height, color, delay }) => {
+        // La egalitate, mai mulți elevi pot avea același loc: luăm al n-lea din clasament.
+        const p = board[place - 1];
+        if (!p) return <li key={place} aria-hidden="true" />;
+        return (
+          <li
+            key={place}
+            className="podium-rise grid justify-items-center gap-2 text-center"
+            style={{ animationDelay: delay }}
+          >
+            <span
+              aria-hidden="true"
+              className={cn(place === 1 ? "text-6xl" : "text-5xl")}
+            >
+              {AVATARS[(p.avatar ?? "fox") as AvatarId]?.emoji ?? "🙂"}
+            </span>
+            <span
+              className={cn(
+                "w-full truncate font-bold font-heading",
+                p.id === meId && "text-primary",
+              )}
+            >
+              {p.name}
+              {p.id === meId ? " (tu)" : ""}
+            </span>
+            <span className="text-muted-foreground text-sm tabular-nums">
+              {p.score} p
+            </span>
+            <span
+              className={cn(
+                "grid w-full cut-sm place-items-center font-extrabold font-heading text-4xl",
+                height,
+                color,
+              )}
+            >
+              <span className="sr-only">Locul </span>
+              {p.rank}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
   );
 }

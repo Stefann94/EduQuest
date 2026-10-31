@@ -24,15 +24,17 @@ import {
   optionCellClass,
   optionGridClass,
 } from "@/components/live/answer-styles";
-import { LiveBoard } from "@/components/live/live-board";
+import { LiveBoard, LivePodium } from "@/components/live/live-board";
 import {
   MultiAnswerLabel,
   OptionCounts,
 } from "@/components/live/option-counts";
+import { TimeWarning } from "@/components/live/time-warning";
 import { QuestionCode } from "@/components/quiz/question-code";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { AvatarId } from "@/lib/data/types";
 import {
+  LAST_SECONDS,
   type LivePhase,
   type LiveState,
   livePhase,
@@ -213,7 +215,7 @@ export function LiveControl({
             Puncte din acest quiz: 500 pentru răspunsul corect, plus până la 500
             pentru viteză. XP-ul se dă la final, după loc.
           </p>
-          <LiveBoard board={state.board} limit={10} large />
+          <LiveBoard board={state.board} limit={10} large showGain />
         </section>
       ) : null}
       {phase === "ended" ? <Ended state={state} /> : null}
@@ -331,7 +333,10 @@ function QuestionStage({ state, left }: { state: LiveState; left: number }) {
             "slant grid min-w-28 place-items-center px-6 py-2 font-extrabold font-heading text-5xl tabular-nums",
             left <= 5
               ? "bg-destructive text-white"
-              : "bg-foreground text-background",
+              : left <= LAST_SECONDS
+                ? "bg-xp text-white"
+                : "bg-foreground text-background",
+            left > 0 && left <= LAST_SECONDS && "time-pulse",
           )}
         >
           {left}
@@ -346,6 +351,7 @@ function QuestionStage({ state, left }: { state: LiveState; left: number }) {
               style={{ width: `${timePct}%` }}
             />
           </div>
+          <TimeWarning left={left} seconds={state.seconds} />
           <p className="font-bold font-heading text-muted-foreground text-sm uppercase tracking-wide">
             Au răspuns {state.answered} din {state.players}
           </p>
@@ -458,7 +464,10 @@ function Ended({ state }: { state: LiveState }) {
       {state.board.length === 0 ? (
         <p className="text-muted-foreground">Niciun jucător n-a intrat.</p>
       ) : (
-        <LiveBoard board={state.board} showXp large />
+        <>
+          <LivePodium board={state.board} />
+          <LiveBoard board={state.board} showXp large />
+        </>
       )}
       <div>
         <Link

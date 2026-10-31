@@ -256,7 +256,7 @@ export function QuizForm({
                                 type="number"
                                 inputMode="numeric"
                                 min={5}
-                                max={120}
+                                max={180}
                                 step={5}
                                 value={Number.isNaN(q.timeSec) ? "" : q.timeSec}
                                 onChange={(e) =>
@@ -280,7 +280,7 @@ export function QuizForm({
                                 s
                                 <span className="sr-only">
                                   {" "}
-                                  (între 5 și 120 de secunde)
+                                  (între 5 și 180 de secunde)
                                 </span>
                               </span>
                             </div>

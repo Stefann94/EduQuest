@@ -63,7 +63,7 @@ const questionSchema = z
       .number({ error: "Alege timpul de răspuns." })
       .int("Timpul e un număr întreg de secunde.")
       .min(5, "Cel puțin 5 secunde.")
-      .max(120, "Cel mult 120 de secunde."),
+      .max(180, "Cel mult 180 de secunde."),
   })
   .superRefine((q, ctx) => {
     const n = q.options.length;

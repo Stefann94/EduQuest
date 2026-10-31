@@ -252,7 +252,46 @@
   }
 }
 
+/* Quiz live: „+x puncte” apare cu un mic salt; timpul din ultimele secunde pulsează. */
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  70% {
+    transform: scale(1.12);
+  }
+}
+@keyframes time-pulse {
+  50% {
+    transform: scale(1.08);
+  }
+}
+@keyframes podium-rise {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+}
+
 @layer components {
+  .pop-in {
+    animation: pop-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+  .time-pulse {
+    animation: time-pulse 1s ease-in-out infinite;
+  }
+  .podium-rise {
+    animation: podium-rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .pop-in,
+    .time-pulse,
+    .podium-rise {
+      animation: none;
+    }
+  }
+
   /* Secțiunile unei pagini noi (template.tsx), cu un decalaj mic între ele. */
   .page-enter > * > * {
     animation: fade-up 0.28s cubic-bezier(0.22, 1, 0.36, 1) backwards;

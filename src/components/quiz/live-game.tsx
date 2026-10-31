@@ -20,15 +20,17 @@ import {
   optionCellClass,
   optionGridClass,
 } from "@/components/live/answer-styles";
-import { LiveBoard } from "@/components/live/live-board";
+import { LiveBoard, LivePodium } from "@/components/live/live-board";
 import {
   MultiAnswerLabel,
   OptionCounts,
 } from "@/components/live/option-counts";
+import { TimeWarning } from "@/components/live/time-warning";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
+  LAST_SECONDS,
   type LivePhase,
   type LiveState,
   livePhase,
@@ -322,6 +324,9 @@ function Round({
           Întrebarea {state.current} din {state.total}
         </p>
         {phase === "question" ? (
+          <TimeWarning left={left} seconds={state.seconds} />
+        ) : null}
+        {phase === "question" ? (
           <span
             role="timer"
             aria-label={`Timp rămas: ${left} secunde`}
@@ -329,7 +334,10 @@ function Round({
               "slant inline-flex h-10 items-center gap-1.5 px-4 font-extrabold font-heading text-2xl tabular-nums",
               left <= 5
                 ? "bg-destructive text-white"
-                : "bg-foreground text-background",
+                : left <= LAST_SECONDS
+                  ? "bg-xp text-white"
+                  : "bg-foreground text-background",
+              left > 0 && left <= LAST_SECONDS && "time-pulse",
             )}
           >
             <Clock className="size-4" aria-hidden="true" />
@@ -541,7 +549,7 @@ function BoardView({ state, meId }: { state: LiveState; meId: string }) {
           </p>
         </div>
       ) : null}
-      <LiveBoard board={state.board} meId={meId} limit={10} />
+      <LiveBoard board={state.board} meId={meId} limit={10} showGain />
       <p className="text-muted-foreground text-sm">
         Punctele sunt doar ale acestui quiz, nu XP. XP-ul îl primești la final,
         după locul tău.
@@ -595,6 +603,8 @@ function Final({
           </p>
         </div>
       ) : null}
+
+      <LivePodium board={state.board} meId={meId} />
 
       <LiveBoard board={state.board} meId={meId} showXp />
 
