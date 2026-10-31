@@ -2,6 +2,7 @@ import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { VisibilityBadge } from "@/components/common/status";
 import { folderEntries } from "@/lib/content/folder-order";
+import { pdfHref } from "@/lib/content/items";
 import type {
   ClassLesson,
   LessonItemView,
@@ -40,6 +41,8 @@ export function menuItems(
     };
     if (i.kind === "link" || i.kind === "video")
       return { ...base, href: i.content.url, external: true };
+    if (i.kind === "pdf")
+      return { ...base, href: pdfHref(i.id), external: true };
     if (i.kind === "problem" && problemHref)
       return { ...base, href: problemHref(i.id) };
     return { ...base, href: `${lessonHref}#m-${i.id}` };

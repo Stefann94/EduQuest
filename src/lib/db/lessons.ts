@@ -5,11 +5,8 @@ import { db, isUuid, must } from "./core";
 
 export type LessonDisplay = Database["public"]["Enums"]["lesson_display"];
 
-/** Un material, cu linkul de descărcare pentru PDF-uri (valabil o oră). */
-export type LessonItemView = LessonItem & {
-  position: number;
-  fileUrl?: string;
-};
+/** Un material, cu poziția lui în folder. */
+export type LessonItemView = LessonItem & { position: number };
 
 /** Un subfolder, pe scurt: pentru listele din folderul părinte. */
 export type SubfolderSummary = {
@@ -71,25 +68,14 @@ type ItemRow = {
 
 const ITEM_FIELDS = "id, kind, title, position, published, content";
 
-/** Rândurile devin materiale validate, în ordine; PDF-urile primesc link semnat. */
+/** Rândurile devin materiale validate, în ordine (PDF-urile se deschid prin /pdf/[id]). */
 async function toItems(rows: ItemRow[]): Promise<LessonItemView[]> {
-  const items = rows
+  return rows
     .flatMap((r) => {
       const item = parseItem(r);
       return item ? [{ ...item, position: r.position }] : [];
     })
     .sort((a, b) => a.position - b.position);
-  const pdfs = items.filter((i) => i.kind === "pdf");
-  if (pdfs.length === 0) return items;
-  const supabase = await db();
-  const { data } = await supabase.storage.from("materials").createSignedUrls(
-    pdfs.map((p) => (p.kind === "pdf" ? p.content.path : "")),
-    3600,
-  );
-  const urls = new Map((data ?? []).map((d) => [d.path, d.signedUrl]));
-  return items.map((i) =>
-    i.kind === "pdf" ? { ...i, fileUrl: urls.get(i.content.path) } : i,
-  ) as LessonItemView[];
 }
 
 /** Titlul lecției în clasă, după cum a ales mentorul: „Lecția 3”, titlul sau amândouă. */

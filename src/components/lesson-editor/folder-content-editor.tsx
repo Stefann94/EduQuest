@@ -34,7 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { folderEntries } from "@/lib/content/folder-order";
-import { ITEM_KINDS, type ItemKind } from "@/lib/content/items";
+import { ITEM_KINDS, type ItemKind, pdfHref } from "@/lib/content/items";
 import type { FolderNode, LessonItemView } from "@/lib/db/lessons";
 import { cn } from "@/lib/utils";
 import { ItemEditor } from "./item-editor";
@@ -236,9 +236,9 @@ function ItemRow({
             <Eye className="size-4" aria-hidden="true" />
           </Link>
         ) : null}
-        {item.kind === "pdf" && item.fileUrl ? (
+        {item.kind === "pdf" ? (
           <a
-            href={item.fileUrl}
+            href={pdfHref(item.id)}
             target="_blank"
             rel="noopener noreferrer"
             className="grid size-8 place-items-center text-muted-foreground hover:text-foreground"

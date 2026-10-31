@@ -184,3 +184,6 @@ export const ITEM_LABEL: Record<ItemKind, string> = {
   video: "Video",
   problem: "Problemă",
 };
+
+/** Adresa fixă a PDF-ului unui material (se deschide într-un tab nou, vezi /pdf/[id]). */
+export const pdfHref = (itemId: string) => `/pdf/${itemId}`;

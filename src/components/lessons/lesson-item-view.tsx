@@ -12,10 +12,10 @@ import type {
   PdfContent,
   ProblemContent,
 } from "@/lib/content/items";
+import { pdfHref } from "@/lib/content/items";
 import type { LessonItemView } from "@/lib/db/lessons";
 import { formatFileSize } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { PdfPreview } from "./pdf-preview";
 import { SolutionTabs } from "./solution-tabs";
 import { TryIt } from "./try-it";
 
@@ -61,7 +61,7 @@ function ItemBody({
         </div>
       );
     case "pdf":
-      return <PdfCard file={item.content} url={item.fileUrl} />;
+      return <PdfCard itemId={item.id} file={item.content} />;
     case "link":
     case "video":
       return <ExternalCard kind={item.kind} content={item.content} />;
@@ -76,7 +76,13 @@ function ItemBody({
   }
 }
 
-export function PdfCard({ file, url }: { file: PdfContent; url?: string }) {
+export function PdfCard({
+  itemId,
+  file,
+}: {
+  itemId: string;
+  file: PdfContent;
+}) {
   return (
     <div className="flex cut-sm flex-wrap items-center gap-4 bg-card p-5">
       <span
@@ -91,13 +97,16 @@ export function PdfCard({ file, url }: { file: PdfContent; url?: string }) {
           PDF · {formatFileSize(file.sizeKb)}
         </p>
       </div>
-      {url ? (
-        <PdfPreview url={url} title={file.name} />
-      ) : (
-        <p className="text-muted-foreground text-sm">
-          Fișierul nu e disponibil acum.
-        </p>
-      )}
+      {/* PDF-ul se deschide într-un tab nou (adresă fixă, link proaspăt la fiecare deschidere). */}
+      <a
+        href={pdfHref(itemId)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={buttonVariants()}
+      >
+        <ExternalLink aria-hidden="true" />
+        Deschide PDF-ul
+      </a>
     </div>
   );
 }
