@@ -1,4 +1,10 @@
-import { LayoutDashboard, Settings, UserCheck, Users } from "lucide-react";
+import {
+  BookOpen,
+  LayoutDashboard,
+  Settings,
+  UserCheck,
+  Users,
+} from "lucide-react";
 import { Suspense } from "react";
 import { AppShell } from "@/components/shell/app-shell";
 import type { NavGroup } from "@/components/shell/nav";
@@ -47,6 +53,10 @@ async function AdminShell({ children }: { children: React.ReactNode }) {
           href: "/admin/setari",
           icon: <Settings />,
         },
+        // Un mentor cu drepturi de admin se întoarce de aici la clasele lui.
+        ...(me.role === "mentor"
+          ? [{ label: "Mentor", href: "/mentor", icon: <BookOpen /> }]
+          : []),
       ],
     },
   ];

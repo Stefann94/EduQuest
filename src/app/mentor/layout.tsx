@@ -7,6 +7,7 @@ import {
   ListChecks,
   Radio,
   Settings,
+  ShieldCheck,
   Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -16,7 +17,7 @@ import type { NavGroup } from "@/components/shell/nav";
 import type { SearchItem } from "@/components/shell/search-menu";
 import { ShellFallback } from "@/components/shell/shell-fallback";
 import { buttonVariants } from "@/components/ui/button";
-import { requireUser } from "@/lib/auth";
+import { getSessionProfile, requireUser } from "@/lib/auth";
 import { getMentorClasses } from "@/lib/db/classes";
 import { getMentorHomeworks, getReviewQueue } from "@/lib/db/homework";
 import { getMentorLessons } from "@/lib/db/lessons";
@@ -36,6 +37,7 @@ export default function Layout({ children }: LayoutProps<"/mentor">) {
 
 async function MentorShell({ children }: { children: React.ReactNode }) {
   const me = await requireUser("mentor");
+  const adminAccess = Boolean((await getSessionProfile())?.adminAccess);
   const [notifications, classes, homeworks, lessons, quizzes, queue] =
     await Promise.all([
       getNotifications(me.id),
@@ -70,6 +72,10 @@ async function MentorShell({ children }: { children: React.ReactNode }) {
           href: "/mentor/invatare",
           icon: <GraduationCap />,
         },
+        // Mentor cu drepturi și de administrator.
+        ...(adminAccess
+          ? [{ label: "Admin", href: "/admin", icon: <ShieldCheck /> }]
+          : []),
       ],
     },
     {

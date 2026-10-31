@@ -909,6 +909,7 @@ export type Database = {
       };
       profiles: {
         Row: {
+          admin_access: boolean;
           avatar: string | null;
           created_at: string;
           display_name: string;
@@ -920,6 +921,7 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          admin_access?: boolean;
           avatar?: string | null;
           created_at?: string;
           display_name: string;
@@ -930,6 +932,7 @@ export type Database = {
           username?: string | null;
         };
         Update: {
+          admin_access?: boolean;
           avatar?: string | null;
           created_at?: string;
           display_name?: string;

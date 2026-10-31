@@ -60,10 +60,13 @@ export function ApplicationReview({
             {decided.note}
           </blockquote>
         ) : null}
-        <p className="rounded-lg bg-muted px-3 py-2 text-muted-foreground text-xs">
-          Demo: decizia nu se salvează. La reîncărcarea paginii vezi din nou
-          starea inițială.
-        </p>
+        {decided.password ? (
+          <CreatedAccount
+            email={applicant.email}
+            password={decided.password}
+            emailed={Boolean(decided.emailed)}
+          />
+        ) : null}
       </div>
     );
 
@@ -208,7 +211,12 @@ function DecisionForm({
       const result = await reviewApplication(prev, formData);
       if (result.status === "success") {
         toast.success(c.toast, {
-          description: `${applicant.fullName} va primi un email. Demo: decizia nu se salvează.`,
+          description:
+            decision === "approve"
+              ? result.emailed
+                ? `Contul e creat, iar parola i-a fost trimisă pe email lui ${applicant.fullName}.`
+                : `Contul e creat. Trimite-i lui ${applicant.fullName} parola afișată.`
+              : `Decizia a fost salvată.`,
         });
         onDone(result);
       } else if (result.status === "error" && result.message)
@@ -236,8 +244,9 @@ function DecisionForm({
               <strong className="break-all font-medium text-foreground">
                 {applicant.email}
               </strong>
-              . Aplicantul primește pe email un link securizat de activare,
-              valabil 48 de ore și care poate fi folosit o singură dată.
+              , cu o parolă generată automat. Parola i se trimite pe email (dacă
+              e configurat serverul de email) și o vezi și tu, o singură dată,
+              ca să i-o poți da.
             </>
           ) : decision === "request_info" ? (
             <>
@@ -256,9 +265,9 @@ function DecisionForm({
       {decision === "approve" ? (
         <ul className="grid gap-2 rounded-lg border bg-muted/40 p-3.5 text-sm">
           {[
-            "Mentorul își alege singur parola, din linkul de activare.",
-            "Nu trimitem niciodată parole pe email.",
-            "Se autentifică apoi cu adresa de email, fără username.",
+            "Contul se creează imediat, cu o parolă generată automat.",
+            "Mentorul se autentifică cu adresa de email și parola primită.",
+            "Își schimbă parola din Setări cont, după prima autentificare.",
           ].map((t) => (
             <li key={t} className="flex gap-2">
               <Check
@@ -319,3 +328,45 @@ const TITLES: Record<ReviewDecision, string> = {
   request_info: "Cere informații suplimentare",
   reject: "Respingi această aplicație?",
 };
+
+/** Contul creat la aprobare: emailul și parola generată, arătate o singură dată. */
+function CreatedAccount({
+  email,
+  password,
+  emailed,
+}: {
+  email: string;
+  password: string;
+  emailed: boolean;
+}) {
+  const text = `Email: ${email}\nParolă: ${password}`;
+  return (
+    <div className="grid gap-2 rounded-lg border bg-success-soft/40 p-3.5 text-sm">
+      <p className="font-semibold">Contul de mentor a fost creat</p>
+      <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
+        <dt className="text-muted-foreground">Email</dt>
+        <dd className="break-all font-medium">{email}</dd>
+        <dt className="text-muted-foreground">Parolă</dt>
+        <dd className="font-medium font-mono">{password}</dd>
+      </dl>
+      <p className="text-muted-foreground text-xs">
+        {emailed
+          ? "Parola a fost trimisă și pe email. "
+          : "Serverul de email nu e configurat: trimite-i tu aceste date. "}
+        Parola nu se mai afișează după ce închizi pagina.
+      </p>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        className="w-fit"
+        onClick={() => {
+          void navigator.clipboard.writeText(text);
+          toast.success("Datele contului au fost copiate.");
+        }}
+      >
+        Copiază emailul și parola
+      </Button>
+    </div>
+  );
+}

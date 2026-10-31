@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import type { ApplicationStatus } from "@/lib/data/types";
 import { getMentorApplication } from "@/lib/db/admin";
+import { generatePassword, sendMail } from "@/lib/mail";
 import { siteOrigin } from "@/lib/site-url";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -18,6 +19,10 @@ export type ReviewState =
       decision: ReviewDecision;
       newStatus: ApplicationStatus;
       note?: string;
+      /** La aprobare: parola generată (arătată o singură dată adminului). */
+      password?: string;
+      /** Parola a plecat pe email (dacă e configurat SMTP). */
+      emailed?: boolean;
     };
 
 const NEW_STATUS: Record<ReviewDecision, ApplicationStatus> = {
@@ -79,16 +84,22 @@ export async function reviewApplication(
       note,
     };
 
-  // La aprobare: contul de mentor se creează printr-o invitație pe email (link unic,
-  // cu termen limitat), în care mentorul își alege singur parola.
+  // La aprobare: contul de mentor se creează direct, cu o parolă generată. Parola pleacă
+  // pe email (dacă e configurat SMTP) și i se arată o singură dată adminului; mentorul
+  // o schimbă apoi din „Setări cont”.
+  let password: string | undefined;
+  let emailed = false;
   if (decision === "approve") {
     const admin = supabaseAdmin();
     if (!admin)
       return { status: "error", message: "Serverul nu are cheile Supabase." };
+    password = generatePassword();
     const { data: invited, error: inviteError } =
-      await admin.auth.admin.inviteUserByEmail(application.email, {
-        data: { display_name: application.fullName },
-        redirectTo: `${await siteOrigin()}/auth/confirm?next=/activare`,
+      await admin.auth.admin.createUser({
+        email: application.email,
+        password,
+        email_confirm: true,
+        user_metadata: { display_name: application.fullName },
       });
     if (inviteError || !invited.user)
       return {
@@ -96,7 +107,7 @@ export async function reviewApplication(
         message:
           inviteError?.code === "email_exists"
             ? "Există deja un cont cu această adresă de email. Verifică-l în pagina Utilizatori."
-            : "Invitația nu a putut fi trimisă. Încearcă din nou.",
+            : "Contul nu a putut fi creat. Încearcă din nou.",
       };
     // Rolul se schimbă doar aici, pe server: un cont nou e mereu de elev.
     const { error: roleError } = await admin
@@ -105,6 +116,24 @@ export async function reviewApplication(
       .eq("id", invited.user.id);
     if (roleError)
       return { status: "error", message: "Contul nu a putut fi făcut mentor." };
+    const origin = await siteOrigin();
+    emailed = await sendMail(
+      application.email,
+      "Contul tău de mentor EduQuest",
+      [
+        `Bună, ${application.fullName}!`,
+        "",
+        "Aplicația ta de mentor a fost aprobată. Te poți autentifica de acum:",
+        "",
+        `Adresa: ${origin}/autentificare (tabul Mentor)`,
+        `Email: ${application.email}`,
+        `Parolă: ${password}`,
+        "",
+        "Schimbă parola după prima autentificare, din Setări cont.",
+        "",
+        "Echipa EduQuest",
+      ].join("\n"),
+    );
   }
 
   const supabase = await createSupabaseServerClient();
@@ -121,5 +150,7 @@ export async function reviewApplication(
     decision,
     newStatus: NEW_STATUS[decision],
     note: note || undefined,
+    password,
+    emailed,
   };
 }

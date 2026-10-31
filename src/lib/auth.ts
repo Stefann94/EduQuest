@@ -21,6 +21,8 @@ export type SessionProfile = {
   avatar?: AvatarId;
   status: AccountStatus;
   createdAt: string;
+  /** Mentor cu drepturi și de administrator (vede și panoul de admin). */
+  adminAccess: boolean;
 };
 
 /**
@@ -36,7 +38,9 @@ export const getSessionProfile = cache(
     if (!user?.email) return null;
     const { data: p } = await supabase
       .from("profiles")
-      .select("display_name, username, role, avatar, status, created_at")
+      .select(
+        "display_name, username, role, avatar, status, created_at, admin_access",
+      )
       .eq("id", user.id)
       .single();
     if (!p) return null;
@@ -49,6 +53,7 @@ export const getSessionProfile = cache(
       avatar: (p.avatar ?? undefined) as AvatarId | undefined,
       status: p.status,
       createdAt: p.created_at,
+      adminAccess: p.role === "admin" || p.admin_access,
     };
   },
 );
@@ -62,7 +67,9 @@ export async function requireUser(role: Role): Promise<User> {
   await connection();
   const p = await getSessionProfile();
   if (!p || p.status !== "active") redirect("/auth/iesire");
-  if (p.role !== role) redirect(HOME[p.role]);
+  // Un mentor cu acces de admin intră și în panoul de administrator.
+  const allowed = p.role === role || (role === "admin" && p.adminAccess);
+  if (!allowed) redirect(HOME[p.role]);
   return {
     id: p.id,
     displayName: p.displayName,
