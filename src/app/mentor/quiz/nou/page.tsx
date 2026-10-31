@@ -28,7 +28,7 @@ export default function NewQuizPage({ searchParams }: Props) {
 }
 
 async function Form({ searchParams }: { searchParams: Props["searchParams"] }) {
-  const { mod, clasa } = await searchParams;
+  const { mod, clasa, lectie } = await searchParams;
   const me = await requireUser("mentor");
   const [lessons, classes] = await Promise.all([
     getMentorLessons(me.id),
@@ -41,7 +41,11 @@ async function Form({ searchParams }: { searchParams: Props["searchParams"] }) {
         live: mod === "live",
         title: "",
         description: "",
-        lessonIds: [],
+        // Din pagina unei lecții: quiz-ul e deja legat de ea.
+        lessonIds:
+          typeof lectie === "string" && lessons.some((l) => l.id === lectie)
+            ? [lectie]
+            : [],
         xp: 3,
         timeLimitSec: null,
         classIds: preselected ? [preselected.id] : [],

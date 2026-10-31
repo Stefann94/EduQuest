@@ -55,11 +55,13 @@ export type StudentQuiz = {
   archived: boolean;
   /** Obligatoriu (ca o temă, apare la Misiuni) sau opțional. */
   required: boolean;
+  /** Lecțiile pe care le verifică (pentru lista de quiz-uri din pagina lecției). */
+  lessonIds: string[];
 };
 
 const QUIZ_CARD_FIELDS = `id, title, description, kind, xp, time_limit_sec, course_id, archived, required,
   quiz_questions(count),
-  quiz_lessons(lesson:lessons!quiz_lessons_lesson_id_fkey(title))`;
+  quiz_lessons(lesson:lessons!quiz_lessons_lesson_id_fkey(id, title))`;
 
 /** Quiz-urile date claselor elevului, cu încercările lui. */
 export async function getStudentQuizzes(
@@ -104,6 +106,9 @@ export async function getStudentQuizzes(
       questionCount: a.quiz.quiz_questions[0]?.count ?? 0,
       lessons: a.quiz.quiz_lessons.flatMap((l) =>
         l.lesson ? [l.lesson.title] : [],
+      ),
+      lessonIds: a.quiz.quiz_lessons.flatMap((l) =>
+        l.lesson ? [l.lesson.id] : [],
       ),
       classIds: [a.class_id],
       classNames: [className],
