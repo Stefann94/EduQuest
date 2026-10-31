@@ -9,21 +9,31 @@ import { Section } from "@/components/common/section";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { fromMask, toMask } from "@/lib/quiz-answers";
 import { cn } from "@/lib/utils";
 import { Field, FieldError, FieldSet, SelectField } from "./field";
 import { AddButton, ItemControls, move, newKey } from "./list-controls";
 import { ANSWER_STYLES, AnswerShape } from "./quiz-shapes";
 
+/** O întrebare în formular: variantele corecte ca indici (cel mult una dacă nu e `multi`). */
 type QuestionDraft = {
   key: string;
   prompt: string;
   code: string;
   options: string[];
-  correct: number | null;
+  /** Mai multe răspunsuri corecte (elevul le bifează pe toate). */
+  multi: boolean;
+  correct: number[];
   explanation: string;
   lessonId: string | null;
   timeSec: number;
+};
+
+/** O întrebare salvată: `correct` e indexul variantei sau, la `multi`, masca variantelor. */
+export type QuizDraftQuestion = Omit<QuestionDraft, "key" | "correct"> & {
+  correct: number;
 };
 
 export type QuizDraft = {
@@ -36,13 +46,13 @@ export type QuizDraft = {
   xp: number;
   timeLimitSec: number | null;
   classIds: string[];
-  questions: Omit<QuestionDraft, "key">[];
+  questions: QuizDraftQuestion[];
 };
 
 /** Câte variante are o întrebare nouă și câte poate avea cel mult. */
 const DEFAULT_OPTIONS = 4;
 const MAX_OPTIONS = 6;
-const DEFAULT_TIME_SEC = 20;
+const DEFAULT_TIME_SEC = 40;
 
 const emptyQuestion = (
   lessonId: string | null,
@@ -52,14 +62,15 @@ const emptyQuestion = (
   prompt: "",
   code: "",
   options: Array.from({ length: DEFAULT_OPTIONS }, () => ""),
-  correct: null,
+  multi: false,
+  correct: [],
   explanation: "",
   lessonId,
   timeSec: DEFAULT_TIME_SEC,
 });
 
 /**
- * Un quiz: întrebări cu 2–6 variante (una corectă), fiecare etichetată pe lecția pe care
+ * Un quiz: întrebări cu 2–6 variante (una corectă sau mai multe), fiecare etichetată pe lecția pe care
  * o verifică; lecțiile acoperite (una = quiz de lecție, mai multe = recapitulare).
  * Live: timp pe fiecare întrebare, jucat în sesiuni cu cod. Pentru clase: XP, limită de
  * timp și clasele cărora le e dat (disponibil imediat).
@@ -84,7 +95,15 @@ export function QuizForm({
   );
   const [questions, setQuestions] = useState<QuestionDraft[]>(() =>
     draft.questions.length
-      ? draft.questions.map((q, i) => ({ ...q, key: `q-${i}` }))
+      ? draft.questions.map((q, i) => ({
+          ...q,
+          key: `q-${i}`,
+          correct: q.multi
+            ? fromMask(q.correct, q.options.length)
+            : q.correct >= 0 && q.correct < q.options.length
+              ? [q.correct]
+              : [],
+        }))
       : [emptyQuestion(draft.lessonIds[0] ?? null, "q-0")],
   );
   const [withCode, setWithCode] = useState<string[]>(() =>
@@ -103,14 +122,26 @@ export function QuizForm({
     });
   function removeOption(i: number, j: number) {
     const q = questions[i];
-    const correct =
-      q.correct === null || q.correct === j
-        ? null
-        : q.correct > j
-          ? q.correct - 1
-          : q.correct;
+    const correct = q.correct
+      .filter((k) => k !== j)
+      .map((k) => (k > j ? k - 1 : k));
     update(i, { options: q.options.filter((_, k) => k !== j), correct });
   }
+  /** Alege varianta corectă sau, la `multi`, o bifează / debifează. */
+  function markCorrect(i: number, j: number, on: boolean) {
+    const q = questions[i];
+    if (!q.multi) return update(i, { correct: [j] });
+    const set = new Set(q.correct);
+    if (on) set.add(j);
+    else set.delete(j);
+    update(i, { correct: [...set].sort((a, b) => a - b) });
+  }
+  /** Trecerea între un răspuns și mai multe păstrează alegerea (la unul: prima bifată). */
+  const setMulti = (i: number, multi: boolean) =>
+    update(i, {
+      multi,
+      correct: multi ? questions[i].correct : questions[i].correct.slice(0, 1),
+    });
   const toggle = (list: string[], id: string, on: boolean) =>
     on ? [...list, id] : list.filter((x) => x !== id);
 
@@ -131,7 +162,8 @@ export function QuizForm({
         prompt: q.prompt,
         code: withCode.includes(q.key) ? q.code : "",
         options: q.options,
-        correct: q.correct ?? -1,
+        multi: q.multi,
+        correct: q.multi ? toMask(q.correct) : (q.correct[0] ?? -1),
         explanation: q.explanation,
         lessonId:
           q.lessonId && lessonIds.includes(q.lessonId) ? q.lessonId : null,
@@ -191,8 +223,8 @@ export function QuizForm({
             title={`Întrebări (${questions.length})`}
             description={
               live
-                ? "Fiecare întrebare are 2–6 variante, una corectă, și timpul ei de răspuns."
-                : "Fiecare întrebare are 2–6 variante, una corectă, și e etichetată pe o lecție."
+                ? "Fiecare întrebare are 2–6 variante (una corectă sau mai multe) și timpul ei de răspuns."
+                : "Fiecare întrebare are 2–6 variante (una corectă sau mai multe) și e etichetată pe o lecție."
             }
           >
             <div className="grid gap-4">
@@ -321,18 +353,31 @@ export function QuizForm({
                         {codeOpen ? "Elimină codul" : "Adaugă cod"}
                       </Button>
 
+                      <div className="flex items-center gap-2 text-sm">
+                        <Switch
+                          id={`${p}.multi`}
+                          checked={q.multi}
+                          onCheckedChange={(on) => setMulti(i, on)}
+                        />
+                        <label htmlFor={`${p}.multi`}>
+                          Mai multe răspunsuri corecte
+                        </label>
+                      </div>
+
                       <fieldset className="grid gap-2">
                         <legend className="mb-2 font-medium text-sm leading-none">
                           Variante de răspuns
                           <span className="ml-1 font-normal text-muted-foreground">
-                            (alege-o pe cea corectă)
+                            {q.multi
+                              ? "(bifează toate variantele corecte)"
+                              : "(alege-o pe cea corectă)"}
                           </span>
                         </legend>
                         <ul className="grid gap-2">
                           {q.options.map((o, j) => {
                             const oid = `${p}.options.${j}`;
                             const style = ANSWER_STYLES[j];
-                            const isCorrect = q.correct === j;
+                            const isCorrect = q.correct.includes(j);
                             return (
                               // biome-ignore lint/suspicious/noArrayIndexKey: variantele nu au id; poziția lor e identitatea (culoare + formă)
                               <li key={j} className="grid gap-1">
@@ -370,10 +415,12 @@ export function QuizForm({
                                   />
                                   <label className="flex shrink-0 cursor-pointer items-center gap-1.5 px-2 py-1 text-xs has-checked:bg-success-soft has-checked:font-medium has-checked:text-success has-focus-visible:ring-3 has-focus-visible:ring-ring/50">
                                     <input
-                                      type="radio"
+                                      type={q.multi ? "checkbox" : "radio"}
                                       name={`correct-${q.key}`}
                                       checked={isCorrect}
-                                      onChange={() => update(i, { correct: j })}
+                                      onChange={(e) =>
+                                        markCorrect(i, j, e.target.checked)
+                                      }
                                       className="size-3.5 accent-success"
                                     />
                                     {isCorrect ? "Corect" : "Corectă?"}

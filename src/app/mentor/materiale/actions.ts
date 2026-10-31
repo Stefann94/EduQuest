@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
+import { folderEntries } from "@/lib/content/folder-order";
 import { ITEM_KINDS, itemContentSchema } from "@/lib/content/items";
 import { mentorClassIds } from "@/lib/db/classes";
 import { db, isUuid } from "@/lib/db/core";
@@ -42,6 +43,26 @@ async function ownLesson(lessonId: string) {
     ? await getLessonForEditor(me.id, lessonId)
     : undefined;
   return lesson ? { me, lesson } : undefined;
+}
+
+/** Următoarea poziție într-un folder: după toate subfolderele și materialele lui. */
+async function nextPosition(folderId: string) {
+  const supabase = await db();
+  const [{ data: f }, { data: i }] = await Promise.all([
+    supabase
+      .from("lessons")
+      .select("position")
+      .eq("parent_id", folderId)
+      .order("position", { ascending: false })
+      .limit(1),
+    supabase
+      .from("lesson_items")
+      .select("position")
+      .eq("lesson_id", folderId)
+      .order("position", { ascending: false })
+      .limit(1),
+  ]);
+  return Math.max(f?.[0]?.position ?? -1, i?.[0]?.position ?? -1) + 1;
 }
 
 /* ---------- Lecția ---------- */
@@ -197,7 +218,7 @@ export async function createSubfolder(
       parent_id: parentId,
       title: parsed.data.title,
       summary: parsed.data.summary,
-      position: owned.lesson.subfolders.length,
+      position: await nextPosition(parentId),
     })
     .select("id")
     .single();
@@ -273,7 +294,7 @@ export async function saveItem(
         .from("lesson_items")
         .insert({
           ...row,
-          position: (owned.lesson.items.at(-1)?.position ?? -1) + 1,
+          position: await nextPosition(lessonId),
         })
         .select("id")
         .single();
@@ -338,6 +359,57 @@ export async function deleteItem(
     await supabase.storage.from("materials").remove([item.content.path]);
   refresh(lessonId);
   return { ok: true, message: "Materialul a fost șters." };
+}
+
+/**
+ * Mută un subfolder sau un material cu un loc mai sus sau mai jos, în ordinea comună
+ * a folderului (subfolderele și materialele stau amestecate, cum alege mentorul).
+ */
+export async function moveEntry(
+  folderId: string,
+  entryId: string,
+  by: -1 | 1,
+): Promise<ActionResult> {
+  const owned = await ownLesson(folderId);
+  if (!owned) return NOT_FOUND;
+  const list = folderEntries(owned.lesson.subfolders, owned.lesson.items);
+  const i = list.findIndex((x) => x.id === entryId);
+  const j = i + by;
+  if (i < 0 || j < 0 || j >= list.length) return { ok: true, message: "" };
+  const order = [...list];
+  [order[i], order[j]] = [order[j], order[i]];
+  const supabase = await db();
+  for (const [position, e] of order.entries())
+    if (e.position !== position)
+      await (e.type === "folder"
+        ? supabase.from("lessons").update({ position }).eq("id", e.id)
+        : supabase.from("lesson_items").update({ position }).eq("id", e.id));
+  refresh(folderId);
+  return { ok: true, message: "" };
+}
+
+/** Șterge un subfolder din editorul folderului părinte (fără să părăsească pagina). */
+export async function deleteSubfolder(id: string): Promise<ActionResult> {
+  const owned = await ownLesson(id);
+  if (!owned) return NOT_FOUND;
+  if (!owned.lesson.parentId)
+    return { ok: false, message: "Nu e un subfolder." };
+  const supabase = await db();
+  const ids = [id, ...(await descendantsOf(id))];
+  const { data: pdfs } = await supabase
+    .from("lesson_items")
+    .select("content")
+    .in("lesson_id", ids)
+    .eq("kind", "pdf");
+  const files = (pdfs ?? []).flatMap((r) => {
+    const path = (r.content as { path?: unknown })?.path;
+    return typeof path === "string" ? [path] : [];
+  });
+  if (files.length) await supabase.storage.from("materials").remove(files);
+  const { error } = await supabase.from("lessons").delete().eq("id", id);
+  if (error) return { ok: false, message: "Subfolderul nu s-a putut șterge." };
+  refresh(owned.lesson.parentId);
+  return { ok: true, message: "Subfolderul a fost șters." };
 }
 
 /** Mută un material cu o poziție mai sus sau mai jos. */

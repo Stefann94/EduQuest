@@ -63,14 +63,17 @@ async function LiveNav() {
     getMentorQuizzes(me.id),
   ]);
   const ended = sessions.filter((s) => s.status === "ended").length;
+  const live = quizzes.filter((q) => q.live);
+  const archived = live.filter((q) => q.archived).length;
   return (
     <SubNav
       label="Quiz-uri live"
       className="flex-1"
       items={base({
         open: sessions.length - ended,
-        ended,
-        quizzes: quizzes.filter((q) => q.live).length,
+        // „Arhivate”: quiz-urile arhivate și sesiunile încheiate.
+        ended: ended + archived,
+        quizzes: live.length - archived,
       })}
     />
   );

@@ -49,7 +49,8 @@ async function Content() {
   ]);
   const practiceDone = practice.filter((q) => q.attempts.count > 0).length;
   const open = sessions.filter((s) => s.status !== "ended");
-  const todo = quizzes.filter((q) => q.attempts.count === 0);
+  // Un quiz arhivat de mentor nu mai e de rezolvat; cel rezolvat deja rămâne cu rezultatul.
+  const todo = quizzes.filter((q) => q.attempts.count === 0 && !q.archived);
   const done = quizzes.filter((q) => q.attempts.count > 0);
 
   return (

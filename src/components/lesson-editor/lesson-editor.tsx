@@ -1,57 +1,34 @@
 "use client";
 
-import {
-  ArrowDown,
-  ArrowUp,
-  ExternalLink,
-  Eye,
-  FolderPlus,
-  Pencil,
-  Plus,
-  Trash2,
-} from "lucide-react";
-import Link from "next/link";
+import { Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   addToClasses,
-  createSubfolder,
-  deleteItem,
   deleteLesson,
-  moveItem,
   removeFromClass,
   savePlacement,
-  setItemPublished,
   updateLessonDetails,
 } from "@/app/mentor/materiale/actions";
-import { VisibilityBadge } from "@/components/common/status";
-import {
-  MATERIAL_KIND,
-  MaterialKindIcon,
-} from "@/components/learning/material-kind";
-import { FolderList } from "@/components/lessons/folder-list";
 import { ConfirmDialog } from "@/components/mentor-content/confirm-dialog";
 import { Field, SelectField } from "@/components/mentor-content/field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { ITEM_KINDS, type ItemKind } from "@/lib/content/items";
 import type {
   EditorLesson,
   LessonDisplay,
   LibraryLesson,
 } from "@/lib/db/lessons";
-import { ItemEditor } from "./item-editor";
+import { FolderContentEditor } from "./folder-content-editor";
 
 const DISPLAY: { value: LessonDisplay; label: string }[] = [
   { value: "both", label: "Număr și titlu („Lecția 3: Bucle”)" },
   { value: "number", label: "Doar numărul („Lecția 3”)" },
   { value: "title", label: "Doar titlul („Bucle”)" },
 ];
-
-type Editing = { id: string } | { kind: ItemKind } | null;
 
 export function LessonEditor({
   lesson,
@@ -61,7 +38,6 @@ export function LessonEditor({
   classes: { id: string; name: string; archived: boolean }[];
 }) {
   const router = useRouter();
-  const [editing, setEditing] = useState<Editing>(null);
   const [pending, startTransition] = useTransition();
 
   function run(task: () => Promise<{ ok: boolean; message: string }>) {
@@ -73,166 +49,33 @@ export function LessonEditor({
     });
   }
 
-  const current =
-    editing && "id" in editing
-      ? lesson.items.find((i) => i.id === editing.id)
-      : undefined;
-
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start">
       <div className="grid min-w-0 gap-6">
         <DetailsForm lesson={lesson} />
 
-        <Subfolders lesson={lesson} />
-
-        <section aria-labelledby="materiale" className="grid gap-3">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h2 id="materiale" className="text-2xl">
-              Materiale ({lesson.items.length})
+        <section aria-labelledby="continut" className="grid gap-3">
+          <div>
+            <h2 id="continut" className="text-2xl">
+              Conținutul folderului
             </h2>
-          </div>
-
-          {lesson.items.length === 0 && !editing ? (
-            <p className="cut-sm bg-card px-4 py-6 text-center text-muted-foreground text-sm">
-              Lecția nu are încă materiale. Adaugă o lecție scrisă, un PDF, un
-              link, un video sau o problemă.
+            <p className="text-muted-foreground text-sm">
+              Subfoldere, PDF-uri, probleme rezolvate, linkuri, video: toate
+              într-o singură listă, în ordinea în care le văd elevii. Le muți cu
+              săgețile; subfolderele se completează direct aici.
             </p>
-          ) : null}
-
-          <ol className="grid gap-2">
-            {lesson.items.map((item, i) =>
-              current?.id === item.id ? (
-                <li key={item.id}>
-                  <ItemEditor
-                    lessonId={lesson.id}
-                    item={item}
-                    kind={item.kind}
-                    onDone={() => setEditing(null)}
-                  />
-                </li>
-              ) : (
-                <li
-                  key={item.id}
-                  className="flex cut-sm flex-wrap items-center gap-3 bg-card px-3 py-2.5"
-                >
-                  <MaterialKindIcon kind={item.kind} />
-                  <div className="min-w-0 flex-1 basis-48">
-                    <p className="truncate font-medium">{item.title}</p>
-                    <p className="text-muted-foreground text-xs">
-                      {MATERIAL_KIND[item.kind].label}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <Switch
-                      checked={item.published}
-                      disabled={pending}
-                      onCheckedChange={(v) =>
-                        run(() => setItemPublished(lesson.id, item.id, v))
-                      }
-                      aria-label={`Vizibil elevilor: ${item.title}`}
-                    />
-                    <VisibilityBadge published={item.published} />
-                  </div>
-                  <div className="flex items-center gap-0.5">
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      disabled={pending || i === 0}
-                      onClick={() =>
-                        run(() => moveItem(lesson.id, item.id, -1))
-                      }
-                      aria-label={`Mută mai sus: ${item.title}`}
-                    >
-                      <ArrowUp aria-hidden="true" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      disabled={pending || i === lesson.items.length - 1}
-                      onClick={() => run(() => moveItem(lesson.id, item.id, 1))}
-                      aria-label={`Mută mai jos: ${item.title}`}
-                    >
-                      <ArrowDown aria-hidden="true" />
-                    </Button>
-                    {item.kind === "problem" ? (
-                      <Link
-                        href={`/mentor/materiale/${lesson.id}/probleme/${item.id}`}
-                        className="grid size-8 place-items-center text-muted-foreground hover:text-foreground"
-                        aria-label={`Previzualizează: ${item.title}`}
-                        title="Previzualizează ca elev"
-                      >
-                        <Eye className="size-4" aria-hidden="true" />
-                      </Link>
-                    ) : null}
-                    {item.kind === "pdf" && item.fileUrl ? (
-                      <a
-                        href={item.fileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="grid size-8 place-items-center text-muted-foreground hover:text-foreground"
-                        aria-label={`Deschide PDF-ul: ${item.title}`}
-                      >
-                        <ExternalLink className="size-4" aria-hidden="true" />
-                      </a>
-                    ) : null}
-                    <Button
-                      variant="ghost"
-                      size="icon-sm"
-                      onClick={() => setEditing({ id: item.id })}
-                      aria-label={`Editează: ${item.title}`}
-                    >
-                      <Pencil aria-hidden="true" />
-                    </Button>
-                    <ConfirmDialog
-                      title="Ștergi materialul?"
-                      description={`„${item.title}” dispare din lecție, din toate clasele. Acțiunea nu se poate anula.`}
-                      confirmLabel="Șterge"
-                      onConfirm={() =>
-                        run(() => deleteItem(lesson.id, item.id))
-                      }
-                      trigger={
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          className="text-muted-foreground hover:text-destructive"
-                          aria-label={`Șterge: ${item.title}`}
-                        >
-                          <Trash2 aria-hidden="true" />
-                        </Button>
-                      }
-                    />
-                  </div>
-                </li>
-              ),
-            )}
-          </ol>
-
-          {editing && "kind" in editing ? (
-            <ItemEditor
-              lessonId={lesson.id}
-              kind={editing.kind}
-              onDone={() => setEditing(null)}
-            />
-          ) : (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="font-bold font-heading text-sm uppercase tracking-wide">
-                Adaugă:
-              </span>
-              {ITEM_KINDS.map((k) => {
-                const Icon = MATERIAL_KIND[k].icon;
-                return (
-                  <Button
-                    key={k}
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setEditing({ kind: k })}
-                  >
-                    <Icon aria-hidden="true" /> {MATERIAL_KIND[k].label}
-                  </Button>
-                );
-              })}
-            </div>
-          )}
+          </div>
+          <FolderContentEditor
+            node={{
+              id: lesson.id,
+              title: lesson.title,
+              summary: lesson.summary,
+              position: lesson.position,
+              items: lesson.items,
+              children: lesson.children,
+            }}
+            level={lesson.path.length}
+          />
         </section>
       </div>
 
@@ -273,76 +116,6 @@ export function LessonEditor({
         </section>
       </aside>
     </div>
-  );
-}
-
-/** Subfolderele folderului (cel mult trei niveluri) și crearea unuia nou. */
-function Subfolders({ lesson }: { lesson: EditorLesson }) {
-  const router = useRouter();
-  const [title, setTitle] = useState("");
-  const [error, setError] = useState<string>();
-  const [pending, startTransition] = useTransition();
-  const canNest = lesson.path.length < 2;
-
-  return (
-    <section aria-labelledby="subfoldere" className="grid gap-3">
-      <h2 id="subfoldere" className="text-2xl">
-        Subfoldere ({lesson.subfolders.length})
-      </h2>
-      <FolderList
-        folders={lesson.subfolders}
-        href={(id) => `/mentor/materiale/${id}`}
-      />
-      {canNest ? (
-        <form
-          className="flex flex-wrap items-end gap-2"
-          onSubmit={(e) => {
-            e.preventDefault();
-            startTransition(async () => {
-              const r = await createSubfolder(lesson.id, {
-                title,
-                summary: "",
-              });
-              if (!r.ok) {
-                setError(r.errors?.title ?? r.message);
-                return;
-              }
-              setError(undefined);
-              setTitle("");
-              toast.success(r.message);
-              router.refresh();
-            });
-          }}
-        >
-          <Field
-            id="new-folder"
-            label="Subfolder nou"
-            error={error}
-            className="min-w-64 flex-1"
-          >
-            <Input
-              id="new-folder"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="ex. Probleme rezolvate"
-              maxLength={120}
-              aria-invalid={error ? true : undefined}
-            />
-          </Field>
-          <Button
-            type="submit"
-            variant="outline"
-            disabled={pending || title.trim().length < 2}
-          >
-            <FolderPlus /> Creează subfolderul
-          </Button>
-        </form>
-      ) : (
-        <p className="text-muted-foreground text-sm">
-          Ai ajuns la al treilea nivel: aici se pun doar materiale.
-        </p>
-      )}
-    </section>
   );
 }
 

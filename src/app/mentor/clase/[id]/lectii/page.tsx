@@ -27,7 +27,7 @@ export default function ClassLessonsPage({ params }: Props) {
 }
 
 async function Lessons({ params }: { params: Props["params"] }) {
-  const { me, classRoom: c } = await loadMentorClass(params);
+  const { classRoom: c } = await loadMentorClass(params);
   const lessons = await getClassLessons(c.id, { includeHidden: true });
   const add = (
     <Link

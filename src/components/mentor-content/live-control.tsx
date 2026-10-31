@@ -25,7 +25,10 @@ import {
   optionGridClass,
 } from "@/components/live/answer-styles";
 import { LiveBoard } from "@/components/live/live-board";
-import { OptionCounts } from "@/components/live/option-counts";
+import {
+  MultiAnswerLabel,
+  OptionCounts,
+} from "@/components/live/option-counts";
 import { QuestionCode } from "@/components/quiz/question-code";
 import { Button, buttonVariants } from "@/components/ui/button";
 import type { AvatarId } from "@/lib/data/types";
@@ -358,6 +361,7 @@ function QuestionStage({ state, left }: { state: LiveState; left: number }) {
         <RichText text={q.prompt} />
       </h3>
       {q.code ? <QuestionCode code={q.code} /> : null}
+      {q.multi ? <MultiAnswerLabel className="text-sm" /> : null}
       <ul className={cn("grid gap-3", optionGridClass(q.options.length))}>
         {q.options.map((opt, i) => {
           const style = liveAnswerStyle(i);
@@ -387,8 +391,11 @@ function QuestionStage({ state, left }: { state: LiveState; left: number }) {
 function RevealStage({ state }: { state: LiveState }) {
   const q = state.question;
   if (!q) return null;
+  // La o întrebare cu mai multe răspunsuri, numărătorile sunt pe variante, nu pe elevi.
   const right =
-    q.correct !== undefined ? (q.counts?.[q.correct] ?? 0) : undefined;
+    q.correct !== undefined && !q.multi
+      ? (q.counts?.[q.correct] ?? 0)
+      : undefined;
   return (
     <section className="grid cut gap-4 bg-card p-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -399,16 +406,23 @@ function RevealStage({ state }: { state: LiveState }) {
           <p className="font-bold font-heading text-lg">
             {right} din {state.players} au răspuns corect
           </p>
+        ) : q.multi ? (
+          <p className="font-bold font-heading text-lg">
+            Au răspuns {state.answered} din {state.players}
+          </p>
         ) : null}
       </div>
       <h3 className="text-2xl leading-tight sm:text-3xl">
         <RichText text={q.prompt} />
       </h3>
       {q.code ? <QuestionCode code={q.code} /> : null}
+      {q.multi ? <MultiAnswerLabel className="text-sm" /> : null}
       <OptionCounts
         options={q.options}
         counts={q.counts}
         correct={q.correct}
+        multi={!!q.multi}
+        answered={state.answered}
         large
       />
       {q.explanation ? (

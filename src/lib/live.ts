@@ -32,14 +32,21 @@ export const liveStateSchema = z.object({
       prompt: z.string(),
       code: z.string().nullable(),
       options: z.array(z.string()),
+      /** Mai multe răspunsuri corecte: răspunsul și `correct` sunt măști peste variante. */
+      multi: z.boolean().optional(),
+      /** După dezvăluire: indexul variantei corecte sau, la `multi`, masca lor. */
       correct: z.number().optional(),
       explanation: z.string().nullable().optional(),
-      /** După dezvăluire: câți elevi au ales fiecare variantă (în ordinea variantelor). */
+      /**
+       * După dezvăluire: câți elevi au ales fiecare variantă (în ordinea variantelor; la
+       * `multi`, câți au bifat-o).
+       */
       counts: z.array(z.number()).optional(),
     })
     .nullable(),
   mine: z
     .object({
+      /** Indexul ales sau, la `multi`, masca variantelor bifate. */
       answer: z.number(),
       correct: z.boolean().nullable(),
       points: z.number().nullable(),

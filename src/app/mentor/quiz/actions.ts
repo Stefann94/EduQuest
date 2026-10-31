@@ -51,7 +51,9 @@ const questionSchema = z
       )
       .min(2, "Cel puțin 2 variante.")
       .max(6, "Cel mult 6 variante."),
-    correct: z.number({ error: "Alege varianta corectă." }).int().min(0),
+    /** Mai multe răspunsuri corecte: `correct` e atunci masca variantelor corecte. */
+    multi: z.boolean().default(false),
+    correct: z.number({ error: "Alege varianta corectă." }).int(),
     explanation: z
       .string()
       .trim()
@@ -63,9 +65,20 @@ const questionSchema = z
       .min(5, "Cel puțin 5 secunde.")
       .max(120, "Cel mult 120 de secunde."),
   })
-  .refine((q) => q.correct < q.options.length, {
-    path: ["correct"],
-    error: "Alege varianta corectă.",
+  .superRefine((q, ctx) => {
+    const n = q.options.length;
+    if (
+      q.multi
+        ? q.correct < 1 || q.correct >= 1 << n
+        : q.correct < 0 || q.correct >= n
+    )
+      ctx.addIssue({
+        code: "custom",
+        path: ["correct"],
+        message: q.multi
+          ? "Bifează cel puțin o variantă corectă."
+          : "Alege varianta corectă.",
+      });
   });
 
 const quizSchema = z.object({
@@ -170,7 +183,8 @@ export async function saveQuiz(
         code: x.code.trim() ? x.code : null,
         options: x.options,
         lesson_id: lessonOf(x.lessonId),
-        time_sec: live ? x.timeSec : 20,
+        multi: x.multi,
+        time_sec: live ? x.timeSec : 40,
       })),
     )
     .select("id, position");
@@ -223,6 +237,30 @@ export async function saveQuiz(
   refresh();
   if (!existing) redirect(`/mentor/quiz/${quizId}`);
   return { ok: true, message: "Quiz-ul a fost salvat.", id: quizId };
+}
+
+/**
+ * Arhivarea: quiz-ul iese din listele active ale mentorului și nu mai poate fi rezolvat
+ * (submit_quiz îl refuză) sau jucat live; rezultatele de până acum rămân.
+ */
+export async function setQuizArchived(
+  id: string,
+  archived: boolean,
+): Promise<ActionResult> {
+  const me = await requireUser("mentor");
+  const quiz = isUuid(id) ? await getQuizForEditor(me.id, id) : undefined;
+  if (!quiz) return { ok: false, message: "Quiz-ul nu mai există." };
+  const supabase = await db();
+  const { error } = await supabase
+    .from("quizzes")
+    .update({ archived })
+    .eq("id", quiz.id);
+  if (error) return { ok: false, message: "Modificarea nu s-a putut salva." };
+  refresh();
+  return {
+    ok: true,
+    message: archived ? "Quiz arhivat" : "Quiz scos din arhivă",
+  };
 }
 
 export async function deleteQuiz(id: string): Promise<ActionResult> {

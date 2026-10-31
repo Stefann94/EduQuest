@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Archive,
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
@@ -27,6 +28,12 @@ import { RichText } from "@/components/learning/rich-text";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { xpOutlook } from "@/lib/db/quiz-rules";
+import {
+  chosenOptions,
+  isChosen,
+  OPTION_LETTERS as LETTERS,
+  toggleInMask,
+} from "@/lib/quiz-answers";
 import { cn } from "@/lib/utils";
 import { QuestionCode } from "./question-code";
 
@@ -36,6 +43,8 @@ export type PublicQuestion = {
   prompt: string;
   code?: string;
   options: string[];
+  /** Mai multe răspunsuri corecte: răspunsul e masca variantelor bifate. */
+  multi?: boolean;
 };
 
 export type QuizPlayerData = {
@@ -55,12 +64,12 @@ export type QuizPlayerData = {
   backLabel: string;
   /** Cel mai bun rezultat de până acum (null dacă nu l-a rezolvat). */
   best?: number | null;
+  /** Arhivat de mentor: nu se mai poate începe (rezultatele rămân). */
+  archived?: boolean;
 };
 
 type Phase = "intro" | "question" | "review" | "results";
 type Graded = Extract<GradeResult, { ok: true }>;
-
-const LETTERS = ["A", "B", "C", "D", "E", "F"];
 
 function clock(sec: number) {
   const m = Math.floor(sec / 60);
@@ -85,6 +94,7 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
   const mounted = useRef(false);
 
   const used = quiz.used + attemptsHere;
+  const anyMulti = quiz.questions.some((q) => q.multi);
   const outlook = xpOutlook(quiz.xp, used);
 
   useEffect(() => {
@@ -206,7 +216,9 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
 
         <dl className="mt-6 grid gap-3 bg-muted/60 p-4 text-sm sm:grid-cols-2">
           <IntroItem icon={ListChecks} label="Întrebări">
-            {total}, cu un singur răspuns corect
+            {anyMulti
+              ? `${total}; la unele sunt mai multe răspunsuri corecte`
+              : `${total}, cu un singur răspuns corect`}
           </IntroItem>
           <IntroItem icon={Clock} label="Timp">
             {quiz.timeLimitSec
@@ -232,16 +244,43 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
           ) : null}
         </dl>
 
-        <div className="mt-6 flex flex-wrap items-center gap-3">
-          <Button size="lg" variant="cta" onClick={start}>
-            {used === 0 ? <Play /> : <RotateCcw />}
-            {used === 0 ? "Începe quiz-ul" : "Repetă quiz-ul"}
-          </Button>
-          <p className="text-muted-foreground text-xs">
-            Poți naviga între întrebări și îți poți schimba răspunsurile până
-            trimiți.
-          </p>
-        </div>
+        {quiz.archived ? (
+          <div className="mt-6 flex cut-sm items-start gap-3 bg-muted p-4">
+            <Archive
+              className="mt-0.5 size-5 shrink-0 text-muted-foreground"
+              aria-hidden="true"
+            />
+            <div>
+              <p className="font-bold font-heading uppercase tracking-wide">
+                Arhivat de mentor
+              </p>
+              <p className="text-muted-foreground text-sm">
+                Quiz-ul nu se mai poate rezolva.
+                {used > 0 ? " Rezultatul tău de până acum rămâne salvat." : ""}
+              </p>
+              <Link
+                href={quiz.backHref}
+                className={cn(
+                  buttonVariants({ variant: "outline", size: "sm" }),
+                  "mt-3",
+                )}
+              >
+                {quiz.backLabel}
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="mt-6 flex flex-wrap items-center gap-3">
+            <Button size="lg" variant="cta" onClick={start}>
+              {used === 0 ? <Play /> : <RotateCcw />}
+              {used === 0 ? "Începe quiz-ul" : "Repetă quiz-ul"}
+            </Button>
+            <p className="text-muted-foreground text-xs">
+              Poți naviga între întrebări și îți poți schimba răspunsurile până
+              trimiți.
+            </p>
+          </div>
+        )}
       </section>
     );
   }
@@ -325,6 +364,7 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
           <ol className="stagger grid gap-3">
             {quiz.questions.map((q, i) => {
               const r = result.results[i];
+              const multi = !!q.multi;
               return (
                 <li key={q.id} className="cut-sm bg-card p-5">
                   <div className="flex flex-wrap items-start justify-between gap-2">
@@ -352,10 +392,16 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
                   {q.code ? (
                     <QuestionCode code={q.code} className="mt-3" />
                   ) : null}
+                  {multi ? (
+                    <p className="mt-2 text-muted-foreground text-xs">
+                      Mai multe răspunsuri corecte: e corect doar dacă le-ai
+                      bifat exact pe toate.
+                    </p>
+                  ) : null}
                   <ul className="mt-3 grid gap-1.5">
                     {q.options.map((opt, oi) => {
-                      const isCorrect = oi === r.correct;
-                      const isYours = oi === r.your;
+                      const isCorrect = isChosen(r.correct, multi, oi);
+                      const isYours = isChosen(r.your, multi, oi);
                       return (
                         <li
                           // biome-ignore lint/suspicious/noArrayIndexKey: variantele au ordine fixă
@@ -463,7 +509,10 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
                 {answers[i] !== null ? (
                   <span className="inline-flex shrink-0 items-center gap-1 text-success text-xs">
                     <CheckCircle2 className="size-3.5" aria-hidden="true" />
-                    Răspuns {LETTERS[answers[i] ?? 0]}
+                    Răspuns{" "}
+                    {chosenOptions(answers[i], !!q.multi, q.options.length)
+                      .map((k) => LETTERS[k])
+                      .join(", ")}
                   </span>
                 ) : (
                   <span className="inline-flex shrink-0 items-center gap-1 text-warning text-xs">
@@ -507,6 +556,12 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
   /* ---------- O întrebare ---------- */
   const q = quiz.questions[index];
   const chosen = answers[index];
+  const multi = !!q.multi;
+  /** Alege varianta (simplă) sau o bifează / debifează (mai multe răspunsuri). */
+  function choose(oi: number) {
+    const next = multi ? toggleInMask(chosen ?? 0, oi) || null : oi;
+    setAnswers(answers.map((x, i) => (i === index ? next : x)));
+  }
   return (
     <section
       aria-labelledby="quiz-question"
@@ -544,6 +599,12 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
             </h2>
           </legend>
           {q.code ? <QuestionCode code={q.code} className="mt-4" /> : null}
+          {multi ? (
+            <p className="mt-4 flex items-center gap-2 font-medium text-primary text-sm">
+              <ListChecks className="size-4" aria-hidden="true" />
+              Alege toate variantele corecte
+            </p>
+          ) : null}
           <div className="mt-5 grid gap-2">
             {q.options.map((opt, oi) => (
               <label
@@ -551,19 +612,17 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
                 key={oi}
                 className={cn(
                   "flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
-                  chosen === oi
+                  isChosen(chosen, multi, oi)
                     ? "border-primary bg-primary-soft"
                     : "hover:bg-muted/50",
                 )}
               >
                 <input
-                  type="radio"
+                  type={multi ? "checkbox" : "radio"}
                   name={`q-${q.id}`}
                   value={oi}
-                  checked={chosen === oi}
-                  onChange={() =>
-                    setAnswers(answers.map((x, i) => (i === index ? oi : x)))
-                  }
+                  checked={isChosen(chosen, multi, oi)}
+                  onChange={() => choose(oi)}
                   className="size-4 shrink-0 accent-primary"
                 />
                 <span className="grid size-6 shrink-0 place-items-center rounded-md bg-secondary font-medium text-xs">

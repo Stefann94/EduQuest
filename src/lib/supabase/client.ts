@@ -3,8 +3,8 @@ import type { Database } from "./database.types";
 
 /**
  * Client Supabase pentru browser, cu sesiunea din cookie-uri și cheia publică.
- * Se folosește doar pentru încărcarea fișierelor direct în Storage (fără limita de
- * mărime a Server Actions); regulile din bucket verifică cine are voie să scrie.
+ * Se folosește pentru încărcarea fișierelor direct în Storage (fără limita de mărime
+ * a Server Actions) și pentru notificările în timp real (Realtime, filtrat de RLS).
  */
 export function createSupabaseBrowserClient() {
   return createBrowserClient<Database>(

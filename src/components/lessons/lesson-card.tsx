@@ -1,6 +1,7 @@
 import { ArrowRight } from "lucide-react";
 import Link from "next/link";
 import { VisibilityBadge } from "@/components/common/status";
+import { folderEntries } from "@/lib/content/folder-order";
 import type {
   ClassLesson,
   LessonItemView,
@@ -10,8 +11,8 @@ import { cn } from "@/lib/utils";
 import { MaterialsMenu, type MenuItem } from "./materials-menu";
 
 /**
- * Ce apare în meniul unei lecții: întâi subfolderele, apoi materialele. PDF-ul și linkurile
- * se deschid direct, restul duce la pagina folderului.
+ * Ce apare în meniul unei lecții: subfolderele și materialele, în ordinea aleasă de mentor.
+ * Linkurile se deschid direct, PDF-urile și restul în pagina folderului.
  */
 export function menuItems(
   items: LessonItemView[],
@@ -22,30 +23,27 @@ export function menuItems(
   /** Pagina proprie a unei probleme (la elev); altfel ancora din pagina folderului. */
   problemHref?: (id: string) => string,
 ): MenuItem[] {
-  const folders: MenuItem[] = subfolders.map((f) => ({
-    id: f.id,
-    kind: "folder",
-    title: f.title,
-    href: folderHref(f.id),
-  }));
-  return [
-    ...folders,
-    ...items.map((i): MenuItem => {
-      const base = {
-        id: i.id,
-        kind: i.kind,
-        title: i.title,
-        hidden: !i.published,
+  return folderEntries(subfolders, items).map((e): MenuItem => {
+    if (e.type === "folder")
+      return {
+        id: e.id,
+        kind: "folder",
+        title: e.folder.title,
+        href: folderHref(e.id),
       };
-      if (i.kind === "pdf" && i.fileUrl)
-        return { ...base, href: i.fileUrl, external: true };
-      if (i.kind === "link" || i.kind === "video")
-        return { ...base, href: i.content.url, external: true };
-      if (i.kind === "problem" && problemHref)
-        return { ...base, href: problemHref(i.id) };
-      return { ...base, href: `${lessonHref}#m-${i.id}` };
-    }),
-  ];
+    const i = e.item;
+    const base = {
+      id: i.id,
+      kind: i.kind,
+      title: i.title,
+      hidden: !i.published,
+    };
+    if (i.kind === "link" || i.kind === "video")
+      return { ...base, href: i.content.url, external: true };
+    if (i.kind === "problem" && problemHref)
+      return { ...base, href: problemHref(i.id) };
+    return { ...base, href: `${lessonHref}#m-${i.id}` };
+  });
 }
 
 /** Numărul lecției într-un hexagon (sau „•” dacă mentorul arată doar titlul). */

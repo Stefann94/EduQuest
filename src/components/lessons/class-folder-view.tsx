@@ -9,6 +9,7 @@ import Link from "next/link";
 import { EmptyState } from "@/components/common/empty-state";
 import { VisibilityBadge } from "@/components/common/status";
 import { buttonVariants } from "@/components/ui/button";
+import { folderEntries } from "@/lib/content/folder-order";
 import { type getClassFolder, lessonLabel } from "@/lib/db/lessons";
 import { FolderList } from "./folder-list";
 import { LessonNumber, LessonTitle } from "./lesson-card";
@@ -34,8 +35,7 @@ export function ClassFolderView({
   editHref?: string;
 }) {
   const { root, lessons, path, folder } = data;
-  const problems = folder.items.filter((i) => i.kind === "problem");
-  const others = folder.items.filter((i) => i.kind !== "problem");
+  const entries = folderEntries(folder.subfolders, folder.items);
   const index = lessons.findIndex((l) => l.id === root.id);
   const prev = folder.isRoot ? lessons[index - 1] : undefined;
   const next = folder.isRoot ? lessons[index + 1] : undefined;
@@ -109,50 +109,36 @@ export function ClassFolderView({
         ) : null}
       </header>
 
-      {folder.subfolders.length > 0 ? (
-        <section aria-labelledby="subfoldere" className="grid gap-3">
-          <h2 id="subfoldere" className="text-xl">
-            Foldere
-          </h2>
-          <FolderList
-            folders={folder.subfolders}
-            href={(id) => `${base}/${id}`}
-          />
-        </section>
-      ) : null}
-
-      {problems.length > 0 ? (
-        <section aria-labelledby="probleme" className="grid gap-3">
-          <h2 id="probleme" className="text-xl">
-            Probleme rezolvate
-          </h2>
-          <ul className="grid gap-3">
-            {problems.map((item) =>
-              item.kind === "problem" ? (
-                <li key={item.id} className="grid gap-1">
-                  <ProblemCard
-                    title={item.title}
-                    problem={item.content}
-                    href={`${base}/${folder.id}/probleme/${item.id}`}
-                  />
-                  {item.published ? null : (
-                    <span className="justify-self-end">
-                      <VisibilityBadge published={false} />
-                    </span>
-                  )}
-                </li>
-              ) : null,
-            )}
-          </ul>
-        </section>
-      ) : null}
-
-      {others.length > 0 ? (
-        <div className="grid gap-10">
-          {others.map((item) => (
-            <LessonItemSection key={item.id} item={item} />
-          ))}
-        </div>
+      {entries.length > 0 ? (
+        <ul className="grid gap-3">
+          {entries.map((e) =>
+            e.type === "folder" ? (
+              <li key={e.id}>
+                <FolderList
+                  folders={[e.folder]}
+                  href={(id) => `${base}/${id}`}
+                />
+              </li>
+            ) : e.item.kind === "problem" ? (
+              <li key={e.id} className="grid gap-1">
+                <ProblemCard
+                  title={e.item.title}
+                  problem={e.item.content}
+                  href={`${base}/${folder.id}/probleme/${e.item.id}`}
+                />
+                {e.item.published ? null : (
+                  <span className="justify-self-end">
+                    <VisibilityBadge published={false} />
+                  </span>
+                )}
+              </li>
+            ) : (
+              <li key={e.id} className="cut-sm bg-card/40 p-4 sm:p-5">
+                <LessonItemSection item={e.item} />
+              </li>
+            ),
+          )}
+        </ul>
       ) : null}
 
       {folder.items.length === 0 && folder.subfolders.length === 0 ? (

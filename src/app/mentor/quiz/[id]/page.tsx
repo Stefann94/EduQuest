@@ -1,9 +1,11 @@
-import { Trash2 } from "lucide-react";
+import { Archive, Trash2 } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/common/page-header";
+import { StatusBadge } from "@/components/common/status";
 import { LiveQuizStart } from "@/components/mentor-content/live-quiz-start";
+import { QuizArchiveButton } from "@/components/mentor-content/quiz-archive-button";
 import { QuizDeleteButton } from "@/components/mentor-content/quiz-delete-button";
 import { QuizForm } from "@/components/mentor-content/quiz-form";
 import { FormSkeleton } from "@/components/mentor-content/skeletons";
@@ -52,12 +54,22 @@ async function Content({ params }: { params: Props["params"] }) {
         description={`${quiz.live ? "Quiz live" : quiz.kind === "recap" ? "Recapitulare" : "Quiz de lecție"} · ${plural(quiz.questions.length, "întrebare", "întrebări")}`}
         actions={
           <>
+            {quiz.archived ? (
+              <StatusBadge icon={Archive} tone="warning">
+                Arhivat
+              </StatusBadge>
+            ) : null}
+            <QuizArchiveButton
+              quizId={quiz.id}
+              title={quiz.title}
+              archived={quiz.archived}
+            />
             <QuizDeleteButton
               quizId={quiz.id}
               title={quiz.title}
               icon={<Trash2 />}
             />
-            {quiz.live ? (
+            {quiz.live && !quiz.archived ? (
               <LiveQuizStart
                 quizId={quiz.id}
                 questionCount={quiz.questions.length}
@@ -72,6 +84,14 @@ async function Content({ params }: { params: Props["params"] }) {
           </>
         }
       />
+      {quiz.archived ? (
+        <p className="flex items-start gap-2 bg-warning-soft px-4 py-3 text-sm">
+          <Archive className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+          {quiz.live
+            ? "Quiz-ul e arhivat: nu se mai poate juca live. Clasamentele sesiunilor de până acum rămân."
+            : "Quiz-ul e arhivat: elevii nu-l mai pot rezolva, dar își văd rezultatele de până acum."}
+        </p>
+      ) : null}
       <QuizForm
         draft={{
           id: quiz.id,
@@ -86,6 +106,7 @@ async function Content({ params }: { params: Props["params"] }) {
             prompt: q.prompt,
             code: q.code,
             options: q.options,
+            multi: q.multi,
             correct: q.correct,
             explanation: q.explanation,
             lessonId: q.lessonId,

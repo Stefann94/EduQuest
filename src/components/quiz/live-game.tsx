@@ -21,7 +21,10 @@ import {
   optionGridClass,
 } from "@/components/live/answer-styles";
 import { LiveBoard } from "@/components/live/live-board";
-import { OptionCounts } from "@/components/live/option-counts";
+import {
+  MultiAnswerLabel,
+  OptionCounts,
+} from "@/components/live/option-counts";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -32,6 +35,7 @@ import {
   playerXp,
   secondsLeft,
 } from "@/lib/live";
+import { isChosen, toggleInMask } from "@/lib/quiz-answers";
 import { cn } from "@/lib/utils";
 import { QuestionCode } from "./question-code";
 
@@ -280,26 +284,35 @@ function Round({
   const [picked, setPicked] = useState<number | null>(
     state.mine?.answer ?? null,
   );
+  // La o întrebare cu mai multe răspunsuri: variantele bifate (mască), trimise cu un buton.
+  const [selected, setSelected] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const left = secondsLeft(state, skew);
   if (!q) return null;
 
+  const multi = !!q.multi;
   const answered = picked !== null || state.mine !== null;
   const closed = phase !== "question" || left === 0;
   const mineAnswer = state.mine?.answer ?? picked;
+  const shown = answered ? mineAnswer : multi ? selected : null;
 
-  function answer(i: number) {
+  function answer(value: number) {
     if (answered || closed) return;
-    setPicked(i);
+    setPicked(value);
     setError(null);
     startTransition(async () => {
-      const r = await answerLive(sessionId, state.current, i);
+      const r = await answerLive(sessionId, state.current, value);
       if (!r.ok) {
         setError(r.message);
         setPicked(null);
       }
     });
+  }
+  function choose(i: number) {
+    if (answered || closed) return;
+    if (multi) setSelected((m) => toggleInMask(m, i));
+    else answer(i);
   }
 
   return (
@@ -335,23 +348,33 @@ function Round({
             <RichText text={q.prompt} />
           </h1>
           {q.code ? <QuestionCode code={q.code} /> : null}
+          {multi ? (
+            <MultiAnswerLabel>
+              Mai multe răspunsuri corecte · bifează-le pe toate
+            </MultiAnswerLabel>
+          ) : null}
           <ul className={cn("grid gap-3", optionGridClass(q.options.length))}>
             {q.options.map((opt, i) => {
               const style = liveAnswerStyle(i);
-              const isMine = mineAnswer === i;
+              const isMine = isChosen(shown, multi, i);
               return (
                 // biome-ignore lint/suspicious/noArrayIndexKey: variantele au ordine fixă
                 <li key={i} className={optionCellClass(q.options.length, i)}>
                   <button
                     type="button"
                     disabled={answered || closed || pending}
-                    onClick={() => answer(i)}
+                    onClick={() => choose(i)}
                     aria-pressed={isMine}
                     className={cn(
                       "flex h-full min-h-20 w-full cut-sm items-center gap-3 px-4 py-3 text-left font-mono text-lg outline-none transition-[opacity,transform] focus-visible:ring-4 focus-visible:ring-ring focus-visible:ring-inset",
                       style.className,
                       !answered && !closed && "hover:-translate-y-0.5",
                       (answered || closed) && !isMine && "opacity-35",
+                      multi &&
+                        !answered &&
+                        isMine &&
+                        "ring-4 ring-foreground ring-inset",
+                      multi && !answered && !closed && !isMine && "opacity-60",
                     )}
                   >
                     <LiveAnswerShape index={i} className="size-7" />
@@ -361,7 +384,7 @@ function Round({
                     </span>
                     {isMine ? (
                       <span className="font-bold font-sans text-sm">
-                        Răspunsul tău
+                        {multi && !answered ? "Bifat" : "Răspunsul tău"}
                       </span>
                     ) : null}
                   </button>
@@ -369,6 +392,23 @@ function Round({
               );
             })}
           </ul>
+          {multi && !answered && !closed ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <Button
+                variant="cta"
+                size="lg"
+                disabled={selected === 0 || pending}
+                onClick={() => answer(selected)}
+              >
+                Trimite răspunsul
+              </Button>
+              <span className="text-muted-foreground text-sm">
+                {selected === 0
+                  ? "Bifează cel puțin o variantă."
+                  : "Poți schimba bifele până trimiți."}
+              </span>
+            </div>
+          ) : null}
           <div className="min-h-14">
             {error ? (
               <p role="alert" className="text-destructive">
@@ -399,11 +439,14 @@ function Round({
             <RichText text={q.prompt} />
           </h1>
           {q.code ? <QuestionCode code={q.code} /> : null}
+          {multi ? <MultiAnswerLabel /> : null}
           <OptionCounts
             options={q.options}
             counts={q.counts}
             correct={q.correct}
             mine={mineAnswer}
+            multi={multi}
+            answered={state.answered}
           />
           {q.explanation ? (
             <p className="text-muted-foreground">
@@ -460,7 +503,10 @@ function ResultBanner({ state }: { state: LiveState }) {
       <div className="min-w-0 flex-1">
         <p className="font-extrabold font-heading text-3xl uppercase">Greșit</p>
         <p className="text-white/85">
-          0 puncte la această întrebare. Varianta corectă e marcată mai jos.
+          0 puncte la această întrebare.{" "}
+          {state.question?.multi
+            ? "Variantele corecte sunt marcate mai jos."
+            : "Varianta corectă e marcată mai jos."}
         </p>
       </div>
     </div>

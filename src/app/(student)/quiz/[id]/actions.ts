@@ -6,13 +6,16 @@ import { requireUser } from "@/lib/auth";
 import { db, isUuid } from "@/lib/db/core";
 import { xpOutlook } from "@/lib/db/quiz-rules";
 
+// Un index (întrebare simplă) sau masca variantelor bifate (întrebare cu mai multe
+// răspunsuri corecte, cel mult 6 variante → cel mult 2^6 − 1).
 const answersSchema = z
-  .array(z.number().int().min(0).max(9).nullable())
+  .array(z.number().int().min(0).max(63).nullable())
   .min(1)
   .max(100);
 
 export type QuestionResult = {
   questionId: string;
+  /** Indexul variantei sau, la o întrebare cu mai multe răspunsuri, masca lor. */
   your: number | null;
   correct: number;
   isCorrect: boolean;

@@ -2,7 +2,9 @@
 
 import { Bell } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { buttonVariants } from "@/components/ui/button";
 import { Popover, PopoverTrigger } from "@/components/ui/popover";
 import { markNotificationsRead } from "@/lib/actions/notifications";
@@ -23,6 +25,25 @@ export function NotificationsMenu({
   const [items, setItems] = useState(initial);
   const [open, setOpen] = useState(false);
   const unread = items.filter((n) => !n.read).length;
+  const router = useRouter();
+  const seen = useRef(new Set(initial.map((n) => n.id)));
+
+  // Lista vine de pe server (cu preferințele de notificări aplicate); la fiecare
+  // reîmprospătare o preluăm și anunțăm ce a apărut nou.
+  useEffect(() => {
+    setItems(initial);
+    for (const n of initial)
+      if (!seen.current.has(n.id)) {
+        seen.current.add(n.id);
+        if (!n.read)
+          toast(n.title, {
+            description: n.body || undefined,
+            action: n.href
+              ? { label: "Deschide", onClick: () => router.push(n.href) }
+              : undefined,
+          });
+      }
+  }, [initial, router]);
 
   const markRead = (id?: string) => {
     setItems((list) =>

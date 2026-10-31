@@ -58,10 +58,12 @@ async function Content({ params }: { params: Props["params"] }) {
       prompt: q.prompt,
       code: q.code,
       options: q.options,
+      multi: q.multi,
     })),
     xp: quiz.xp,
     used: quiz.attempts.count,
     best: quiz.attempts.best,
+    archived: quiz.archived,
     backHref: back.href,
     backLabel: `Înapoi la ${back.label}`,
   };

@@ -13,6 +13,8 @@ export type PublicQuestion = {
   prompt: string;
   code?: string;
   options: string[];
+  /** Mai multe răspunsuri corecte: elevul le bifează pe toate (răspunsul e o mască). */
+  multi: boolean;
   lessonId: string | null;
 };
 
@@ -49,9 +51,11 @@ export type StudentQuiz = {
   classNames: string[];
   assignedAt: string;
   attempts: AttemptSummary;
+  /** Arhivat de mentor: nu mai poate fi rezolvat; rezultatele de până acum rămân. */
+  archived: boolean;
 };
 
-const QUIZ_CARD_FIELDS = `id, title, description, kind, xp, time_limit_sec, course_id,
+const QUIZ_CARD_FIELDS = `id, title, description, kind, xp, time_limit_sec, course_id, archived,
   quiz_questions(count),
   quiz_lessons(lesson:lessons!quiz_lessons_lesson_id_fkey(title))`;
 
@@ -105,6 +109,7 @@ export async function getStudentQuizzes(
       attempts: summarizeAttempts(
         attemptRows.filter((t) => t.quiz_id === a.quiz?.id),
       ),
+      archived: a.quiz.archived,
     });
   }
   return [...byQuiz.values()];
@@ -158,9 +163,9 @@ export async function getQuizForPlayer(studentId: string, id: string) {
   const { data: q } = await supabase
     .from("quizzes")
     .select(
-      `id, title, description, kind, xp, time_limit_sec, course_id,
+      `id, title, description, kind, xp, time_limit_sec, course_id, archived,
        course:courses!quizzes_course_id_fkey(slug, title),
-       quiz_questions(id, position, prompt, code, options, lesson_id),
+       quiz_questions(id, position, prompt, code, options, multi, lesson_id),
        quiz_lessons(lesson:lessons!quiz_lessons_lesson_id_fkey(title)),
        quiz_assignments(class_id)`,
     )
@@ -188,6 +193,7 @@ export async function getQuizForPlayer(studentId: string, id: string) {
       prompt: x.prompt,
       code: x.code ?? undefined,
       options: x.options,
+      multi: x.multi,
       lessonId: x.lesson_id,
     }));
   const summary = summarizeAttempts(must("Încercările", attempts));
@@ -197,6 +203,7 @@ export async function getQuizForPlayer(studentId: string, id: string) {
     description: q.description,
     kind: q.kind,
     xp: q.xp,
+    archived: q.archived,
     timeLimitSec: q.time_limit_sec ?? undefined,
     className: cls?.name,
     course: q.course
@@ -222,6 +229,8 @@ export type MentorQuiz = {
   kind: QuizKind;
   /** Quiz live (jucat doar în sesiuni cu cod) sau pentru clase (rezolvat oricând). */
   live: boolean;
+  /** Arhivat: în afara listelor active; nu se mai rezolvă și nu se mai joacă live. */
+  archived: boolean;
   xp: number;
   createdAt: string;
   questionCount: number;
@@ -230,7 +239,7 @@ export type MentorQuiz = {
   attempts: number;
 };
 
-const MENTOR_QUIZ_FIELDS = `id, title, description, kind, live, xp, created_at,
+const MENTOR_QUIZ_FIELDS = `id, title, description, kind, live, archived, xp, created_at,
   quiz_questions(count),
   quiz_lessons(lesson:lessons!quiz_lessons_lesson_id_fkey(id, title)),
   quiz_assignments(class_id, assigned_at),
@@ -257,6 +266,7 @@ export async function getMentorQuizzes(
     description: q.description,
     kind: q.kind,
     live: q.live,
+    archived: q.archived,
     xp: q.xp,
     createdAt: q.created_at,
     questionCount: q.quiz_questions[0]?.count ?? 0,
@@ -278,6 +288,8 @@ export type EditorQuestion = {
   prompt: string;
   code: string;
   options: string[];
+  /** Mai multe răspunsuri corecte: `correct` e atunci masca variantelor corecte. */
+  multi: boolean;
   correct: number;
   explanation: string;
   lessonId: string | null;
@@ -292,8 +304,8 @@ export async function getQuizForEditor(mentorId: string, id: string) {
   const { data: q } = await supabase
     .from("quizzes")
     .select(
-      `id, title, description, kind, live, xp, time_limit_sec,
-       quiz_questions(id, position, prompt, code, options, lesson_id, time_sec,
+      `id, title, description, kind, live, archived, xp, time_limit_sec,
+       quiz_questions(id, position, prompt, code, options, multi, lesson_id, time_sec,
          quiz_answer_keys(correct, explanation)),
        quiz_lessons(lesson_id),
        quiz_assignments(class_id, assigned_at)`,
@@ -315,7 +327,8 @@ export async function getQuizForEditor(mentorId: string, id: string) {
         prompt: x.prompt,
         code: x.code ?? "",
         options: x.options,
-        correct: key?.correct ?? 0,
+        multi: x.multi,
+        correct: key?.correct ?? (x.multi ? 1 : 0),
         explanation: key?.explanation ?? "",
         lessonId: x.lesson_id,
         timeSec: x.time_sec,
@@ -327,6 +340,7 @@ export async function getQuizForEditor(mentorId: string, id: string) {
     description: q.description,
     kind: q.kind,
     live: q.live,
+    archived: q.archived,
     xp: q.xp,
     timeLimitSec: q.time_limit_sec,
     questions,

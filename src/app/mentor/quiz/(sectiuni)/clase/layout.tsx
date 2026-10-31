@@ -49,7 +49,8 @@ async function ClassesNav() {
     getMentorClasses(me.id),
     getMentorQuizzes(me.id),
   ]);
-  const forClasses = quizzes.filter((q) => !q.live);
+  // Numărătorile sunt doar pentru quiz-urile active (cele arhivate stau la final).
+  const forClasses = quizzes.filter((q) => !q.live && !q.archived);
   const items: SubNavItem[] = [
     { ...ALL, count: forClasses.length },
     ...classes.active.map((c) => ({

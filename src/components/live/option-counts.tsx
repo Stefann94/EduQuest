@@ -1,29 +1,58 @@
-import { CheckCircle2, UserRound } from "lucide-react";
+import { CheckCircle2, ListChecks, UserRound } from "lucide-react";
 import { StatusBadge } from "@/components/common/status";
 import { RichText } from "@/components/learning/rich-text";
+import { isChosen } from "@/lib/quiz-answers";
 import { cn } from "@/lib/utils";
 import { LiveAnswerShape, liveAnswerStyle } from "./answer-styles";
 
+/** Eticheta unei întrebări cu mai multe răspunsuri corecte. */
+export function MultiAnswerLabel({
+  className,
+  children = "Mai multe răspunsuri corecte",
+}: {
+  className?: string;
+  children?: React.ReactNode;
+}) {
+  return (
+    <p
+      className={cn(
+        "inline-flex w-fit items-center gap-1.5 bg-primary-soft px-2.5 py-1 font-bold font-heading text-primary text-xs uppercase tracking-wide",
+        className,
+      )}
+    >
+      <ListChecks className="size-4" aria-hidden="true" />
+      {children}
+    </p>
+  );
+}
+
 /**
- * După dezvăluire: câți elevi au ales fiecare variantă, cu varianta corectă evidențiată
- * și (la elev) alegerea lui marcată.
+ * După dezvăluire: câți elevi au ales fiecare variantă, cu variantele corecte evidențiate
+ * și (la elev) alegerea lui marcată. La o întrebare cu mai multe răspunsuri, `correct` și
+ * `mine` sunt măști, iar procentele sunt din câți au răspuns.
  */
 export function OptionCounts({
   options,
   counts,
   correct,
   mine,
+  multi = false,
+  answered,
   large = false,
 }: {
   options: string[];
   counts: number[] | undefined;
   correct: number | undefined;
   mine?: number | null;
+  multi?: boolean;
+  /** Câți elevi au răspuns (numitorul procentelor la `multi`). */
+  answered?: number;
   /** Pentru proiectarea în clasă: text și cifre mai mari. */
   large?: boolean;
 }) {
   const values = options.map((_, i) => counts?.[i] ?? 0);
-  const total = values.reduce((a, b) => a + b, 0);
+  const sum = values.reduce((a, b) => a + b, 0);
+  const total = multi ? Math.max(answered ?? 0, ...values) : sum;
   const max = Math.max(1, ...values);
 
   return (
@@ -31,8 +60,8 @@ export function OptionCounts({
       {options.map((opt, i) => {
         const style = liveAnswerStyle(i);
         const n = values[i];
-        const isCorrect = correct === i;
-        const isMine = mine === i;
+        const isCorrect = isChosen(correct, multi, i);
+        const isMine = isChosen(mine, multi, i);
         const pct = total ? Math.round((n / total) * 100) : 0;
         return (
           <li

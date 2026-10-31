@@ -40,7 +40,7 @@ export async function LiveNow({
         <LiveStartForm
           classes={classes.active.map((c) => ({ id: c.id, name: c.name }))}
           quizzes={quizzes
-            .filter((q) => q.live)
+            .filter((q) => q.live && !q.archived)
             .map((q) => ({
               id: q.id,
               title: q.title,

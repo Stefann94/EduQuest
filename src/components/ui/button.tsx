@@ -9,7 +9,7 @@ const buttonVariants = cva(
       variant: {
         default: "bg-primary text-primary-foreground hover:bg-primary/85",
         /** Acțiunea principală a unui ecran (ex. „Intră în arenă”). */
-        cta: "bg-cta text-cta-foreground hover:bg-foreground",
+        cta: "bg-cta text-cta-foreground hover:bg-foreground hover:text-cta",
         outline:
           "border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
         secondary:

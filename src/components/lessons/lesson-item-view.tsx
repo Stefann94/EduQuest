@@ -1,10 +1,4 @@
-import {
-  Download,
-  ExternalLink,
-  FileText,
-  Lightbulb,
-  PlayCircle,
-} from "lucide-react";
+import { ExternalLink, FileText, Lightbulb, PlayCircle } from "lucide-react";
 import { CodeBlock } from "@/components/common/code-block";
 import { ContentBlocks, RichText } from "@/components/learning/content-blocks";
 import {
@@ -21,6 +15,7 @@ import type {
 import type { LessonItemView } from "@/lib/db/lessons";
 import { formatFileSize } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { PdfPreview } from "./pdf-preview";
 import { SolutionTabs } from "./solution-tabs";
 import { TryIt } from "./try-it";
 
@@ -97,15 +92,7 @@ export function PdfCard({ file, url }: { file: PdfContent; url?: string }) {
         </p>
       </div>
       {url ? (
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={buttonVariants()}
-        >
-          <Download /> Deschide PDF-ul
-          <span className="sr-only"> (se deschide într-o filă nouă)</span>
-        </a>
+        <PdfPreview url={url} title={file.name} />
       ) : (
         <p className="text-muted-foreground text-sm">
           Fișierul nu e disponibil acum.

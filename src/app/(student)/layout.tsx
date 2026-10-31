@@ -103,7 +103,7 @@ async function StudentShell({ children }: { children: React.ReactNode }) {
     })),
     ...quizzes.map((q) => ({
       label: q.title,
-      hint: `Quiz · ${q.classNames.join(", ")}`,
+      hint: `Quiz · ${q.classNames.join(", ")}${q.archived ? " · arhivat" : ""}`,
       href: `/quiz/${q.id}`,
       kind: "quiz" as const,
     })),

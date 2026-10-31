@@ -1,6 +1,7 @@
 import { Logo } from "@/components/brand/logo";
 import type { Notification } from "@/lib/data/types";
 import { AccountMenu } from "./account-menu";
+import { LiveRefresh } from "./live-refresh";
 import { MobileNav } from "./mobile-nav";
 import type { NavGroup, ShellUser } from "./nav";
 import { NotificationsMenu } from "./notifications-menu";
@@ -68,6 +69,7 @@ export function AppShell({
               initial={notifications}
               allHref={notificationsHref}
             />
+            <LiveRefresh />
             <span
               aria-hidden="true"
               className="mx-0.5 hidden h-6 w-px bg-border sm:block xl:mx-1"

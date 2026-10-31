@@ -16,6 +16,8 @@ export type SubfolderSummary = {
   id: string;
   title: string;
   summary: string;
+  /** Locul în folderul părinte, în aceeași ordine cu materialele. */
+  position: number;
   /** Materiale direct în subfolder (vizibile celui care citește). */
   itemCount: number;
   /** Subfoldere direct în subfolder. */
@@ -135,6 +137,7 @@ async function subfoldersOf(parentIds: string[]) {
       id: r.id,
       title: r.title,
       summary: r.summary,
+      position: r.position,
       itemCount: r.lesson_items.length,
       folderCount: grand.filter((g) => g.parent_id === r.id).length,
     });
@@ -260,6 +263,54 @@ async function ancestorsOf(parentId: string | null) {
 }
 
 /** O lecție (folder) pentru editor, doar dacă mentorul e autorul ei. */
+/** Un folder cu tot conținutul lui, pentru editorul pe o singură pagină. */
+export type FolderNode = {
+  id: string;
+  title: string;
+  summary: string;
+  position: number;
+  items: LessonItemView[];
+  children: FolderNode[];
+};
+
+/** Subfolderele unui folder, pe toate nivelurile (cel mult 3), cu materialele lor. */
+async function folderTree(rootId: string): Promise<FolderNode[]> {
+  const supabase = await db();
+  const nodes = new Map<string, FolderNode>();
+  const childrenOf = new Map<string, FolderNode[]>();
+  let level = [rootId];
+  for (let depth = 0; depth < 3 && level.length; depth++) {
+    const rows = must(
+      "Subfolderele",
+      await supabase
+        .from("lessons")
+        .select(
+          `id, title, summary, position, parent_id, created_at, lesson_items(${ITEM_FIELDS})`,
+        )
+        .in("parent_id", level)
+        .order("position")
+        .order("created_at"),
+    );
+    for (const r of rows) {
+      const node: FolderNode = {
+        id: r.id,
+        title: r.title,
+        summary: r.summary,
+        position: r.position,
+        items: await toItems(r.lesson_items as ItemRow[]),
+        children: [],
+      };
+      nodes.set(r.id, node);
+      const list = childrenOf.get(r.parent_id as string) ?? [];
+      list.push(node);
+      childrenOf.set(r.parent_id as string, list);
+    }
+    level = rows.map((r) => r.id);
+  }
+  for (const [id, node] of nodes) node.children = childrenOf.get(id) ?? [];
+  return childrenOf.get(rootId) ?? [];
+}
+
 export async function getLessonForEditor(mentorId: string, id: string) {
   if (!isUuid(id)) return undefined;
   const supabase = await db();
@@ -272,11 +323,17 @@ export async function getLessonForEditor(mentorId: string, id: string) {
     .maybeSingle();
   if (!data) return undefined;
   const lesson = await toLibrary(data as LibraryRow);
-  const [subs, path] = await Promise.all([
+  const [subs, path, children] = await Promise.all([
     subfoldersOf([lesson.id]),
     ancestorsOf(lesson.parentId),
+    folderTree(lesson.id),
   ]);
-  return { ...lesson, subfolders: subs.get(lesson.id) ?? [], path };
+  return {
+    ...lesson,
+    subfolders: subs.get(lesson.id) ?? [],
+    path,
+    children,
+  };
 }
 
 export type EditorLesson = NonNullable<

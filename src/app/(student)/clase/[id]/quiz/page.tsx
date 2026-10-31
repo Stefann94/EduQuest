@@ -30,7 +30,10 @@ async function Content({ params }: { params: Props["params"] }) {
     getStudentQuizzes(viewer.id),
     getLiveSessions(),
   ]);
-  const assigned = quizzes.filter((q) => q.classIds.includes(c.id));
+  // Cele arhivate de mentor rămân doar dacă elevul le-a rezolvat (cu rezultatul lui).
+  const assigned = quizzes.filter(
+    (q) => q.classIds.includes(c.id) && (!q.archived || q.attempts.count > 0),
+  );
   const mine = sessions.filter((s) => s.classId === c.id);
   const open = mine.filter((s) => s.status !== "ended");
   const past = mine.filter((s) => s.status === "ended");

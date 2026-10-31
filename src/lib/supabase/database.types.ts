@@ -1087,6 +1087,7 @@ export type Database = {
           code: string | null;
           id: string;
           lesson_id: string | null;
+          multi: boolean;
           options: string[];
           position: number;
           prompt: string;
@@ -1098,6 +1099,7 @@ export type Database = {
           code?: string | null;
           id?: string;
           lesson_id?: string | null;
+          multi?: boolean;
           options: string[];
           position: number;
           prompt: string;
@@ -1108,6 +1110,7 @@ export type Database = {
           code?: string | null;
           id?: string;
           lesson_id?: string | null;
+          multi?: boolean;
           options?: string[];
           position?: number;
           prompt?: string;
@@ -1133,6 +1136,7 @@ export type Database = {
       };
       quizzes: {
         Row: {
+          archived: boolean;
           author_id: string;
           course_id: string | null;
           created_at: string;
@@ -1146,6 +1150,7 @@ export type Database = {
         };
         ComputedFields: never;
         Insert: {
+          archived?: boolean;
           author_id: string;
           course_id?: string | null;
           created_at?: string;
@@ -1158,6 +1163,7 @@ export type Database = {
           xp?: number;
         };
         Update: {
+          archived?: boolean;
           author_id?: string;
           course_id?: string | null;
           created_at?: string;

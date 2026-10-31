@@ -1,4 +1,5 @@
 import {
+  Archive,
   CheckCircle2,
   ChevronRight,
   ListChecks,
@@ -16,6 +17,12 @@ import { formatDateTime, plural } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 function QuizStateBadge({ quiz: q }: { quiz: StudentQuiz }) {
+  if (q.archived)
+    return (
+      <StatusBadge icon={Archive} tone="neutral">
+        Arhivat de mentor
+      </StatusBadge>
+    );
   if (q.attempts.count === 0)
     return (
       <StatusBadge icon={PlayCircle} tone="primary">
@@ -35,9 +42,12 @@ function QuizStateBadge({ quiz: q }: { quiz: StudentQuiz }) {
   );
 }
 
-/** Un quiz dat clasei: lecțiile pe care le verifică, rezultatul și XP-ul rămas. */
+/**
+ * Un quiz dat clasei: lecțiile pe care le verifică, rezultatul și XP-ul rămas. Unul
+ * arhivat de mentor nu se mai poate rezolva; pagina lui arată doar rezultatul.
+ */
 export function AssignedQuizRow({ quiz: q }: { quiz: StudentQuiz }) {
-  const outlook = xpOutlook(q.xp, q.attempts.count);
+  const outlook = q.archived ? { max: 0 } : xpOutlook(q.xp, q.attempts.count);
   return (
     <Link
       href={`/quiz/${q.id}`}
