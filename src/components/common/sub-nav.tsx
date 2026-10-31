@@ -26,7 +26,13 @@ export function SubNav({
   const pathname = usePathname();
 
   return (
-    <nav aria-label={label} className={cn("-mx-1 overflow-x-auto", className)}>
+    <nav
+      aria-label={label}
+      className={cn(
+        "-mx-1 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        className,
+      )}
+    >
       <ul className="flex min-w-max gap-1 border-b px-1">
         {items.map((s) => {
           const active = s.exact

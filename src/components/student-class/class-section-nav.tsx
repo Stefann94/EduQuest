@@ -21,7 +21,7 @@ export function ClassSectionNav({ classId }: { classId: string }) {
 
   return (
     <nav aria-label="Secțiunile clasei">
-      <ul className="flex gap-1 overflow-x-auto shadow-[inset_0_-1px_0_var(--border)]">
+      <ul className="flex gap-1 overflow-x-auto shadow-[inset_0_-1px_0_var(--border)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {SECTIONS.map((s) => {
           const href = `${base}${s.path}`;
           const active =

@@ -79,7 +79,7 @@ export function ApplicationsList({
 
   return (
     <Tabs defaultValue="pending" className="gap-4">
-      <div className="-mx-1 overflow-x-auto px-1 pb-1">
+      <div className="-mx-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <TabsList aria-label="Filtrează după stare">
           {TABS.map((t) => (
             <TabsTrigger key={t.id} value={t.id} className="px-3">
