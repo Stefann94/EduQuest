@@ -95,7 +95,7 @@ function VerifyEmail({
       const { ok } = await resendVerification(email);
       if (ok)
         toast.success("Am retrimis emailul de verificare", {
-          description: `Verifică ${email}. Demo: emailul nu se trimite cu adevărat.`,
+          description: `Verifică ${email} (și dosarul Spam).`,
         });
       else toast.error("Nu am putut retrimite emailul. Încearcă din nou.");
     });

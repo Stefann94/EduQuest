@@ -61,9 +61,6 @@ function JoinForm() {
             materialele noi.
           </DialogDescription>
         </DialogHeader>
-        <p className="rounded-lg bg-muted px-3 py-2 text-muted-foreground text-xs">
-          Demo: înscrierea se salvează după conectarea la baza de date.
-        </p>
         <DialogFooter>
           <DialogClose render={<Button />}>Gata</DialogClose>
         </DialogFooter>
@@ -118,8 +115,7 @@ function JoinForm() {
           </p>
         ) : (
           <p id="invite-hint" className="text-muted-foreground text-xs">
-            Demo: încearcă OOP9X3 (valid), PY7K2Q (ești deja înscris) sau PY1OLD
-            (expirat).
+            Codul de 6 caractere primit de la mentor.
           </p>
         )}
       </div>

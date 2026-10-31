@@ -73,7 +73,7 @@ export function ClassSettings({
   inviteCodeActive: boolean;
   archived: boolean;
 }) {
-  // Demo: starea se schimbă doar în pagină. Cu Supabase vine din baza de date.
+  // Starea afișată se actualizează imediat după fiecare salvare reușită.
   const [code, setCode] = useState(inviteCode);
   const [codeActive, setCodeActive] = useState(inviteCodeActive);
   const [archived, setArchived] = useState(initiallyArchived);
@@ -92,8 +92,7 @@ export function ClassSettings({
       if (res.status === "success") {
         setSaved(res.values);
         toast.success("Detaliile clasei au fost salvate", {
-          description:
-            "Demo: modificarea se salvează după conectarea la baza de date.",
+          description: "Elevii văd noile detalii imediat.",
         });
       } else if (res.status === "error" && res.message) {
         toast.error(res.message);
