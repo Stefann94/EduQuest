@@ -6,14 +6,17 @@ import {
   BookOpen,
   ChevronRight,
   FileCode2,
+  GripVertical,
   Plus,
   Search,
   Users,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
-import { moveLesson } from "@/app/mentor/materiale/actions";
+import { moveLesson, reorderLessons } from "@/app/mentor/materiale/actions";
+import { dragged, endDrag, reorder, startDrag } from "@/components/common/drag";
 import { EmptyState } from "@/components/common/empty-state";
 import { VisibilityBadge } from "@/components/common/status";
 import {
@@ -24,7 +27,6 @@ import {
   MaterialsMenu,
   type MenuItem,
 } from "@/components/lessons/materials-menu";
-import { FilterSelect } from "@/components/mentor-content/filter-select";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -109,9 +111,16 @@ export function LessonLibrary({
   const [cls, setCls] = useState("all");
   const q = normalize(query.trim());
 
+  // „Fără clasă”: lecțiile care nu sunt încă în nicio clasă.
   const matchClass = (l: LibraryEntry) =>
-    cls === "all" || l.classes.some((c) => c.classId === cls);
-  const shown = lessons.filter(
+    cls === "all" ||
+    (cls === "none"
+      ? l.classes.length === 0
+      : l.classes.some((c) => c.classId === cls));
+  const chosenClass = classes.find((c) => c.id === cls);
+  // Ordinea aleasă prin drag and drop, afișată imediat (până vine lista nouă de la server).
+  const [optimistic, setOptimistic] = useState<string[] | null>(null);
+  const unsorted = lessons.filter(
     (l) =>
       l.parentId === null &&
       matchClass(l) &&
@@ -120,6 +129,11 @@ export function LessonLibrary({
           `${l.title} ${l.summary} ${l.items.map((i) => i.title).join(" ")}`,
         ).includes(q)),
   );
+  const shown = optimistic
+    ? [...unsorted].sort(
+        (a, b) => optimistic.indexOf(a.id) - optimistic.indexOf(b.id),
+      )
+    : unsorted;
   const problems = lessons
     .filter(matchClass)
     .flatMap((l) =>
@@ -128,15 +142,71 @@ export function LessonLibrary({
         .map((p) => ({ ...p, lesson: l })),
     )
     .filter((p) => !q || normalize(`${p.title} ${p.lesson.title}`).includes(q));
-  const classList = classes.filter((c) => cls === "all" || c.id === cls);
+  const classList = classes.filter(
+    (c) => cls === "all" || cls === "none" || c.id === cls,
+  );
   // Ordinea se schimbă doar pe lista întreagă (fără căutare sau filtru de clasă).
   const canReorder = !q && cls === "all";
   const [pending, startMove] = useTransition();
+  const router = useRouter();
   const move = (id: string, by: -1 | 1) =>
     startMove(async () => {
       const res = await moveLesson(id, by);
       if (!res.ok) toast.error(res.message);
     });
+  // Drag and drop: o lecție trasă peste alta îi ia locul (doar pe lista întreagă).
+  const [over, setOver] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const dragProps = (id: string) =>
+    canReorder && shown.length > 1
+      ? {
+          draggable: true,
+          onDragStart: (ev: React.DragEvent) => {
+            startDrag(ev, { kind: "lesson", id, from: "library" });
+            setDraggingId(id);
+          },
+          onDragEnd: () => {
+            endDrag();
+            setOver(null);
+            setDraggingId(null);
+          },
+          onDragOver: (ev: React.DragEvent) => {
+            if (dragged()?.kind !== "lesson") return;
+            ev.preventDefault();
+            setOver(id);
+          },
+          onDragLeave: () => setOver((o) => (o === id ? null : o)),
+          onDrop: (ev: React.DragEvent) => {
+            ev.preventDefault();
+            const p = dragged();
+            endDrag();
+            setOver(null);
+            setDraggingId(null);
+            if (p?.kind !== "lesson") return;
+            const next = reorder(
+              shown.map((l) => l.id),
+              p.id,
+              id,
+            );
+            if (next) {
+              setOptimistic(next);
+              startMove(async () => {
+                const res = await reorderLessons(next);
+                if (!res.ok) toast.error(res.message);
+                router.refresh();
+                setOptimistic(null);
+              });
+            }
+          },
+          className: cn(
+            "transition-opacity",
+            draggingId === id && "opacity-40",
+            over === id &&
+              draggingId !== id &&
+              "rounded-sm ring-2 ring-primary ring-offset-2",
+          ),
+        }
+      : {};
 
   return (
     <div className="grid gap-4">
@@ -155,15 +225,50 @@ export function LessonLibrary({
             className="pl-9"
           />
         </div>
-        <FilterSelect
-          label="Clasa"
-          value={cls}
-          onChange={setCls}
-          items={[
-            { value: "all", label: "Toate clasele" },
+      </div>
+
+      {/* Biblioteca pe clase: alegi clasa și vezi doar lecțiile ei (sau le adaugi direct acolo). */}
+      <div className="flex flex-wrap items-center gap-2">
+        <fieldset className="flex flex-wrap gap-1.5">
+          <legend className="sr-only">Clasa</legend>
+          {[
+            { value: "all", label: "Toate" },
             ...classes.map((c) => ({ value: c.id, label: c.name })),
-          ]}
-        />
+            { value: "none", label: "Fără clasă" },
+          ].map((o) => (
+            <label
+              key={o.value}
+              className={cn(
+                "slant cursor-pointer px-3 py-1.5 font-bold font-heading text-sm uppercase tracking-wide transition-colors has-focus-visible:ring-3 has-focus-visible:ring-ring/50",
+                cls === o.value
+                  ? "bg-foreground text-background"
+                  : "bg-card text-muted-foreground hover:text-foreground",
+              )}
+            >
+              <input
+                type="radio"
+                name="library-class"
+                value={o.value}
+                checked={cls === o.value}
+                onChange={() => setCls(o.value)}
+                className="sr-only"
+              />
+              {o.label}
+            </label>
+          ))}
+        </fieldset>
+        {chosenClass ? (
+          <Link
+            href={`/mentor/materiale/nou?clasa=${chosenClass.id}`}
+            className={buttonVariants({
+              variant: "outline",
+              size: "sm",
+              className: "ml-auto",
+            })}
+          >
+            <Plus aria-hidden="true" /> Lecție nouă în {chosenClass.name}
+          </Link>
+        ) : null}
       </div>
 
       <Tabs defaultValue="materials">
@@ -200,10 +305,17 @@ export function LessonLibrary({
                   })),
                 ];
                 return (
-                  <li key={l.id}>
+                  <li key={l.id} {...dragProps(l.id)}>
                     <article className="flex cut flex-col gap-4 bg-card p-5 md:flex-row md:items-center md:gap-6">
                       {canReorder && shown.length > 1 ? (
                         <div className="flex gap-1 md:flex-col">
+                          <span
+                            aria-hidden="true"
+                            title="Trage ca să muți"
+                            className="hidden size-8 cursor-grab place-items-center text-muted-foreground active:cursor-grabbing md:grid"
+                          >
+                            <GripVertical className="size-4" />
+                          </span>
                           <Button
                             variant="ghost"
                             size="icon-sm"

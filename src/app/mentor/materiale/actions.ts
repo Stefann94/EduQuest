@@ -435,6 +435,126 @@ export async function moveLesson(
   return { ok: true, message: "" };
 }
 
+/** Scrie pozițiile 0…n-1 în ordinea dată (subfoldere și materiale, amestecate). */
+async function writeOrder(
+  order: { id: string; type: "folder" | "item"; position: number }[],
+) {
+  const supabase = await db();
+  const results = await Promise.all(
+    order.flatMap((e, position) =>
+      e.position === position
+        ? []
+        : [
+            e.type === "folder"
+              ? supabase.from("lessons").update({ position }).eq("id", e.id)
+              : supabase
+                  .from("lesson_items")
+                  .update({ position })
+                  .eq("id", e.id),
+          ],
+    ),
+  );
+  return !results.some((r) => r.error);
+}
+
+/** Ordinea nouă a conținutului unui folder, după drag and drop (aceleași elemente). */
+export async function reorderEntries(
+  folderId: string,
+  orderedIds: string[],
+): Promise<ActionResult> {
+  const owned = await ownLesson(folderId);
+  if (!owned) return NOT_FOUND;
+  const list = folderEntries(owned.lesson.subfolders, owned.lesson.items);
+  const byId = new Map(list.map((e) => [e.id, e]));
+  if (
+    orderedIds.length !== list.length ||
+    new Set(orderedIds).size !== list.length ||
+    !orderedIds.every((id) => byId.has(id))
+  )
+    return { ok: false, message: "Conținutul s-a schimbat. Reîncarcă pagina." };
+  const ok = await writeOrder(
+    orderedIds.map((id) => byId.get(id) as (typeof list)[number]),
+  );
+  refresh(folderId);
+  return ok
+    ? { ok: true, message: "" }
+    : { ok: false, message: "Ordinea nu s-a putut salva." };
+}
+
+/**
+ * Mută un material în alt folder (drag and drop), înaintea unui element sau la final.
+ * Ambele foldere trebuie să fie ale mentorului.
+ */
+export async function moveItemToFolder(
+  itemId: string,
+  targetFolderId: string,
+  beforeId: string | null,
+): Promise<ActionResult> {
+  if (!isUuid(itemId)) return NOT_FOUND;
+  const supabase = await db();
+  const { data: item } = await supabase
+    .from("lesson_items")
+    .select("id, lesson_id")
+    .eq("id", itemId)
+    .maybeSingle();
+  if (!item) return NOT_FOUND;
+  const [source, target] = await Promise.all([
+    ownLesson(item.lesson_id),
+    ownLesson(targetFolderId),
+  ]);
+  if (!source || !target) return NOT_FOUND;
+  if (item.lesson_id !== targetFolderId) {
+    const { error } = await supabase
+      .from("lesson_items")
+      .update({ lesson_id: targetFolderId })
+      .eq("id", itemId);
+    if (error) return { ok: false, message: "Materialul nu s-a putut muta." };
+  }
+  // Locul în folderul nou: înaintea elementului pe care a fost lăsat, altfel la final.
+  const rest: { id: string; type: "folder" | "item"; position: number }[] =
+    folderEntries(target.lesson.subfolders, target.lesson.items)
+      .filter((e) => e.id !== itemId)
+      .map((e) => ({ id: e.id, type: e.type, position: e.position }));
+  const at = beforeId ? rest.findIndex((e) => e.id === beforeId) : -1;
+  const moved = { id: itemId, type: "item" as const, position: -1 };
+  const order = [...rest];
+  order.splice(at < 0 ? order.length : at, 0, moved);
+  await writeOrder(order);
+  refresh(item.lesson_id);
+  refresh(targetFolderId);
+  return { ok: true, message: "Materialul a fost mutat." };
+}
+
+/** Ordinea lecțiilor din Materiale, după drag and drop (aceleași lecții). */
+export async function reorderLessons(
+  orderedIds: string[],
+): Promise<ActionResult> {
+  const me = await requireUser("mentor");
+  const list = await rootLessons(me.id);
+  const byId = new Map(list.map((l) => [l.id, l]));
+  if (
+    orderedIds.length !== list.length ||
+    new Set(orderedIds).size !== list.length ||
+    !orderedIds.every((id) => byId.has(id))
+  )
+    return { ok: false, message: "Lista s-a schimbat. Reîncarcă pagina." };
+  const supabase = await db();
+  const results = await Promise.all(
+    orderedIds.flatMap((id, position) =>
+      byId.get(id)?.position === position
+        ? []
+        : [supabase.from("lessons").update({ position }).eq("id", id)],
+    ),
+  );
+  if (results.some((r) => r.error))
+    return {
+      ok: false,
+      message: "Ordinea nu s-a putut salva. Încearcă din nou.",
+    };
+  refresh();
+  return { ok: true, message: "" };
+}
+
 /** Șterge un subfolder din editorul folderului părinte (fără să părăsească pagina). */
 export async function deleteSubfolder(id: string): Promise<ActionResult> {
   const owned = await ownLesson(id);

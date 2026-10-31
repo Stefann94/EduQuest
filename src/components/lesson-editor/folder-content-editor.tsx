@@ -9,6 +9,7 @@ import {
   Eye,
   FolderOpen,
   FolderPlus,
+  GripVertical,
   Pencil,
   Trash2,
   X,
@@ -22,9 +23,12 @@ import {
   deleteItem,
   deleteSubfolder,
   moveEntry,
+  moveItemToFolder,
+  reorderEntries,
   setItemPublished,
   updateLessonDetails,
 } from "@/app/mentor/materiale/actions";
+import { dragged, endDrag, reorder, startDrag } from "@/components/common/drag";
 import {
   MATERIAL_KIND,
   MaterialKindIcon,
@@ -73,7 +77,31 @@ export function FolderContentEditor({
   const [run, pending] = useRun();
   const [editing, setEditing] = useState<{ id: string } | null>(null);
   const [adding, setAdding] = useState<ItemKind | "folder" | null>(null);
+  const [over, setOver] = useState<string | null>(null);
+  const [draggingId, setDraggingId] = useState<string | null>(null);
   const entries = folderEntries(node.children, node.items);
+  const ids = entries.map((e) => e.id);
+
+  // Ce poate fi lăsat aici: orice element din acest folder (ordine) sau un material din
+  // alt folder (se mută aici). Subfolderele rămân în folderul lor.
+  const accepts = () => {
+    const p = dragged();
+    return !!p && (p.from === node.id || p.kind === "item");
+  };
+  const dropOn = (targetId: string | null) => {
+    const p = dragged();
+    endDrag();
+    setOver(null);
+    setDraggingId(null);
+    if (!p) return;
+    if (p.from === node.id) {
+      if (!targetId) return;
+      const next = reorder(ids, p.id, targetId);
+      if (next) run(() => reorderEntries(node.id, next));
+    } else if (p.kind === "item") {
+      run(() => moveItemToFolder(p.id, node.id, targetId));
+    }
+  };
 
   return (
     <div className="grid gap-2">
@@ -84,11 +112,37 @@ export function FolderContentEditor({
         </p>
       ) : null}
 
-      <ol className="grid gap-2">
+      <ol
+        className={cn(
+          "grid gap-2",
+          over === "end" && "rounded-sm ring-2 ring-primary ring-offset-2",
+        )}
+        onDragOver={(ev) => {
+          // Lăsat pe spațiul listei (nu pe un rând): un material din alt folder ajunge la final.
+          const p = dragged();
+          if (!p || p.from === node.id || p.kind !== "item") return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          setOver("end");
+        }}
+        onDragLeave={() => setOver((o) => (o === "end" ? null : o))}
+        onDrop={(ev) => {
+          ev.preventDefault();
+          ev.stopPropagation();
+          dropOn(null);
+        }}
+      >
         {entries.map((e, i) => {
           const move = (by: -1 | 1) => run(() => moveEntry(node.id, e.id, by));
           const arrows = (
             <>
+              <span
+                aria-hidden="true"
+                title="Trage ca să muți"
+                className="hidden size-8 cursor-grab place-items-center text-muted-foreground active:cursor-grabbing sm:grid"
+              >
+                <GripVertical className="size-4" />
+              </span>
               <Button
                 variant="ghost"
                 size="icon-sm"
@@ -109,8 +163,46 @@ export function FolderContentEditor({
               </Button>
             </>
           );
+          const editingThis = e.type === "item" && editing?.id === e.id;
+          const drag = editingThis
+            ? {}
+            : {
+                draggable: true,
+                onDragStart: (ev: React.DragEvent) => {
+                  startDrag(ev, {
+                    kind: e.type === "folder" ? "folder" : "item",
+                    id: e.id,
+                    from: node.id,
+                  });
+                  setDraggingId(e.id);
+                },
+                onDragEnd: () => {
+                  endDrag();
+                  setOver(null);
+                  setDraggingId(null);
+                },
+                onDragOver: (ev: React.DragEvent) => {
+                  if (!accepts()) return;
+                  ev.preventDefault();
+                  ev.stopPropagation();
+                  setOver(e.id);
+                },
+                onDragLeave: () => setOver((o) => (o === e.id ? null : o)),
+                onDrop: (ev: React.DragEvent) => {
+                  ev.preventDefault();
+                  ev.stopPropagation();
+                  dropOn(e.id);
+                },
+                className: cn(
+                  "transition-opacity",
+                  draggingId === e.id && "opacity-40",
+                  over === e.id &&
+                    draggingId !== e.id &&
+                    "rounded-sm ring-2 ring-primary ring-offset-2",
+                ),
+              };
           return e.type === "folder" ? (
-            <li key={e.id}>
+            <li key={e.id} {...drag}>
               <SubfolderBlock
                 folder={e.folder}
                 level={level + 1}
@@ -127,7 +219,7 @@ export function FolderContentEditor({
               />
             </li>
           ) : (
-            <li key={e.id}>
+            <li key={e.id} {...drag}>
               <ItemRow
                 folderId={node.id}
                 item={e.item}
@@ -290,6 +382,7 @@ function SubfolderBlock({
   const [open, setOpen] = useState(true);
   const [renaming, setRenaming] = useState(false);
   const [title, setTitle] = useState(folder.title);
+  const [target, setTarget] = useState(false);
   const count = folder.items.length + folder.children.length;
 
   return (
@@ -297,7 +390,30 @@ function SubfolderBlock({
       aria-label={`Subfolder: ${folder.title}`}
       className="cut-sm border-xp/40 border-l-4 bg-xp-soft/40"
     >
-      <div className="flex flex-wrap items-center gap-2 px-3 py-2.5">
+      {/* biome-ignore lint/a11y/noStaticElementInteractions: zonă de drop pentru mouse (un material lăsat pe antet intră în subfolder); de la tastatură ordinea se schimbă cu săgețile */}
+      <div
+        className={cn(
+          "flex flex-wrap items-center gap-2 px-3 py-2.5",
+          target && "bg-primary-soft ring-2 ring-primary ring-inset",
+        )}
+        onDragOver={(ev) => {
+          const p = dragged();
+          if (!p || p.kind !== "item" || p.from === folder.id) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          setTarget(true);
+        }}
+        onDragLeave={() => setTarget(false)}
+        onDrop={(ev) => {
+          const p = dragged();
+          if (!p || p.kind !== "item" || p.from === folder.id) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          endDrag();
+          setTarget(false);
+          run(() => moveItemToFolder(p.id, folder.id, null));
+        }}
+      >
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
