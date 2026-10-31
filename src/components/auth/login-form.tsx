@@ -57,7 +57,7 @@ function RoleForm({ kind: role }: { kind: LoginRole }) {
         <TextField
           id={`${role}-identifier`}
           name="identifier"
-          label={student ? "Username sau email" : "Adresa de email"}
+          label={student ? "Email sau username" : "Adresa de email"}
           type={student ? "text" : "email"}
           autoComplete={student ? "username" : "email"}
           autoCapitalize="none"
@@ -67,7 +67,7 @@ function RoleForm({ kind: role }: { kind: LoginRole }) {
           error={failed?.errors.identifier}
           hint={
             student
-              ? undefined
+              ? "Username-ul tău îl găsești în Setări cont."
               : "Mentorii nu au username: te autentifici cu emailul verificat."
           }
         />

@@ -37,26 +37,13 @@ function Register({ onRestart }: { onRestart: () => void }) {
         <TextField
           id="displayName"
           name="displayName"
-          label="Nume afișat"
+          label="Numele tău"
           autoComplete="name"
           required
           maxLength={40}
           defaultValue={values.displayName}
           error={errors.displayName}
-          hint="Așa te vor vedea mentorul și colegii din clasele tale."
-        />
-        <TextField
-          id="username"
-          name="username"
-          label="Username"
-          autoComplete="username"
-          autoCapitalize="none"
-          spellCheck={false}
-          required
-          maxLength={20}
-          defaultValue={values.username}
-          error={errors.username}
-          hint="3–20 caractere: litere mici, cifre, punct sau underscore. Ex.: maria.pop"
+          hint="Numele și prenumele. Așa te vor vedea mentorul și colegii din clasele tale."
         />
         <TextField
           id="email"

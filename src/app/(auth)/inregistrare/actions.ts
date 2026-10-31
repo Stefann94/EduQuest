@@ -15,13 +15,7 @@ import {
   withoutPasswords,
 } from "../_lib/validation";
 
-const FIELDS = [
-  "displayName",
-  "username",
-  "email",
-  "password",
-  "confirm",
-] as const;
+const FIELDS = ["displayName", "email", "password", "confirm"] as const;
 type Field = (typeof FIELDS)[number];
 
 export type RegisterState = FormState<Field, { email: string }>;
@@ -30,17 +24,8 @@ const schema = z.object({
   displayName: z
     .string()
     .trim()
-    .min(2, { error: "Scrie numele afișat (cel puțin 2 caractere)." })
-    .max(40, { error: "Numele afișat poate avea cel mult 40 de caractere." }),
-  username: z
-    .string()
-    .trim()
-    .min(3, { error: "Username-ul are cel puțin 3 caractere." })
-    .max(20, { error: "Username-ul poate avea cel mult 20 de caractere." })
-    .regex(/^[a-z0-9._]+$/, {
-      error:
-        "Folosește doar litere mici fără diacritice, cifre, punct și underscore.",
-    }),
+    .min(2, { error: "Scrie-ți numele (cel puțin 2 caractere)." })
+    .max(40, { error: "Numele poate avea cel mult 40 de caractere." }),
   email: emailSchema,
 });
 
@@ -58,16 +43,9 @@ export async function register(
 
   const admin = supabaseAdmin();
   if (parsed.success && admin) {
-    // Unicitatea se verifică pe server; baza de date o garantează oricum (username unic).
-    const [{ data: taken }, { data: emailTaken }] = await Promise.all([
-      admin
-        .from("profiles")
-        .select("id")
-        .eq("username", parsed.data.username)
-        .maybeSingle(),
-      admin.rpc("email_taken", { p_email: parsed.data.email }),
-    ]);
-    if (taken) errors.username = "Username-ul este deja folosit. Alege altul.";
+    const { data: emailTaken } = await admin.rpc("email_taken", {
+      p_email: parsed.data.email,
+    });
     if (emailTaken)
       errors.email =
         "Există deja un cont cu această adresă. Intră în cont sau recuperează-ți parola.";
@@ -77,9 +55,10 @@ export async function register(
     return { status: "error", errors, values: withoutPasswords(values) };
 
   // Rolul nu se trimite: orice cont nou e de elev (vezi trigger-ul din baza de date).
+  // Username-ul (pentru autentificare, pe lângă email) se face automat din nume.
   const data = {
     display_name: parsed.data.displayName,
-    username: parsed.data.username,
+    username: await freeUsername(parsed.data.displayName, parsed.data.email),
   };
 
   if (admin && mailConfigured()) {
@@ -230,4 +209,31 @@ async function sendConfirmEmail(
       note: "Dacă nu tu ți-ai făcut cont, ignoră acest email: fără confirmare, contul nu se activează.",
     }),
   );
+}
+
+/** Un username liber, din nume: „Maria Popescu” → maria.popescu (sau maria.popescu2…). */
+async function freeUsername(name: string, email: string) {
+  const slug = (t: string) =>
+    t
+      .normalize("NFD")
+      .replace(/\p{M}/gu, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ".")
+      .replace(/^\.+|\.+$/g, "")
+      .slice(0, 18)
+      .replace(/\.+$/, "");
+  let base = slug(name);
+  if (base.length < 3) base = slug(email.split("@")[0]);
+  if (base.length < 3) base = "elev";
+  const admin = supabaseAdmin();
+  if (!admin) return base;
+  const { data } = await admin
+    .from("profiles")
+    .select("username")
+    .like("username", `${base}%`);
+  const taken = new Set((data ?? []).map((r) => r.username));
+  if (!taken.has(base)) return base;
+  for (let n = 2; n < 1000; n++)
+    if (!taken.has(`${base}${n}`)) return `${base}${n}`;
+  return `${base}${Date.now() % 100000}`;
 }
