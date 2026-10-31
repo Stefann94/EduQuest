@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { requireUser } from "@/lib/auth";
 import type { ApplicationStatus } from "@/lib/data/types";
 import { getMentorApplication } from "@/lib/db/admin";
-import { generatePassword, sendMail } from "@/lib/mail";
-import { siteOrigin } from "@/lib/site-url";
+import { emailHtml, generatePassword, sendMail } from "@/lib/mail";
+import { trustedOrigin } from "@/lib/site-url";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -116,7 +116,7 @@ export async function reviewApplication(
       .eq("id", invited.user.id);
     if (roleError)
       return { status: "error", message: "Contul nu a putut fi făcut mentor." };
-    const origin = await siteOrigin();
+    const origin = await trustedOrigin();
     emailed = await sendMail(
       application.email,
       "Contul tău de mentor EduQuest",
@@ -133,6 +133,19 @@ export async function reviewApplication(
         "",
         "Echipa EduQuest",
       ].join("\n"),
+      emailHtml({
+        title: "Contul tău de mentor e gata",
+        paragraphs: [
+          `Bună, ${application.fullName}!`,
+          "Aplicația ta de mentor a fost aprobată. Te poți autentifica de acum, din tabul Mentor, cu datele de mai jos.",
+        ],
+        details: [
+          ["Email", application.email],
+          ["Parolă", password],
+        ],
+        button: { label: "Intră în cont", href: `${origin}/autentificare` },
+        note: "Schimbă parola după prima autentificare, din Setări cont. Dacă o uiți, o poți reseta oricând din pagina de autentificare.",
+      }),
     );
   }
 

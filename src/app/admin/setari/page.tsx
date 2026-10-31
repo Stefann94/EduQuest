@@ -75,7 +75,7 @@ const SECURITY: { icon: LucideIcon; title: string; text: string }[] = [
   {
     icon: KeyRound,
     title: "Parole",
-    text: "Parolele nu se trimit niciodată pe email. Linkurile de resetare sunt valabile 60 de minute și pot fi folosite o singură dată.",
+    text: "Doar parola inițială a unui mentor aprobat pleacă pe email, iar mentorul o schimbă după prima autentificare. La „Ai uitat parola?” se trimite un email cu butonul „Resetează parola”: linkul e valabil 60 de minute și poate fi folosit o singură dată.",
   },
   {
     icon: Lock,

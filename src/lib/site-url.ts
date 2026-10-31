@@ -15,3 +15,16 @@ export async function siteOrigin() {
     (host.startsWith("localhost") ? "http" : "https");
   return `${proto}://${host}`;
 }
+
+/**
+ * Adresa site-ului pentru linkurile cu token din emailurile trimise de noi (ex. resetarea
+ * parolei). Nu vine din antetele cererii: un antet falsificat ar trimite tokenul pe alt
+ * site. Online: SITE_URL sau domeniul de producție dat de Vercel; local: cererea curentă.
+ */
+export async function trustedOrigin() {
+  if (process.env.SITE_URL) return process.env.SITE_URL.replace(/\/+$/, "");
+  const vercel = process.env.VERCEL_PROJECT_PRODUCTION_URL;
+  if (vercel) return `https://${vercel}`;
+  if (process.env.NODE_ENV !== "production") return siteOrigin();
+  return "https://eduquest-gilt.vercel.app";
+}
