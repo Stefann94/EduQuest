@@ -1051,6 +1051,7 @@ export type Database = {
           at: string;
           correct: number;
           id: string;
+          late: boolean;
           quiz_id: string;
           results: NonNullable<Json>;
           student_id: string;
@@ -1062,6 +1063,7 @@ export type Database = {
           at?: string;
           correct: number;
           id?: string;
+          late?: boolean;
           quiz_id: string;
           results?: NonNullable<Json>;
           student_id: string;
@@ -1072,6 +1074,7 @@ export type Database = {
           at?: string;
           correct?: number;
           id?: string;
+          late?: boolean;
           quiz_id?: string;
           results?: NonNullable<Json>;
           student_id?: string;
@@ -1183,6 +1186,7 @@ export type Database = {
           author_id: string;
           course_id: string | null;
           created_at: string;
+          deadline: string | null;
           description: string;
           id: string;
           kind: Database["public"]["Enums"]["quiz_kind"];
@@ -1198,6 +1202,7 @@ export type Database = {
           author_id: string;
           course_id?: string | null;
           created_at?: string;
+          deadline?: string | null;
           description?: string;
           id?: string;
           kind?: Database["public"]["Enums"]["quiz_kind"];
@@ -1212,6 +1217,7 @@ export type Database = {
           author_id?: string;
           course_id?: string | null;
           created_at?: string;
+          deadline?: string | null;
           description?: string;
           id?: string;
           kind?: Database["public"]["Enums"]["quiz_kind"];

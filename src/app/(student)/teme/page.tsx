@@ -16,10 +16,12 @@ import {
   HomeworkRow,
 } from "@/components/homework/homework-row";
 import { SectionSkeleton } from "@/components/student-class/skeletons";
+import { QuizMissionRow } from "@/components/student-home/mission-row";
 import { buttonVariants } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { requireUser } from "@/lib/auth";
 import { getStudentHomework, type StudentHomework } from "@/lib/db/homework";
+import { getStudentQuizzes, type StudentQuiz } from "@/lib/db/quizzes";
 import { formatDateTime, relativeDays } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Teme" };
@@ -40,8 +42,17 @@ export default function HomeworkPage() {
 
 async function Content() {
   const me = await requireUser("student");
-  const all = await getStudentHomework(me.id);
+  const [all, quizzes] = await Promise.all([
+    getStudentHomework(me.id),
+    getStudentQuizzes(me.id),
+  ]);
   const now = Date.now();
+  // Quiz-urile obligatorii sunt și ele teme: până la termen în „Obligatorii”, apoi în arhivă.
+  const requiredQuizzes = quizzes.filter((q) => q.required && !q.archived);
+  const quizPast = (q: StudentQuiz) =>
+    !!q.deadline && Date.parse(q.deadline) < now;
+  const currentQuizzes = requiredQuizzes.filter((q) => !quizPast(q));
+  const archivedQuizzes = requiredQuizzes.filter(quizPast);
   const isArchived = (h: StudentHomework) =>
     !!h.deadline && Date.parse(h.deadline) < now;
   const current = all.filter((h) => !isArchived(h));
@@ -52,7 +63,7 @@ async function Content() {
   const required = current.filter((h) => h.required);
   const optional = current.filter((h) => !h.required);
 
-  if (all.length === 0)
+  if (all.length === 0 && requiredQuizzes.length === 0)
     return (
       <EmptyState
         icon={ClipboardList}
@@ -63,23 +74,32 @@ async function Content() {
 
   return (
     <div className="grid gap-6">
-      {focus ? <CurrentHomework homework={focus} /> : <AllDone />}
+      {focus ? (
+        <CurrentHomework homework={focus} />
+      ) : currentQuizzes.some((q) => q.attempts.count === 0) ? null : (
+        <AllDone />
+      )}
 
       <Tabs defaultValue="required">
         <TabsList>
           <TabsTrigger value="required">
-            Obligatorii ({required.length})
+            Obligatorii ({required.length + currentQuizzes.length})
           </TabsTrigger>
           <TabsTrigger value="optional">
             Opționale ({optional.length})
           </TabsTrigger>
-          <TabsTrigger value="archive">Arhivă ({archive.length})</TabsTrigger>
+          <TabsTrigger value="archive">
+            Arhivă ({archive.length + archivedQuizzes.length})
+          </TabsTrigger>
         </TabsList>
-        <TabsContent value="required" className="mt-4">
-          <HomeworkList
-            items={required}
-            empty="Nicio temă obligatorie în desfășurare."
-          />
+        <TabsContent value="required" className="mt-4 grid gap-4">
+          <QuizList quizzes={currentQuizzes} />
+          {required.length > 0 || currentQuizzes.length === 0 ? (
+            <HomeworkList
+              items={required}
+              empty="Nicio temă obligatorie în desfășurare."
+            />
+          ) : null}
         </TabsContent>
         <TabsContent value="optional" className="mt-4">
           <HomeworkList
@@ -87,8 +107,11 @@ async function Content() {
             empty="Nicio temă opțională acum. Când mentorul dă una, o găsești aici."
           />
         </TabsContent>
-        <TabsContent value="archive" className="mt-4">
-          <HomeworkArchive items={archive} />
+        <TabsContent value="archive" className="mt-4 grid gap-4">
+          <QuizList quizzes={archivedQuizzes} />
+          {archive.length > 0 || archivedQuizzes.length === 0 ? (
+            <HomeworkArchive items={archive} />
+          ) : null}
         </TabsContent>
       </Tabs>
     </div>
@@ -194,5 +217,19 @@ function AllDone() {
         </p>
       </div>
     </section>
+  );
+}
+
+/** Quiz-urile obligatorii, afișate ca teme (rezolvate sau de rezolvat, cu termenul). */
+function QuizList({ quizzes }: { quizzes: StudentQuiz[] }) {
+  if (quizzes.length === 0) return null;
+  return (
+    <ul className="stagger grid gap-2">
+      {quizzes.map((q) => (
+        <li key={q.id}>
+          <QuizMissionRow quiz={q} />
+        </li>
+      ))}
+    </ul>
   );
 }

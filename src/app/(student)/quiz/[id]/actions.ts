@@ -59,7 +59,11 @@ export async function submitQuiz(
   const supabase = await db();
   const [{ data: quiz }, { data: questions }, { count: before }] =
     await Promise.all([
-      supabase.from("quizzes").select("xp").eq("id", quizId).maybeSingle(),
+      supabase
+        .from("quizzes")
+        .select("xp, required, deadline")
+        .eq("id", quizId)
+        .maybeSingle(),
       supabase
         .from("quiz_questions")
         .select("id, position, options, multi")
@@ -99,8 +103,12 @@ export async function submitQuiz(
 
   // Aceeași regulă ca în submit_quiz: prima încercare după scor, a doua +1.
   const outlook = xpOutlook(quiz.xp, before ?? 0);
-  const xp =
-    outlook.kind === "first"
+  // După termenul unui quiz obligatoriu nu se mai dă XP (la fel ca în submit_quiz).
+  const late =
+    quiz.required && !!quiz.deadline && Date.parse(quiz.deadline) < Date.now();
+  const xp = late
+    ? 0
+    : outlook.kind === "first"
       ? Math.round((quiz.xp * graded.correct) / Math.max(1, graded.total))
       : outlook.max;
 

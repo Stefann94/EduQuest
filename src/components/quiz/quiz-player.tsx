@@ -4,6 +4,7 @@ import {
   Archive,
   ArrowLeft,
   ArrowRight,
+  CalendarClock,
   CheckCircle2,
   Circle,
   CircleAlert,
@@ -28,7 +29,7 @@ import { RichText } from "@/components/learning/rich-text";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { xpOutlook } from "@/lib/db/quiz-rules";
-import { formatScore } from "@/lib/format";
+import { formatDateTime, formatScore } from "@/lib/format";
 import {
   chosenOptions,
   isChosen,
@@ -67,6 +68,8 @@ export type QuizPlayerData = {
   best?: number | null;
   /** Arhivat de mentor: nu se mai poate începe (rezultatele rămân). */
   archived?: boolean;
+  /** Quiz obligatoriu cu termen: după termen se rezolvă fără XP. */
+  deadline?: string | null;
 };
 
 type Phase = "intro" | "question" | "review" | "results";
@@ -99,7 +102,8 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
   const [usedAtOpen] = useState(quiz.used);
   const used = Math.max(quiz.used, usedAtOpen + attemptsHere);
   const anyMulti = quiz.questions.some((q) => q.multi);
-  const outlook = xpOutlook(quiz.xp, used);
+  const late = !!quiz.deadline && Date.parse(quiz.deadline) < Date.now();
+  const outlook = late ? { kind: "late" as const } : xpOutlook(quiz.xp, used);
 
   useEffect(() => {
     answersRef.current = answers;
@@ -234,14 +238,22 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
               ? "Prima încercare"
               : `Rezolvat de ${used === 1 ? "o dată" : `${used} ori`}`}
           </IntroItem>
+          {quiz.deadline ? (
+            <IntroItem icon={CalendarClock} label="Termen">
+              {formatDateTime(quiz.deadline)}
+              {late ? " · a trecut" : ""}
+            </IntroItem>
+          ) : null}
           <IntroItem icon={Star} label="XP">
             {quiz.archived
               ? "Fără XP: quiz-ul a fost arhivat"
-              : outlook.kind === "first"
-                ? `Până la +${quiz.xp} XP, după câte răspunsuri corecte ai`
-                : outlook.kind === "retake"
-                  ? "+1 XP pentru prima repetare (doar o dată)"
-                  : "Fără XP: l-ai repetat deja, acum e doar exersare"}
+              : outlook.kind === "late"
+                ? "Fără XP: termenul a trecut (îl poți rezolva în continuare)"
+                : outlook.kind === "first"
+                  ? `Până la +${quiz.xp} XP, după câte răspunsuri corecte ai`
+                  : outlook.kind === "retake"
+                    ? "+1 XP pentru prima repetare (doar o dată)"
+                    : "Fără XP: l-ai repetat deja, acum e doar exersare"}
           </IntroItem>
           {quiz.className ? (
             <IntroItem icon={Info} label="Clasa">

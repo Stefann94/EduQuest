@@ -137,7 +137,11 @@ async function StudentHomeContent() {
     ]);
   // Quiz-urile obligatorii sunt misiuni: de rezolvat (active) sau rezolvate (trimise).
   const requiredQuizzes = quizzes.filter((q) => q.required && !q.archived);
-  const activeQuizzes = requiredQuizzes.filter((q) => q.attempts.count === 0);
+  const activeQuizzes = requiredQuizzes.filter(
+    (q) =>
+      q.attempts.count === 0 &&
+      (!q.deadline || Date.parse(q.deadline) >= Date.now()),
+  );
   const solvedQuizzes = requiredQuizzes.filter((q) => q.attempts.count > 0);
 
   const needsChanges = (h: StudentHomework) =>

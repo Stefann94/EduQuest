@@ -55,11 +55,13 @@ export type StudentQuiz = {
   archived: boolean;
   /** Obligatoriu (ca o temă, apare la Misiuni) sau opțional. */
   required: boolean;
+  /** La un quiz obligatoriu: până când are XP (după termen se rezolvă fără XP). */
+  deadline: string | null;
   /** Lecțiile pe care le verifică (pentru lista de quiz-uri din pagina lecției). */
   lessonIds: string[];
 };
 
-const QUIZ_CARD_FIELDS = `id, title, description, kind, xp, time_limit_sec, course_id, archived, required,
+const QUIZ_CARD_FIELDS = `id, title, description, kind, xp, time_limit_sec, course_id, archived, required, deadline,
   quiz_questions(count),
   quiz_lessons(lesson:lessons!quiz_lessons_lesson_id_fkey(id, title))`;
 
@@ -118,6 +120,7 @@ export async function getStudentQuizzes(
       ),
       archived: a.quiz.archived,
       required: a.quiz.required,
+      deadline: a.quiz.required ? a.quiz.deadline : null,
     });
   }
   return [...byQuiz.values()];
@@ -171,7 +174,7 @@ export async function getQuizForPlayer(studentId: string, id: string) {
   const { data: q } = await supabase
     .from("quizzes")
     .select(
-      `id, title, description, kind, xp, time_limit_sec, course_id, archived,
+      `id, title, description, kind, xp, time_limit_sec, course_id, archived, required, deadline,
        course:courses!quizzes_course_id_fkey(slug, title),
        quiz_questions(id, position, prompt, code, options, multi, lesson_id),
        quiz_lessons(lesson:lessons!quiz_lessons_lesson_id_fkey(title)),
@@ -212,6 +215,7 @@ export async function getQuizForPlayer(studentId: string, id: string) {
     kind: q.kind,
     xp: q.xp,
     archived: q.archived,
+    deadline: q.required ? q.deadline : null,
     timeLimitSec: q.time_limit_sec ?? undefined,
     className: cls?.name,
     course: q.course
@@ -241,6 +245,8 @@ export type MentorQuiz = {
   archived: boolean;
   /** Obligatoriu (ca o temă) sau opțional. */
   required: boolean;
+  /** La un quiz obligatoriu: până când are XP (după termen se rezolvă fără XP). */
+  deadline: string | null;
   xp: number;
   createdAt: string;
   questionCount: number;
@@ -249,7 +255,7 @@ export type MentorQuiz = {
   attempts: number;
 };
 
-const MENTOR_QUIZ_FIELDS = `id, title, description, kind, live, archived, required, xp, created_at,
+const MENTOR_QUIZ_FIELDS = `id, title, description, kind, live, archived, required, deadline, xp, created_at,
   quiz_questions(count),
   quiz_lessons(lesson:lessons!quiz_lessons_lesson_id_fkey(id, title)),
   quiz_assignments(class_id, assigned_at),
@@ -278,6 +284,7 @@ export async function getMentorQuizzes(
     live: q.live,
     archived: q.archived,
     required: q.required,
+    deadline: q.required ? q.deadline : null,
     xp: q.xp,
     createdAt: q.created_at,
     questionCount: q.quiz_questions[0]?.count ?? 0,
@@ -315,7 +322,7 @@ export async function getQuizForEditor(mentorId: string, id: string) {
   const { data: q } = await supabase
     .from("quizzes")
     .select(
-      `id, title, description, kind, live, archived, required, xp, time_limit_sec,
+      `id, title, description, kind, live, archived, required, deadline, xp, time_limit_sec,
        quiz_questions(id, position, prompt, code, options, multi, lesson_id, time_sec,
          quiz_answer_keys(correct, explanation)),
        quiz_lessons(lesson_id),
@@ -353,6 +360,7 @@ export async function getQuizForEditor(mentorId: string, id: string) {
     live: q.live,
     archived: q.archived,
     required: q.required,
+    deadline: q.required ? q.deadline : null,
     xp: q.xp,
     timeLimitSec: q.time_limit_sec,
     questions,

@@ -64,6 +64,7 @@ async function Content({ params }: { params: Props["params"] }) {
     used: quiz.attempts.count,
     best: quiz.attempts.best,
     archived: quiz.archived,
+    deadline: quiz.deadline,
     backHref: back.href,
     backLabel: `Înapoi la ${back.label}`,
   };

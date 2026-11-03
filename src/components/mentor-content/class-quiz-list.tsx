@@ -3,7 +3,7 @@ import Link from "next/link";
 import { EmptyState } from "@/components/common/empty-state";
 import { StatusBadge, XpBadge } from "@/components/common/status";
 import type { MentorQuiz } from "@/lib/db/quizzes";
-import { plural } from "@/lib/format";
+import { formatDateTime, plural } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { QuizArchiveButton } from "./quiz-archive-button";
 
@@ -83,7 +83,9 @@ function Rows({
               </p>
               <p className="truncate text-muted-foreground text-sm">
                 {plural(q.questionCount, "întrebare", "întrebări")} ·{" "}
-                {q.required ? "Obligatoriu · " : "Opțional · "}
+                {q.required
+                  ? `Obligatoriu${q.deadline ? `, termen ${formatDateTime(q.deadline)}` : ""} · `
+                  : "Opțional · "}
                 {q.kind === "recap" ? "Recapitulare" : "Lecție"}
                 {q.lessons.length
                   ? `: ${q.lessons.map((l) => l.title).join(", ")}`

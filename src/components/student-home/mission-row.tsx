@@ -153,6 +153,8 @@ export function QuizMissionRow({ quiz: q }: { quiz: StudentQuiz }) {
               {formatScore(q.attempts.best ?? 0)}/{q.attempts.total} corecte
             </span>
           </>
+        ) : q.deadline ? (
+          <QuizDeadline deadline={q.deadline} />
         ) : (
           <b className="block font-extrabold font-heading text-3xl leading-none">
             De rezolvat
@@ -160,5 +162,32 @@ export function QuizMissionRow({ quiz: q }: { quiz: StudentQuiz }) {
         )}
       </div>
     </Link>
+  );
+}
+
+/** Timpul rămas până la termenul unui quiz obligatoriu (după termen: fără XP). */
+function QuizDeadline({ deadline }: { deadline: string }) {
+  const overdue = Date.parse(deadline) < Date.now();
+  const d = daysUntil(deadline);
+  return (
+    <>
+      <b
+        className={cn(
+          "block font-extrabold font-heading text-3xl leading-none",
+          overdue && "text-destructive",
+        )}
+      >
+        {overdue
+          ? "Depășit"
+          : d <= 0
+            ? "Azi"
+            : d === 1
+              ? "Mâine"
+              : plural(d, "zi", "zile")}
+      </b>
+      <span className="text-muted-foreground text-xs">
+        {overdue ? "fără XP" : formatWeekday(deadline).toLowerCase()}
+      </span>
+    </>
   );
 }

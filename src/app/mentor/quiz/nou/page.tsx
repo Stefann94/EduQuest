@@ -50,6 +50,7 @@ async function Form({ searchParams }: { searchParams: Props["searchParams"] }) {
         timeLimitSec: null,
         classIds: preselected ? [preselected.id] : [],
         required: false,
+        deadline: "",
         questions: [],
       }}
       lessons={lessons.map((l) => ({ id: l.id, title: l.title }))}

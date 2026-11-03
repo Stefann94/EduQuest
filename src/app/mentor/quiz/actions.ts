@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { localToIso } from "@/components/mentor-classes/dates";
 import { requireUser } from "@/lib/auth";
 import { mentorClassIds } from "@/lib/db/classes";
 import { db, isUuid } from "@/lib/db/core";
@@ -111,6 +112,12 @@ const quizSchema = z.object({
   classIds: z.array(z.string().refine(isUuid)).max(30),
   /** Obligatoriu (ca o temă) sau opțional; doar la quiz-urile pentru clase. */
   required: z.boolean().default(false),
+  /** Termenul unui quiz obligatoriu, pe ora României („2026-11-10T20:00”), sau gol. */
+  deadline: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/, "Alege data și ora termenului.")
+    .or(z.literal(""))
+    .default(""),
 });
 
 export type QuizInput = z.input<typeof quizSchema>;
@@ -154,7 +161,22 @@ export async function saveQuiz(
     xp: live ? 0 : q.xp,
     time_limit_sec: live ? null : q.timeLimitSec,
     required: live ? false : q.required,
+    // Termenul are sens doar la un quiz obligatoriu.
+    deadline:
+      !live && q.required && q.deadline
+        ? localToIso(q.deadline.slice(0, 10), q.deadline.slice(11))
+        : null,
   };
+  if (
+    row.deadline &&
+    row.deadline !== existing?.deadline &&
+    Date.parse(row.deadline) < Date.now()
+  )
+    return {
+      ok: false,
+      message: "Termenul e în trecut.",
+      errors: { deadline: "Termenul e în trecut." },
+    };
   let quizId = existing?.id;
   if (existing) {
     const { error } = await supabase

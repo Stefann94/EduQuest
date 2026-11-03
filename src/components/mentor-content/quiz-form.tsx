@@ -48,6 +48,8 @@ export type QuizDraft = {
   classIds: string[];
   /** Obligatoriu (ca o temă) sau opțional; doar la quiz-urile pentru clase. */
   required: boolean;
+  /** Termenul unui quiz obligatoriu, ca valoare pentru datetime-local, sau gol. */
+  deadline: string;
   questions: QuizDraftQuestion[];
 };
 
@@ -92,6 +94,7 @@ export function QuizForm({
   const [lessonIds, setLessonIds] = useState(draft.lessonIds);
   const [classIds, setClassIds] = useState(draft.classIds);
   const [required, setRequired] = useState(draft.required);
+  const [deadline, setDeadline] = useState(draft.deadline);
   const [xp, setXp] = useState(draft.xp);
   const [minutes, setMinutes] = useState(
     draft.timeLimitSec ? String(Math.round(draft.timeLimitSec / 60)) : "",
@@ -162,6 +165,7 @@ export function QuizForm({
         !live && minutes.trim() ? Math.round(Number(minutes) * 60) : null,
       classIds: live ? [] : classIds,
       required: live ? false : required,
+      deadline: !live && required ? deadline : "",
       questions: questions.map((q) => ({
         prompt: q.prompt,
         code: withCode.includes(q.key) ? q.code : "",
@@ -661,6 +665,26 @@ export function QuizForm({
                   ))}
                 </div>
               </FieldSet>
+              {required ? (
+                <Field
+                  id="quiz-deadline"
+                  label="Termen (opțional)"
+                  error={errors.deadline}
+                >
+                  <Input
+                    id="quiz-deadline"
+                    type="datetime-local"
+                    value={deadline}
+                    onChange={(e) => setDeadline(e.target.value)}
+                    aria-invalid={errors.deadline ? true : undefined}
+                    className="w-fit"
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    Până la termen, quiz-ul aduce XP. După termen elevii îl pot
+                    rezolva în continuare, dar fără XP. Fără termen: oricând.
+                  </p>
+                </Field>
+              ) : null}
               {classes.length > 0 ? (
                 <FieldSet
                   legend="Clasele care îl primesc"

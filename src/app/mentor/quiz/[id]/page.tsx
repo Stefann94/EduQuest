@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/common/page-header";
 import { StatusBadge } from "@/components/common/status";
+import { localInputValue } from "@/components/mentor-classes/dates";
 import { LiveQuizStart } from "@/components/mentor-content/live-quiz-start";
 import { QuizArchiveButton } from "@/components/mentor-content/quiz-archive-button";
 import { QuizDeleteButton } from "@/components/mentor-content/quiz-delete-button";
@@ -103,6 +104,7 @@ async function Content({ params }: { params: Props["params"] }) {
           timeLimitSec: quiz.timeLimitSec,
           classIds: quiz.classIds,
           required: quiz.required,
+          deadline: quiz.deadline ? localInputValue(quiz.deadline) : "",
           questions: quiz.questions.map((q) => ({
             prompt: q.prompt,
             code: q.code,
