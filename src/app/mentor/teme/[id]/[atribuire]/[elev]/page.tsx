@@ -1,4 +1,4 @@
-import { CalendarClock } from "lucide-react";
+import { CalendarClock, StickyNote } from "lucide-react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -12,6 +12,7 @@ import {
 import { RichText } from "@/components/learning/content-blocks";
 import { DetailSkeleton } from "@/components/mentor-content/skeletons";
 import { requireUser } from "@/lib/auth";
+import { unpackFiles } from "@/lib/code-files";
 import { placeholderParams } from "@/lib/db/core";
 import { getStudentWorkForMentor } from "@/lib/db/homework";
 import { formatDateTime } from "@/lib/format";
@@ -47,13 +48,37 @@ async function Content({ params }: { params: Props["params"] }) {
     submissionId: p.submissionId,
     feedback: p.feedback?.text,
     attempts: p.attempts,
+    language: p.language,
     statement: p.statement.split(/\n{2,}/).map((para) => (
       <p key={para}>
         <RichText text={para} />
       </p>
     )),
+    // Ultima variantă: fiecare fișier cu numele lui, apoi notița elevului (dacă a lăsat).
     latest: p.attempts[0] ? (
-      <CodeBlock code={p.attempts[0].code} language={p.language} />
+      <div className="grid gap-3">
+        {unpackFiles(p.attempts[0].code, p.language).map((f, i, all) => (
+          <CodeBlock
+            // biome-ignore lint/suspicious/noArrayIndexKey: fișierele nu au id; poziția e identitatea
+            key={i}
+            code={f.code}
+            language={p.language}
+            title={all.length > 1 ? f.name : undefined}
+          />
+        ))}
+        {p.attempts[0].note ? (
+          <p className="flex items-start gap-2 cut-sm bg-xp-soft px-4 py-3 text-sm">
+            <StickyNote
+              className="mt-0.5 size-4 shrink-0 text-xp-foreground"
+              aria-hidden="true"
+            />
+            <span>
+              <span className="font-semibold">Notița elevului: </span>
+              <span className="whitespace-pre-line">{p.attempts[0].note}</span>
+            </span>
+          </p>
+        ) : null}
+      </div>
     ) : undefined,
   }));
 

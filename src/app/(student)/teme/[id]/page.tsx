@@ -13,6 +13,7 @@ import {
   HomeworkWorkspace,
   type WorkspaceProblem,
 } from "@/components/homework/homework-workspace";
+import { OptionalChoice } from "@/components/homework/optional-choice";
 import { RichText } from "@/components/learning/content-blocks";
 import { Skeleton } from "@/components/ui/skeleton";
 import { requireUser } from "@/lib/auth";
@@ -133,6 +134,10 @@ async function Content({ params }: { params: Props["params"] }) {
           </p>
           <p className="mt-1 whitespace-pre-line">{a.review.note}</p>
         </div>
+      ) : null}
+
+      {!a.required && !a.classArchived && a.progress.done === 0 ? (
+        <OptionalChoice assignmentId={a.id} choice={a.choice} />
       ) : null}
 
       <HomeworkWorkspace

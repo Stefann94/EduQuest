@@ -271,6 +271,43 @@ export type Database = {
           },
         ];
       };
+      homework_choices: {
+        Row: {
+          assignment_id: string;
+          at: string;
+          choice: string;
+          student_id: string;
+        };
+        ComputedFields: never;
+        Insert: {
+          assignment_id: string;
+          at?: string;
+          choice: string;
+          student_id: string;
+        };
+        Update: {
+          assignment_id?: string;
+          at?: string;
+          choice?: string;
+          student_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "homework_choices_assignment_id_fkey";
+            columns: ["assignment_id"];
+            isOneToOne: false;
+            referencedRelation: "homework_assignments";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "homework_choices_student_id_fkey";
+            columns: ["student_id"];
+            isOneToOne: false;
+            referencedRelation: "profiles";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       homework_problems: {
         Row: {
           homework_id: string;
@@ -824,6 +861,7 @@ export type Database = {
           code: string;
           id: string;
           late: boolean;
+          note: string | null;
           submission_id: string;
         };
         ComputedFields: never;
@@ -832,6 +870,7 @@ export type Database = {
           code: string;
           id?: string;
           late?: boolean;
+          note?: string | null;
           submission_id: string;
         };
         Update: {
@@ -839,6 +878,7 @@ export type Database = {
           code?: string;
           id?: string;
           late?: boolean;
+          note?: string | null;
           submission_id?: string;
         };
         Relationships: [
@@ -1336,8 +1376,17 @@ export type Database = {
         };
         Returns: undefined;
       };
+      set_homework_choice: {
+        Args: { p_assignment: string; p_choice: string };
+        Returns: undefined;
+      };
       submit_problem: {
-        Args: { p_assignment: string; p_code: string; p_problem: string };
+        Args: {
+          p_assignment: string;
+          p_code: string;
+          p_note?: string;
+          p_problem: string;
+        };
         Returns: string;
       };
       submit_quiz: {

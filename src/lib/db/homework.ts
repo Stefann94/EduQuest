@@ -20,9 +20,15 @@ export type HomeworkProblem = {
 export type ProblemAttempt = {
   id: string;
   at: string;
+  /** Codul; la mai multe fișiere, cu marcaje între ele (vezi lib/code-files). */
   code: string;
   late: boolean;
+  /** Notița opțională a elevului pentru mentor, la această trimitere. */
+  note: string | null;
 };
+
+/** La o temă opțională: elevul o face („accepted”), a refuzat-o sau n-a ales încă. */
+export type HomeworkChoice = "accepted" | "declined" | null;
 
 export type ProblemWork = HomeworkProblem & {
   state: ProblemState;
@@ -62,6 +68,8 @@ export type StudentHomework = {
   complete: boolean;
   overdue: boolean;
   bonusXp: number | null;
+  /** Doar la temele opționale: alegerea elevului. */
+  choice: HomeworkChoice;
 };
 
 type SubRow = {
@@ -86,7 +94,7 @@ export async function getStudentHomework(
   studentId: string,
 ): Promise<StudentHomework[]> {
   const supabase = await db();
-  const [classes, assignments, subs, reviews] = await Promise.all([
+  const [classes, assignments, subs, reviews, choices] = await Promise.all([
     getVisibleClasses(),
     supabase.from("homework_assignments").select(
       `id, class_id, deadline, assigned_at, max_bonus_xp,
@@ -101,7 +109,14 @@ export async function getStudentHomework(
       .from("homework_reviews")
       .select("assignment_id, bonus_xp")
       .eq("student_id", studentId),
+    supabase
+      .from("homework_choices")
+      .select("assignment_id, choice")
+      .eq("student_id", studentId),
   ]);
+  const choiceOf = new Map(
+    (choices.data ?? []).map((c) => [c.assignment_id, c.choice]),
+  );
   const mine = new Map(
     classes
       .filter((c) => c.studentIds.includes(studentId))
@@ -148,6 +163,9 @@ export async function getStudentHomework(
           complete,
           overdue: !complete && !!a.deadline && Date.parse(a.deadline) < now,
           bonusXp: bonus.get(a.id) ?? null,
+          choice: a.homework.required
+            ? null
+            : ((choiceOf.get(a.id) ?? null) as HomeworkChoice),
         },
       ];
     })
@@ -180,17 +198,23 @@ export async function getStudentAssignment(
   );
   if (!cls) return undefined;
 
-  const [subs, review] = await Promise.all([
+  const [subs, review, choice] = await Promise.all([
     supabase
       .from("problem_submissions")
       .select(
-        "id, assignment_id, problem_id, status, feedback, feedback_at, problem_attempts(id, at, code, late)",
+        "id, assignment_id, problem_id, status, feedback, feedback_at, problem_attempts(id, at, code, late, note)",
       )
       .eq("assignment_id", a.id)
       .eq("student_id", studentId),
     supabase
       .from("homework_reviews")
       .select("bonus_xp, note, reviewed_at")
+      .eq("assignment_id", a.id)
+      .eq("student_id", studentId)
+      .maybeSingle(),
+    supabase
+      .from("homework_choices")
+      .select("choice")
       .eq("assignment_id", a.id)
       .eq("student_id", studentId)
       .maybeSingle(),
@@ -233,6 +257,9 @@ export async function getStudentAssignment(
     progress,
     complete: progress.done === progress.total,
     overdue: !!a.deadline && Date.parse(a.deadline) < Date.now(),
+    choice: a.homework.required
+      ? null
+      : ((choice.data?.choice ?? null) as HomeworkChoice),
     review: review.data
       ? {
           bonusXp: review.data.bonus_xp,
@@ -371,6 +398,8 @@ export type StudentProgressRow = {
   lastAt: string | null;
   late: boolean;
   bonusXp: number | null;
+  /** La o temă opțională: o face, a refuzat-o sau n-a ales încă. */
+  choice: HomeworkChoice;
 };
 
 /** O temă dată unei clase: fiecare elev, cu starea fiecărei probleme. */
@@ -384,14 +413,14 @@ export async function getAssignmentProgress(
     .from("homework_assignments")
     .select(
       `id, class_id, deadline, max_bonus_xp, homework_id,
-       homework:homeworks!homework_assignments_homework_id_fkey(author_id, title, problems:homework_problems(${PROBLEM_FIELDS}))`,
+       homework:homeworks!homework_assignments_homework_id_fkey(author_id, title, required, problems:homework_problems(${PROBLEM_FIELDS}))`,
     )
     .eq("id", assignmentId)
     .maybeSingle();
   const cls = (await getVisibleClasses()).find((c) => c.id === a?.class_id);
   if (!a?.homework || !cls || cls.mentorId !== mentorId) return undefined;
 
-  const [subs, reviews] = await Promise.all([
+  const [subs, reviews, choices] = await Promise.all([
     supabase
       .from("problem_submissions")
       .select(
@@ -402,7 +431,14 @@ export async function getAssignmentProgress(
       .from("homework_reviews")
       .select("student_id, bonus_xp")
       .eq("assignment_id", a.id),
+    supabase
+      .from("homework_choices")
+      .select("student_id, choice")
+      .eq("assignment_id", a.id),
   ]);
+  const choiceOf = new Map(
+    (choices.data ?? []).map((c) => [c.student_id, c.choice]),
+  );
   const problems = [...a.homework.problems].sort(byPosition);
   const counted = problems.some((p) => p.required)
     ? problems.filter((p) => p.required)
@@ -429,12 +465,16 @@ export async function getAssignmentProgress(
           .at(-1) ?? null,
       late: own.some((s) => s.problem_attempts.some((t) => t.late)),
       bonusXp: bonus.get(student.id) ?? null,
+      choice: a.homework?.required
+        ? null
+        : ((choiceOf.get(student.id) ?? null) as HomeworkChoice),
     };
   });
   return {
     id: a.id,
     homeworkId: a.homework_id,
     title: a.homework.title,
+    required: a.homework.required,
     classId: cls.id,
     className: cls.name,
     deadline: a.deadline,
@@ -459,7 +499,7 @@ export async function getStudentWorkForMentor(
     supabase
       .from("problem_submissions")
       .select(
-        "id, problem_id, status, feedback, feedback_at, problem_attempts(id, at, code, late)",
+        "id, problem_id, status, feedback, feedback_at, problem_attempts(id, at, code, late, note)",
       )
       .eq("assignment_id", assignmentId)
       .eq("student_id", studentId),

@@ -143,7 +143,8 @@ async function StudentHomeContent() {
   const needsChanges = (h: StudentHomework) =>
     h.problems.some((p) => p.state === "needs_changes");
   const active = homework.filter(
-    (h) => needsChanges(h) || (!h.complete && !h.overdue),
+    (h) =>
+      needsChanges(h) || (!h.complete && !h.overdue && h.choice !== "declined"),
   );
   const submitted = homework.filter((h) => h.complete && !needsChanges(h));
   const done = homework.filter(

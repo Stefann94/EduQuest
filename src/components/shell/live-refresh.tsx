@@ -14,6 +14,7 @@ const TABLES = [
   "classes",
   "homework_assignments",
   "homework_problems",
+  "homework_choices",
   "homework_reviews",
   "homeworks",
   "lesson_classes",

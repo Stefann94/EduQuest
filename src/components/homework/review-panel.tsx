@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import type { ProblemAttempt, ProblemState } from "@/lib/db/homework";
 import { formatDateTime } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { AttemptFiles } from "./homework-workspace";
 
 export type ReviewProblem = {
   id: string;
@@ -21,6 +22,8 @@ export type ReviewProblem = {
   submissionId?: string;
   feedback?: string;
   attempts: ProblemAttempt[];
+  /** Limbajul codului (pentru numele implicit al fișierului). */
+  language: string;
   /** Enunțul, randat pe server. */
   statement: React.ReactNode;
   /** Ultima variantă, cu evidențierea sintaxei (randată pe server). */
@@ -189,9 +192,13 @@ function ProblemReview({
                       {formatDateTime(a.at)}
                       {a.late ? " · după termen" : ""}
                     </p>
-                    <pre className="max-h-56 overflow-auto bg-[#0d1117] p-3 font-mono text-[#e6edf3] text-sm leading-6">
-                      {a.code}
-                    </pre>
+                    <AttemptFiles code={a.code} language={p.language} />
+                    {a.note ? (
+                      <p className="bg-muted/60 px-3 py-2 text-sm">
+                        <span className="font-semibold">Notița elevului: </span>
+                        <span className="whitespace-pre-line">{a.note}</span>
+                      </p>
+                    ) : null}
                   </li>
                 ))}
               </ol>

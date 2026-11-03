@@ -27,6 +27,8 @@ export async function submitProblem(
   assignmentId: string,
   problemId: string,
   code: string,
+  /** Notița opțională pentru mentor (cel mult 2000 de caractere). */
+  note?: string,
 ): Promise<SubmitResult> {
   const me = await requireUser("student");
   if (!isUuid(assignmentId) || !isUuid(problemId))
@@ -34,6 +36,12 @@ export async function submitProblem(
   const parsed = codeSchema.safeParse(code);
   if (!parsed.success)
     return { ok: false, message: parsed.error.issues[0].message };
+  const cleanNote = (note ?? "").trim();
+  if (cleanNote.length > 2000)
+    return {
+      ok: false,
+      message: "Notița are cel mult 2000 de caractere.",
+    };
 
   const supabase = await db();
   const eventKey = `homework:${assignmentId}:${me.id}`;
@@ -47,6 +55,7 @@ export async function submitProblem(
     p_assignment: assignmentId,
     p_problem: problemId,
     p_code: parsed.data,
+    p_note: cleanNote || undefined,
   });
   if (error || !submissionId)
     return {
@@ -83,5 +92,32 @@ export async function submitProblem(
     ok: true,
     late: attempts?.[0]?.late ?? false,
     xpAwarded: !before.data && !!afterXp.data,
+  };
+}
+
+/**
+ * La o temă opțională, elevul spune dacă o face sau nu, ca mentorul să nu-l aștepte
+ * degeaba. Se poate schimba oricând; o trimitere o trece automat pe „o fac”.
+ */
+export async function setHomeworkChoice(
+  assignmentId: string,
+  choice: "accepted" | "declined",
+): Promise<{ ok: boolean; message: string }> {
+  await requireUser("student");
+  if (!isUuid(assignmentId) || !["accepted", "declined"].includes(choice))
+    return { ok: false, message: "Alegerea nu e validă." };
+  const supabase = await db();
+  const { error } = await supabase.rpc("set_homework_choice", {
+    p_assignment: assignmentId,
+    p_choice: choice,
+  });
+  if (error) return { ok: false, message: "Alegerea nu s-a putut salva." };
+  revalidatePath("/", "layout");
+  return {
+    ok: true,
+    message:
+      choice === "accepted"
+        ? "Mentorul vede că faci tema."
+        : "Mentorul vede că nu faci această temă.",
   };
 }

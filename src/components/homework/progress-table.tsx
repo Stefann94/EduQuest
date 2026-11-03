@@ -95,6 +95,16 @@ export function ProgressTable({
                         {r.late ? " · după termen" : ""}
                       </span>
                     ) : null}
+                    {/* La o temă opțională: dacă elevul o face sau a refuzat-o. */}
+                    {r.choice === "declined" ? (
+                      <span className="block font-medium text-destructive text-xs">
+                        Nu o face (a refuzat tema)
+                      </span>
+                    ) : r.choice === "accepted" && !r.lastAt ? (
+                      <span className="block font-medium text-success text-xs">
+                        O face · încă nimic trimis
+                      </span>
+                    ) : null}
                   </span>
                 </span>
               </th>
