@@ -34,6 +34,8 @@ export async function sendMail(
       subject,
       text,
       html,
+      // Fără ruperi de rând la transport (quoted-printable le poate pierde spațiile).
+      textEncoding: "base64",
     });
     return true;
   } catch {
@@ -57,6 +59,7 @@ export function emailHtml({
   paragraphs,
   button,
   details,
+  monoDetails = false,
   note,
 }: {
   title: string;
@@ -64,15 +67,19 @@ export function emailHtml({
   button: { label: string; href: string };
   /** Rânduri „etichetă: valoare” într-o casetă (ex. emailul și parola). */
   details?: [string, string][];
+  /** Valorile din casetă cu font de cod (ex. o parolă de copiat). */
+  monoDetails?: boolean;
   note?: string;
 }) {
   const p = (t: string) =>
-    `<p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#1d2a22">${esc(t)}</p>`;
+    `<p style="margin:0;margin-bottom:14px;font-size:15px;line-height:1.6;color:#1d2a22">${esc(t)}</p>
+`;
   const box = details?.length
     ? `<table role="presentation" cellpadding="0" cellspacing="0" style="margin:4px 0 20px;width:100%;background:#f6f1e7;border:1px solid #e0d6c3;border-radius:10px"><tr><td style="padding:14px 16px">${details
         .map(
           ([k, v]) =>
-            `<div style="font-size:14px;line-height:1.7;color:#1d2a22"><span style="color:#6b6458">${esc(k)}:</span> <strong style="font-family:Consolas,Menlo,monospace">${esc(v)}</strong></div>`,
+            `<div style="font-size:14px;line-height:1.7;color:#1d2a22"><span style="color:#6b6458">${esc(k)}:</span> <strong${monoDetails ? ' style="font-family:Consolas,Menlo,monospace"' : ""}>${esc(v)}</strong></div>
+`,
         )
         .join("")}</td></tr></table>`
     : "";

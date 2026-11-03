@@ -135,6 +135,7 @@ export async function reviewApplication(
           `Bună, ${application.fullName}!`,
           "Aplicația ta de mentor a fost aprobată. Te poți autentifica de acum, din tabul Mentor, cu datele de mai jos.",
         ],
+        monoDetails: true,
         details: [
           ["Email", application.email],
           ["Parolă", password],

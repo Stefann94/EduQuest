@@ -348,12 +348,14 @@ const PREFERENCES = [
   {
     name: "submissions",
     label: "Trimiteri noi",
-    description: "Când un elev trimite rezolvarea unei probleme din temă.",
+    description:
+      "Când un elev trimite rezolvarea unei probleme din temă (în aplicație și pe email).",
   },
   {
     name: "resubmissions",
     label: "Retrimiteri",
-    description: "Când un elev retrimite o problemă după corecturi.",
+    description:
+      "Când un elev retrimite o problemă după corecturi (în aplicație și pe email).",
   },
   {
     name: "classActivity",
@@ -377,7 +379,7 @@ function NotificationPreferences({
       )}
       <Card
         title="Notificări"
-        description="Alege ce notificări vezi în aplicație."
+        description="Alege ce notificări primești, în aplicație și pe email."
         footer={
           <Button type="submit" disabled={pending}>
             {pending ? "Se salvează…" : "Salvează preferințele"}

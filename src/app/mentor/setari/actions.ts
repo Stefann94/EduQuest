@@ -198,7 +198,7 @@ export async function updateNotificationPreferences(
     message: "Preferințele de notificare au fost salvate.",
     note:
       enabled.length > 0
-        ? `Vezi notificări pentru: ${enabled.join(", ")}.`
-        : "Nu vei mai vedea notificări în aplicație.",
+        ? `Primești notificări pentru: ${enabled.join(", ")}.`
+        : "Nu vei mai primi notificări.",
   };
 }

@@ -1,9 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { db, isUuid } from "@/lib/db/core";
+import { emailMentorAboutSubmission } from "@/lib/db/notify";
 
 const codeSchema = z
   .string()
@@ -52,14 +54,13 @@ export async function submitProblem(
       message: error?.message ?? "Trimiterea nu a reușit. Încearcă din nou.",
     };
 
-  const [{ data: attempt }, after] = await Promise.all([
+  const [{ data: attempts }, afterXp] = await Promise.all([
     supabase
       .from("problem_attempts")
       .select("late")
       .eq("submission_id", submissionId)
       .order("at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
+      .limit(2),
     supabase
       .from("xp_transactions")
       .select("id")
@@ -67,10 +68,20 @@ export async function submitProblem(
       .maybeSingle(),
   ]);
 
+  // Emailul pentru mentor pleacă după ce elevul a primit răspunsul (nu-l face să aștepte).
+  after(() =>
+    emailMentorAboutSubmission({
+      assignmentId,
+      problemId,
+      studentId: me.id,
+      resubmission: (attempts?.length ?? 0) > 1,
+    }),
+  );
+
   revalidatePath("/", "layout");
   return {
     ok: true,
-    late: attempt?.late ?? false,
-    xpAwarded: !before.data && !!after.data,
+    late: attempts?.[0]?.late ?? false,
+    xpAwarded: !before.data && !!afterXp.data,
   };
 }
