@@ -6,7 +6,7 @@ import { dateKey, localToIso } from "@/components/mentor-classes/dates";
 import { getClassMeetings } from "@/lib/db/attendance";
 import { db, isUuid } from "@/lib/db/core";
 import { getClassLessons } from "@/lib/db/lessons";
-import { now } from "@/lib/format";
+import { formatWeekday, now } from "@/lib/format";
 import { NO_ACCESS, ownedClass } from "../../access";
 import { parseSchedule } from "../../schedule";
 
@@ -19,7 +19,8 @@ export type AttendanceState =
       errors: Partial<Record<"date" | "lesson", string>>;
     };
 
-const STATUSES = ["present", "absent", "recovered"] as const;
+// „none”: elevul nu e trecut la această întâlnire (ex. a fost bifat din greșeală).
+const STATUSES = ["present", "absent", "recovered", "none"] as const;
 
 const schema = z.object({
   date: z
@@ -95,6 +96,17 @@ export async function saveAttendance(
       message: "Întâlnirea nu mai există. Reîncarcă pagina.",
       errors: {},
     };
+  // O singură prezență pe lecție (o lecție se face o dată cu o clasă).
+  const sameLesson = lesson
+    ? meetings.find((m) => m.lessonId === lesson.id && m.id !== existing?.id)
+    : undefined;
+  if (sameLesson)
+    return {
+      status: "error",
+      errors: {
+        lesson: `Lecția are deja prezența notată (${formatWeekday(sameLesson.date)}). Corecteaz-o sau șterge-o pe aceea.`,
+      },
+    };
   // O singură întâlnire pe zi, ca XP-ul să nu se acorde de două ori pentru aceeași zi.
   const sameDay = meetings.find(
     (m) => dateKey(m.date) === date && m.id !== existing?.id,
@@ -139,6 +151,11 @@ export async function saveAttendance(
         .insert(row)
         .select("id")
         .single();
+  if (saved.error?.code === "23505")
+    return {
+      status: "error",
+      errors: { lesson: "Lecția are deja prezența notată." },
+    };
   if (saved.error || !saved.data)
     return {
       status: "error",
@@ -158,11 +175,68 @@ export async function saveAttendance(
     };
 
   revalidatePath(`/mentor/clase/${c.id}`, "layout");
-  const absent = Object.values(records).filter((s) => s === "absent").length;
+  const marked = Object.values(records).filter((s) => s !== "none");
+  const attended = marked.filter((s) => s !== "absent").length;
   return {
     status: "success",
-    message: `${existing ? "Prezența a fost corectată" : "Prezența a fost salvată"}: ${
-      c.studentIds.length - absent
-    } din ${c.studentIds.length} prezenți (+2 XP fiecare).`,
+    message: `${existing ? "Prezența a fost corectată" : "Prezența a fost salvată"}: ${attended} din ${marked.length} prezenți (+2 XP fiecare).`,
   };
+}
+
+export type AttendanceResult = { ok: boolean; message: string };
+
+async function ownedMeeting(classId: string, meetingId: string) {
+  const owned = await ownedClass(classId);
+  if (!owned) return { error: NO_ACCESS };
+  if (owned.classRoom.status === "archived")
+    return { error: "Clasa este arhivată; prezența nu se mai poate modifica." };
+  const meeting = (await getClassMeetings(classId)).find(
+    (m) => m.id === meetingId,
+  );
+  if (!meeting) return { error: "Întâlnirea nu mai există. Reîncarcă pagina." };
+  return { meeting };
+}
+
+/** Șterge toată întâlnirea (lecția greșită, dublură…), cu prezențele și XP-ul ei. */
+export async function deleteMeeting(
+  classId: string,
+  meetingId: string,
+): Promise<AttendanceResult> {
+  const r = await ownedMeeting(classId, meetingId);
+  if (!r.meeting) return { ok: false, message: r.error };
+  const supabase = await db();
+  const { error } = await supabase.rpc("delete_attendance_meeting", {
+    p_meeting: meetingId,
+  });
+  if (error)
+    return {
+      ok: false,
+      message: "Întâlnirea nu s-a putut șterge. Încearcă din nou.",
+    };
+  revalidatePath(`/mentor/clase/${classId}`, "layout");
+  return {
+    ok: true,
+    message: `Prezența pentru „${r.meeting.lessonTitle ?? r.meeting.topic}” a fost ștearsă.`,
+  };
+}
+
+/** Scoate un elev trecut din greșeală la o întâlnire (dispare și XP-ul lui de prezență). */
+export async function removeFromMeeting(
+  classId: string,
+  meetingId: string,
+  studentId: string,
+): Promise<AttendanceResult> {
+  const r = await ownedMeeting(classId, meetingId);
+  if (!r.meeting) return { ok: false, message: r.error };
+  if (!isUuid(studentId) || !r.meeting.records[studentId])
+    return { ok: false, message: "Elevul nu e trecut la această întâlnire." };
+  const supabase = await db();
+  const { error } = await supabase.rpc("set_attendance", {
+    p_meeting: meetingId,
+    p_records: { [studentId]: "none" },
+  });
+  if (error)
+    return { ok: false, message: "Nu s-a putut șterge. Încearcă din nou." };
+  revalidatePath(`/mentor/clase/${classId}`, "layout");
+  return { ok: true, message: "Elevul a fost scos de la această întâlnire." };
 }

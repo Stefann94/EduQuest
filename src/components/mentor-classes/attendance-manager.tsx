@@ -4,17 +4,29 @@ import {
   CalendarPlus,
   ChevronDown,
   PencilLine,
+  Trash2,
   TriangleAlert,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useActionState, useEffect, useId, useRef, useState } from "react";
+import {
+  useActionState,
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  useTransition,
+} from "react";
 import { toast } from "sonner";
 import {
   type AttendanceState,
+  deleteMeeting,
+  removeFromMeeting,
   saveAttendance,
 } from "@/app/mentor/clase/[id]/prezenta/actions";
 import { ATTENDANCE_STATUS, AttendanceBadge } from "@/components/common/status";
 import { UserAvatar } from "@/components/common/user-avatar";
+import { ConfirmDialog } from "@/components/mentor-content/confirm-dialog";
 import {
   Field,
   FormMessage,
@@ -28,6 +40,8 @@ import { cn } from "@/lib/utils";
 import { dateKey } from "./dates";
 
 type Status = "present" | "absent" | "recovered";
+/** În formular: „none” = elevul nu e trecut la această întâlnire. */
+type FormStatus = Status | "none";
 
 export type AttendanceStudent = {
   id: string;
@@ -44,13 +58,25 @@ export type AttendanceMeetingView = {
   topic: string;
   lessonId: string | null;
   lessonTitle: string | null;
+  /** Numărul lecției în clasă (Lecția 3), dacă întâlnirea e pe o lecție. */
+  lessonNumber: number | null;
   records: Record<string, Status>;
 };
-
-export type LessonOption = { id: string; label: string };
+export type LessonOption = {
+  id: string;
+  label: string;
+  /** Întâlnirea care are deja prezența pe această lecție. */
+  meetingId?: string;
+};
 
 const INITIAL: AttendanceState = { status: "idle" };
-const ORDER: Status[] = ["present", "absent", "recovered"];
+const ORDER: FormStatus[] = ["present", "absent", "recovered", "none"];
+const LABEL: Record<FormStatus, string> = {
+  present: ATTENDANCE_STATUS.present.label,
+  absent: ATTENDANCE_STATUS.absent.label,
+  recovered: ATTENDANCE_STATUS.recovered.label,
+  none: "Fără",
+};
 
 /**
  * Prezența unei clase: o întâlnire nouă (pe lecția planificată) sau corectarea uneia
@@ -109,9 +135,11 @@ export function AttendanceManager({
             {meetings.map((m) => (
               <MeetingRow
                 key={m.id}
+                classId={classId}
                 meeting={m}
                 students={students}
                 onEdit={archived ? undefined : () => setEditing(m)}
+                editable={!archived}
               />
             ))}
           </ul>
@@ -122,15 +150,30 @@ export function AttendanceManager({
 }
 
 function MeetingRow({
+  classId,
   meeting: m,
   students,
   onEdit,
+  editable,
 }: {
+  classId: string;
   meeting: AttendanceMeetingView;
   students: AttendanceStudent[];
   onEdit?: () => void;
+  editable: boolean;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const [busy, startBusy] = useTransition();
+  const title = m.lessonTitle ?? m.topic;
+  const lessonPrefix = m.lessonNumber ? `Lecția ${m.lessonNumber} · ` : "";
+  const run = (task: () => Promise<{ ok: boolean; message: string }>) =>
+    startBusy(async () => {
+      const r = await task();
+      if (r.ok) toast.success(r.message);
+      else toast.error(r.message);
+      router.refresh();
+    });
   const id = useId();
   const count = (s: Status) =>
     Object.values(m.records).filter((x) => x === s).length;
@@ -153,7 +196,10 @@ function MeetingRow({
           />
           <span className="min-w-0">
             <span className="block truncate font-medium">
-              {m.lessonTitle ?? m.topic}
+              {m.lessonNumber ? (
+                <span className="text-primary">{lessonPrefix}</span>
+              ) : null}
+              {title}
             </span>
             <span className="block text-muted-foreground text-sm">
               {formatWeekday(m.date)}
@@ -172,6 +218,24 @@ function MeetingRow({
             <PencilLine /> Corectează
           </Button>
         ) : null}
+        {editable ? (
+          <ConfirmDialog
+            title="Ștergi prezența pentru această lecție?"
+            description={`Întâlnirea „${lessonPrefix}${title}” din ${formatWeekday(m.date)} dispare, cu prezențele tuturor elevilor și XP-ul primit pentru ea. Lecția poate fi apoi notată din nou.`}
+            confirmLabel="Șterge prezența"
+            onConfirm={() => run(() => deleteMeeting(classId, m.id))}
+            trigger={
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={busy}
+                className="text-muted-foreground hover:text-destructive"
+              >
+                <Trash2 /> Șterge
+              </Button>
+            }
+          />
+        ) : null}
       </div>
       <ul
         id={id}
@@ -183,9 +247,26 @@ function MeetingRow({
             key={s.id}
             className="flex items-center justify-between gap-3 py-1 text-sm"
           >
-            <span className="truncate">{s.displayName}</span>
+            <span className="min-w-0 flex-1 truncate">{s.displayName}</span>
             {m.records[s.id] ? (
-              <AttendanceBadge status={m.records[s.id]} />
+              <>
+                <AttendanceBadge status={m.records[s.id]} />
+                {editable ? (
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    disabled={busy}
+                    onClick={() =>
+                      run(() => removeFromMeeting(classId, m.id, s.id))
+                    }
+                    aria-label={`Scoate-l pe ${s.displayName} de la această întâlnire`}
+                    title="Trecut din greșeală? Scoate-l de la această întâlnire"
+                    className="text-muted-foreground hover:text-destructive"
+                  >
+                    <X aria-hidden="true" />
+                  </Button>
+                ) : null}
+              </>
             ) : (
               <span className="text-muted-foreground text-xs">nemarcat</span>
             )}
@@ -218,10 +299,18 @@ function MeetingForm({
   const [lessonId, setLessonId] = useState(
     meeting?.lessonId ?? suggestedLessonId ?? "",
   );
-  const [statuses, setStatuses] = useState<Record<string, Status>>(() =>
+  // La corectură, cine nu era trecut rămâne „Fără”; la o întâlnire nouă, toți prezenți.
+  const [statuses, setStatuses] = useState<Record<string, FormStatus>>(() =>
     Object.fromEntries(
-      students.map((s) => [s.id, meeting?.records[s.id] ?? "present"]),
+      students.map((s) => [
+        s.id,
+        meeting ? (meeting.records[s.id] ?? "none") : "present",
+      ]),
     ),
+  );
+  // Lecțiile cu prezența deja notată (la altă întâlnire) nu se mai pot alege.
+  const available = lessons.filter(
+    (l) => !l.meetingId || l.meetingId === meeting?.id,
   );
 
   // Fiecare rezultat reușit se tratează o singură dată (onDone se schimbă la fiecare randare).
@@ -235,7 +324,7 @@ function MeetingForm({
   });
 
   const errors = state.status === "error" ? state.errors : {};
-  const set = (sid: string, s: Status) =>
+  const set = (sid: string, s: FormStatus) =>
     setStatuses((x) => ({ ...x, [sid]: s }));
 
   return (
@@ -277,16 +366,24 @@ function MeetingForm({
           id="att-lesson"
           label="Lecția făcută"
           error={errors.lesson}
-          hint="Prezența se notează pe lecția planificată pentru întâlnire."
+          hint={
+            available.length < lessons.length
+              ? "O lecție se notează o singură dată: cele cu prezența deja notată nu apar aici."
+              : "Prezența se notează pe lecția planificată pentru întâlnire."
+          }
         >
           <SelectField
             id="att-lesson"
             name="lessonId"
             value={lessonId}
             onValueChange={setLessonId}
-            items={lessons.map((l) => ({ value: l.id, label: l.label }))}
+            items={available.map((l) => ({ value: l.id, label: l.label }))}
             placeholder={
-              lessons.length ? "Alege lecția" : "Clasa nu are lecții"
+              available.length
+                ? "Alege lecția"
+                : lessons.length
+                  ? "Toate lecțiile au prezența notată"
+                  : "Clasa nu are lecții"
             }
             error={errors.lesson}
           />
@@ -349,7 +446,9 @@ function MeetingForm({
                             ? "bg-success text-white"
                             : st === "absent"
                               ? "bg-destructive text-white"
-                              : "bg-xp text-xp-foreground"
+                              : st === "none"
+                                ? "bg-foreground text-background"
+                                : "bg-xp text-xp-foreground"
                           : "bg-card text-muted-foreground hover:text-foreground",
                       )}
                     >
@@ -361,7 +460,7 @@ function MeetingForm({
                         onChange={() => set(s.id, st)}
                         className="sr-only"
                       />
-                      {ATTENDANCE_STATUS[st].label}
+                      {LABEL[st]}
                     </label>
                   ))}
                 </div>
@@ -371,7 +470,8 @@ function MeetingForm({
         </ul>
         <p className="text-muted-foreground text-xs">
           „Recuperat”: elevul a făcut lecția cu altă grupă. Contează ca prezent
-          și primește tot +2 XP.
+          și primește tot +2 XP. „Fără”: elevul nu e trecut la această întâlnire
+          (de exemplu, a fost bifat din greșeală).
         </p>
       </fieldset>
 

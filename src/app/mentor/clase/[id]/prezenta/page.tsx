@@ -5,7 +5,7 @@ import { dateKey } from "@/components/mentor-classes/dates";
 import { SectionSkeleton } from "@/components/mentor-classes/skeletons";
 import { getClassMeetings, MAX_ABSENCES } from "@/lib/db/attendance";
 import { placeholderParams } from "@/lib/db/core";
-import { getClassLessons, lessonLabel } from "@/lib/db/lessons";
+import { getClassLessons } from "@/lib/db/lessons";
 import { now } from "@/lib/format";
 import { loadMentorClass } from "../load-class";
 
@@ -56,9 +56,18 @@ async function Attendance({ params }: { params: Props["params"] }) {
           avatar: s.avatar,
           absences: meetings.filter((m) => m.records[s.id] === "absent").length,
         }))}
-        lessons={lessons.map((l) => ({ id: l.id, label: lessonLabel(l) }))}
+        lessons={lessons.map((l) => ({
+          id: l.id,
+          label: `Lecția ${l.number}: ${l.title}`,
+          // Lecția are deja o întâlnire cu prezență (o lecție se notează o singură dată).
+          meetingId: meetings.find((m) => m.lessonId === l.id)?.id,
+        }))}
         suggestedLessonId={suggested?.id}
-        meetings={meetings}
+        meetings={meetings.map((m) => ({
+          ...m,
+          lessonNumber:
+            lessons.find((l) => l.id === m.lessonId)?.number ?? null,
+        }))}
       />
     </div>
   );

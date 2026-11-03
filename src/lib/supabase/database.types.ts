@@ -1303,6 +1303,10 @@ export type Database = {
         Args: { p_class: string; p_quiz: string };
         Returns: string;
       };
+      delete_attendance_meeting: {
+        Args: { p_meeting: string };
+        Returns: undefined;
+      };
       email_taken: { Args: { p_email: string }; Returns: boolean };
       join_class: { Args: { p_code: string }; Returns: string };
       join_live: { Args: { p_code: string }; Returns: string };
