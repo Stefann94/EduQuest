@@ -121,3 +121,94 @@ export async function emailMentorAboutSubmission(input: {
     }),
   );
 }
+
+/**
+ * Emailul către elev când mentorul evaluează o problemă din temă: acceptată sau de
+ * refăcut. Respectă preferința elevului „Feedback de la mentor” din Setări. Cel mult un
+ * email la 10 minute pentru aceeași temă și același rezultat (o temă cu mai multe
+ * probleme evaluate una după alta aduce un singur email).
+ */
+export async function emailStudentAboutReview(input: {
+  submissionId: string;
+  status: "accepted" | "needs_changes";
+}) {
+  const admin = supabaseAdmin();
+  if (!admin || !mailConfigured()) return;
+  const { data: s } = await admin
+    .from("problem_submissions")
+    .select(
+      "assignment_id, student_id, problem:homework_problems!problem_submissions_problem_id_fkey(title), assignment:homework_assignments!problem_submissions_assignment_id_fkey(homework:homeworks!homework_assignments_homework_id_fkey(title), class:classes!homework_assignments_class_id_fkey(name))",
+    )
+    .eq("id", input.submissionId)
+    .maybeSingle();
+  if (!s?.assignment?.homework) return;
+  if (
+    !mailAllowed(
+      `review:${s.assignment_id}:${s.student_id}:${input.status}`,
+      10 * 60_000,
+    )
+  )
+    return;
+  const [{ data: student }, { data: account }] = await Promise.all([
+    admin
+      .from("profiles")
+      .select("display_name, notification_prefs")
+      .eq("id", s.student_id)
+      .maybeSingle(),
+    admin.auth.admin.getUserById(s.student_id),
+  ]);
+  const email = account?.user?.email;
+  if (!student || !email) return;
+  const prefs = (student.notification_prefs ?? {}) as Record<string, unknown>;
+  if (prefs.feedback === false) return;
+
+  const accepted = input.status === "accepted";
+  const link = `${await trustedOrigin()}/teme/${s.assignment_id}`;
+  const homework = s.assignment.homework.title;
+  const problem = s.problem?.title;
+  const hello = `Bună, ${student.display_name}!`;
+  const intro = accepted
+    ? `Mentorul ți-a acceptat rezolvarea${problem ? ` la problema „${problem}”` : ""} din tema „${homework}”. Bravo!`
+    : `Mentorul îți cere să refaci${problem ? ` problema „${problem}”` : " o problemă"} din tema „${homework}”.`;
+  const next = accepted
+    ? "Intră pe EduQuest și vezi feedbackul de la temă."
+    : "Intră pe EduQuest, vezi feedbackul de la temă, corectează rezolvarea și retrimite-o.";
+  const details: [string, string][] = [
+    ["Temă", homework],
+    ...(problem ? ([["Problemă", problem]] as [string, string][]) : []),
+    ...(s.assignment.class
+      ? ([["Clasă", s.assignment.class.name]] as [string, string][])
+      : []),
+    ["Rezultat", accepted ? "Acceptată" : "De refăcut"],
+  ];
+  await sendMail(
+    email,
+    accepted
+      ? `EduQuest – Feedback la tema „${homework}”: rezolvare acceptată`
+      : `EduQuest – Feedback la tema „${homework}”: de refăcut`,
+    [
+      hello,
+      "",
+      intro,
+      next,
+      "",
+      ...details.map(([k, v]) => `${k}: ${v}`),
+      "",
+      link,
+      "",
+      "Echipa EduQuest",
+    ].join("\n"),
+    emailHtml({
+      title: accepted
+        ? "Rezolvarea ta a fost acceptată"
+        : "Ai de refăcut o problemă din temă",
+      paragraphs: [hello, intro, next],
+      details,
+      button: {
+        label: accepted ? "Vezi feedbackul" : "Vezi ce e de refăcut",
+        href: link,
+      },
+      note: "Poți opri aceste emailuri din Setări → Notificări („Feedback de la mentor”).",
+    }),
+  );
+}

@@ -319,7 +319,7 @@ const PREFS: { key: keyof NotificationPrefs; label: string; hint: string }[] = [
   {
     key: "feedback",
     label: "Feedback de la mentor",
-    hint: "Când o problemă e acceptată sau trebuie refăcută.",
+    hint: "Când o problemă e acceptată sau trebuie refăcută (în aplicație și pe email).",
   },
   {
     key: "materials",

@@ -2,13 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { z } from "zod";
 import { localToIso } from "@/components/mentor-classes/dates";
 import { requireUser } from "@/lib/auth";
 import { mentorClassIds } from "@/lib/db/classes";
 import { db, isUuid } from "@/lib/db/core";
 import { getHomeworkForMentor } from "@/lib/db/homework";
-import { notifyClassStudents } from "@/lib/db/notify";
+import { emailStudentAboutReview, notifyClassStudents } from "@/lib/db/notify";
 
 // Temele mentorului: o temă are una sau mai multe probleme (obligatorii sau opționale),
 // e refolosibilă și se dă mai multor clase, fiecare cu termenul ei.
@@ -406,6 +407,9 @@ export async function reviewProblem(
     p_feedback: parsed.data.feedback,
   });
   if (error) return { ok: false, message: "Evaluarea nu s-a putut salva." };
+  // Emailul pentru elev pleacă după ce mentorul a primit răspunsul.
+  const status = parsed.data.status;
+  after(() => emailStudentAboutReview({ submissionId, status }));
   refresh();
   return {
     ok: true,
