@@ -42,3 +42,31 @@ export const toggleInMask = (mask: number, i: number) => mask ^ (1 << i);
 
 /** Literele variantelor (A–F), pentru afișare. */
 export const OPTION_LETTERS = ["A", "B", "C", "D", "E", "F"];
+
+const bits = (n: number) => {
+  let c = 0;
+  for (let x = n; x; x &= x - 1) c++;
+  return c;
+};
+
+/**
+ * Cât valorează un răspuns (0…1). La o întrebare simplă: 1 sau 0. La una cu mai multe
+ * răspunsuri corecte, punctaj parțial care nu recompensează „bifez tot”:
+ * corecte_bifate / total_corecte − greșite_bifate / total_greșite, cel puțin 0.
+ * Aceeași regulă ca private.answer_credit din baza de date.
+ */
+export function answerCredit(
+  key: number,
+  answer: number | null | undefined,
+  options: number,
+  multi: boolean,
+) {
+  if (answer === null || answer === undefined || answer < 0) return 0;
+  if (!multi) return answer === key ? 1 : 0;
+  const all = (1 << options) - 1;
+  const correct = bits(key);
+  const wrong = options - correct;
+  const hit = bits(answer & key) / (correct || 1);
+  const miss = wrong ? bits(answer & ~key & all) / wrong : 0;
+  return Math.max(0, Math.round((hit - miss) * 100) / 100);
+}

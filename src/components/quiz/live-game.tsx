@@ -256,7 +256,9 @@ function announce(state: LiveState, phase: LivePhase, meId: string) {
     if (!m) return "Răspunsul corect e afișat. N-ai răspuns.";
     return m.correct
       ? `Corect! Plus ${m.points ?? 0} puncte.`
-      : "Greșit. Răspunsul corect e afișat.";
+      : (m.points ?? 0) > 0
+        ? `Parțial corect. Plus ${m.points} puncte.`
+        : "Greșit. Răspunsul corect e afișat.";
   }
   const me = state.board.find((p) => p.id === meId);
   if (phase === "board")
@@ -358,7 +360,8 @@ function Round({
           {q.code ? <QuestionCode code={q.code} /> : null}
           {multi ? (
             <MultiAnswerLabel>
-              Mai multe răspunsuri corecte · bifează-le pe toate
+              Mai multe răspunsuri corecte · punctaj parțial, dar greșelile scad
+              din el
             </MultiAnswerLabel>
           ) : null}
           <ul className={cn("grid gap-3", optionGridClass(q.options.length))}>
@@ -502,6 +505,24 @@ function ResultBanner({ state }: { state: LiveState }) {
       </div>
       <p className="font-extrabold font-heading text-4xl tabular-nums">
         +{mine.points ?? 0}
+        <span className="text-lg text-white/80"> puncte</span>
+      </p>
+    </div>
+  ) : (mine.points ?? 0) > 0 ? (
+    // Mai multe răspunsuri corecte, găsite doar o parte: punctaj parțial.
+    <div className="flex cut flex-wrap items-center gap-3 bg-xp p-5 text-white">
+      <CheckCircle2 className="size-9 shrink-0" aria-hidden="true" />
+      <div className="min-w-0 flex-1">
+        <p className="font-extrabold font-heading text-3xl uppercase">
+          Parțial corect
+        </p>
+        <p className="text-white/85">
+          Ai găsit o parte din variantele corecte. Variantele greșite bifate
+          scad din puncte.
+        </p>
+      </div>
+      <p className="font-extrabold font-heading text-4xl tabular-nums">
+        +{mine.points}
         <span className="text-lg text-white/80"> puncte</span>
       </p>
     </div>

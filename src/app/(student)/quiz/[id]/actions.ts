@@ -5,6 +5,7 @@ import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { db, isUuid } from "@/lib/db/core";
 import { xpOutlook } from "@/lib/db/quiz-rules";
+import { answerCredit } from "@/lib/quiz-answers";
 
 // Un index (întrebare simplă) sau masca variantelor bifate (întrebare cu mai multe
 // răspunsuri corecte, cel mult 6 variante → cel mult 2^6 − 1).
@@ -19,6 +20,8 @@ export type QuestionResult = {
   your: number | null;
   correct: number;
   isCorrect: boolean;
+  /** Cât valorează răspunsul (0…1): la mai multe răspunsuri corecte poate fi parțial. */
+  credit: number;
   explanation?: string;
 };
 
@@ -59,7 +62,7 @@ export async function submitQuiz(
       supabase.from("quizzes").select("xp").eq("id", quizId).maybeSingle(),
       supabase
         .from("quiz_questions")
-        .select("id, position")
+        .select("id, position, options, multi")
         .eq("quiz_id", quizId)
         .order("position"),
       supabase
@@ -89,6 +92,7 @@ export async function submitQuiz(
       your,
       correct: k?.correct ?? -1,
       isCorrect: your !== null && your === k?.correct,
+      credit: k ? answerCredit(k.correct, your, q.options.length, q.multi) : 0,
       explanation: k?.explanation ?? undefined,
     };
   });

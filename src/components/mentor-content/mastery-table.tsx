@@ -1,3 +1,4 @@
+import { formatScore } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type Cell = { correct: number; total: number };
@@ -90,11 +91,11 @@ export function MasteryTable({
                       "px-2 py-1.5 text-center font-semibold tabular-nums",
                       tone(pct),
                     )}
-                    title={`${c.correct} din ${c.total} corecte`}
+                    title={`${formatScore(c.correct)} din ${c.total} corecte`}
                   >
                     {pct}%
                     <span className="block font-normal text-[0.7rem] opacity-80">
-                      {c.correct}/{c.total}
+                      {formatScore(c.correct)}/{c.total}
                     </span>
                   </td>
                 );
@@ -143,11 +144,11 @@ function TotalCell({ cells }: { cells: Cell[] }) {
         "px-2 py-1.5 text-center font-bold tabular-nums ring-2 ring-foreground/10 ring-inset",
         tone(pct),
       )}
-      title={`${correct} din ${total} corecte`}
+      title={`${formatScore(correct)} din ${total} corecte`}
     >
       {pct}%
       <span className="block font-normal text-[0.7rem] opacity-80">
-        {correct}/{total}
+        {formatScore(correct)}/{total}
       </span>
     </td>
   );

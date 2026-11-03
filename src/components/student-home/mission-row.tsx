@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { StudentHomework } from "@/lib/db/homework";
 import type { StudentQuiz } from "@/lib/db/quizzes";
-import { daysUntil, formatWeekday, plural } from "@/lib/format";
+import { daysUntil, formatScore, formatWeekday, plural } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 const needsChanges = (h: StudentHomework) =>
@@ -150,7 +150,7 @@ export function QuizMissionRow({ quiz: q }: { quiz: StudentQuiz }) {
               Rezolvat
             </b>
             <span className="text-muted-foreground text-xs">
-              {q.attempts.best}/{q.attempts.total} corecte
+              {formatScore(q.attempts.best ?? 0)}/{q.attempts.total} corecte
             </span>
           </>
         ) : (

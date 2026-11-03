@@ -13,7 +13,7 @@ import { StatusBadge, XpBadge } from "@/components/common/status";
 import { buttonVariants } from "@/components/ui/button";
 import { xpOutlook } from "@/lib/db/quiz-rules";
 import type { LiveSession, PracticeQuiz, StudentQuiz } from "@/lib/db/quizzes";
-import { formatDateTime, plural } from "@/lib/format";
+import { formatDateTime, formatScore, plural } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 function QuizStateBadge({ quiz: q }: { quiz: StudentQuiz }) {
@@ -83,7 +83,8 @@ export function AssignedQuizRow({ quiz: q }: { quiz: StudentQuiz }) {
             <>
               <span aria-hidden="true">·</span>
               <span>
-                Cel mai bun rezultat: {q.attempts.best}/{q.attempts.total}
+                Cel mai bun rezultat: {formatScore(q.attempts.best)}/
+                {q.attempts.total}
               </span>
             </>
           ) : null}
@@ -206,7 +207,7 @@ export function PracticeQuizRow({
         <span className="block text-muted-foreground text-sm">
           {plural(q.questionCount, "întrebare", "întrebări")}
           {solved
-            ? ` · cel mai bun: ${q.attempts.best}/${q.attempts.total}`
+            ? ` · cel mai bun: ${formatScore(q.attempts.best ?? 0)}/${q.attempts.total}`
             : ""}
         </span>
       </span>

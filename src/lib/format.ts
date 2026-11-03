@@ -103,3 +103,9 @@ export function initials(name: string) {
     .join("")
     .toUpperCase();
 }
+
+/** Un scor care poate avea zecimale (punctaj parțial): „3”, „3,5”, „2,67” → „2,7”. */
+export const formatScore = (n: number) =>
+  Number.isInteger(n)
+    ? String(n)
+    : n.toLocaleString("ro-RO", { maximumFractionDigits: 1 });

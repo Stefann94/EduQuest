@@ -373,7 +373,7 @@ export function QuizForm({
                           Variante de răspuns
                           <span className="ml-1 font-normal text-muted-foreground">
                             {q.multi
-                              ? "(bifează toate variantele corecte)"
+                              ? "(bifează toate variantele corecte; elevii primesc punctaj parțial, iar variantele greșite bifate scad din el)"
                               : "(alege-o pe cea corectă)"}
                           </span>
                         </legend>

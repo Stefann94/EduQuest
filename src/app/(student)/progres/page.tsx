@@ -37,7 +37,13 @@ import { getStudentClasses } from "@/lib/db/classes";
 import { getStudentHomework } from "@/lib/db/homework";
 import { getLiveSessions, getStudentQuizzes } from "@/lib/db/quizzes";
 import { getLeaderboard, getXpHistory } from "@/lib/db/xp";
-import { daysUntil, formatDay, formatShortDate, plural } from "@/lib/format";
+import {
+  daysUntil,
+  formatDay,
+  formatScore,
+  formatShortDate,
+  plural,
+} from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Progresul meu" };
@@ -343,7 +349,8 @@ export default async function ProgressPage() {
                         </span>
                       </span>
                       <span className="shrink-0 tabular-nums">
-                        Cel mai bun: {q.attempts.best} din {q.attempts.total}
+                        Cel mai bun: {formatScore(q.attempts.best ?? 0)} din{" "}
+                        {q.attempts.total}
                       </span>
                     </Link>
                   </li>

@@ -28,6 +28,7 @@ import { RichText } from "@/components/learning/rich-text";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { xpOutlook } from "@/lib/db/quiz-rules";
+import { formatScore } from "@/lib/format";
 import {
   chosenOptions,
   isChosen,
@@ -220,7 +221,7 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
         <dl className="mt-6 grid gap-3 bg-muted/60 p-4 text-sm sm:grid-cols-2">
           <IntroItem icon={ListChecks} label="Întrebări">
             {anyMulti
-              ? `${total}; la unele sunt mai multe răspunsuri corecte`
+              ? `${total}; la unele sunt mai multe răspunsuri corecte (punctaj parțial)`
               : `${total}, cu un singur răspuns corect`}
           </IntroItem>
           <IntroItem icon={Clock} label="Timp">
@@ -317,7 +318,7 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
           </h2>
           <p className="mt-4 flex items-baseline gap-2">
             <span className="font-semibold text-5xl tabular-nums tracking-tight">
-              {result.correct}
+              {formatScore(result.correct)}
             </span>
             <span className="text-lg text-muted-foreground">
               din {result.total} corecte
@@ -382,6 +383,11 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
                         <CheckCircle2 className="size-4" aria-hidden="true" />
                         Corect
                       </span>
+                    ) : r.credit > 0 ? (
+                      <span className="inline-flex items-center gap-1 font-medium text-sm text-xp-foreground">
+                        <CheckCircle2 className="size-4" aria-hidden="true" />
+                        Parțial: {Math.round(r.credit * 100)}%
+                      </span>
                     ) : r.your === null ? (
                       <span className="inline-flex items-center gap-1 font-medium text-muted-foreground text-sm">
                         <Circle className="size-4" aria-hidden="true" />
@@ -399,8 +405,9 @@ export function QuizPlayer({ quiz }: { quiz: QuizPlayerData }) {
                   ) : null}
                   {multi ? (
                     <p className="mt-2 text-muted-foreground text-xs">
-                      Mai multe răspunsuri corecte: e corect doar dacă le-ai
-                      bifat exact pe toate.
+                      Mai multe răspunsuri corecte: fiecare variantă corectă
+                      bifată aduce o parte din punct, iar fiecare variantă
+                      greșită bifată scade din el.
                     </p>
                   ) : null}
                   <ul className="mt-3 grid gap-1.5">
